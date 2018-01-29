@@ -1,0 +1,11 @@
+C:\Users\wach\Documents\Visual Studio 2012\Projects\Cplex_ECOS2018\Cplex_ECOS2018\bin\Debug\Cplex_ECOS2018.exe.config
+C:\Users\wach\Documents\Visual Studio 2012\Projects\Cplex_ECOS2018\Cplex_ECOS2018\bin\Debug\Cplex_ECOS2018.exe
+C:\Users\wach\Documents\Visual Studio 2012\Projects\Cplex_ECOS2018\Cplex_ECOS2018\bin\Debug\Cplex_ECOS2018.pdb
+C:\Users\wach\Documents\Visual Studio 2012\Projects\Cplex_ECOS2018\Cplex_ECOS2018\bin\Debug\ILOG.Concert.dll
+C:\Users\wach\Documents\Visual Studio 2012\Projects\Cplex_ECOS2018\Cplex_ECOS2018\bin\Debug\ILOG.CPLEX.dll
+C:\Users\wach\Documents\Visual Studio 2012\Projects\Cplex_ECOS2018\Cplex_ECOS2018\bin\Debug\ILOG.Concert.xml
+C:\Users\wach\Documents\Visual Studio 2012\Projects\Cplex_ECOS2018\Cplex_ECOS2018\bin\Debug\ILOG.CPLEX.xml
+C:\Users\wach\Documents\Visual Studio 2012\Projects\Cplex_ECOS2018\Cplex_ECOS2018\obj\Debug\Cplex_ECOS2018.exe
+C:\Users\wach\Documents\Visual Studio 2012\Projects\Cplex_ECOS2018\Cplex_ECOS2018\obj\Debug\Cplex_ECOS2018.pdb
+C:\Users\wach\Documents\Visual Studio 2012\Projects\Cplex_ECOS2018\Cplex_ECOS2018\bin\Debug\cplex1261.dll
+C:\Users\wach\Documents\Visual Studio 2012\Projects\Cplex_ECOS2018\Cplex_ECOS2018\obj\Debug\Cplex_ECOS2018.csprojResolveAssemblyReference.cache
