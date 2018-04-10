@@ -974,7 +974,12 @@ namespace Cplex_ECOS2018
             for (int t = 0; t < this.horizon; t++)
             {
                 // CHP 
+                // BUG!!!!!!!!!!!!!!! this will cause the chp to operate the entire time. and the min operation will grow with the capacity
                 cpl.AddGe(x_chp_op_e[t], cpl.Prod(x_chp, c_chp_minload));
+                //cpl.AddGe(x_chp_op_e[t], cpl.Prod(y_chp[t], b_chp_minload));  // this is how it should be. b_chp_minload is min load of minimum size of a chp
+                //cpl.AddGe(x_chp, cpl.Prod(y_chp_selected, b_chp_minload));
+                // !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+                
                 cpl.AddLe(x_chp_op_e[t], x_chp);
                 // heat recovery and heat dump from CHP is equal to electricity generation by CHP times heat to power ratio
                 ILinearNumExpr chpheatrecov = cpl.LinearNumExpr();

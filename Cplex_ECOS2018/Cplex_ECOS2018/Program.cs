@@ -30,6 +30,9 @@ namespace Cplex_ECOS2018
         {
             Console.WriteLine();
             Console.WriteLine(@"///////////////////////////////////////");
+            Console.WriteLine("CAREFUL!!!!!!!!!!! BUG IN CHP OPERATION!!! SEE LINE 977 in Ehub.cs");
+            Console.WriteLine("Hit any key if you still wanna proceed");
+            Console.ReadKey();
             Console.WriteLine("Morris sampling for ECOS 2018 energy hubs A, B and C...");
             Console.WriteLine(@"80 morris samples...");
             Console.WriteLine(@"///////////////////////////////////////");
