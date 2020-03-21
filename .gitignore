@@ -5,3 +5,5 @@
 /.vs
 
 /Cplex_ECOS2018/.vs
+/Cplex_ECOS2018/bin
+/Cplex_ECOS2018/Debug
