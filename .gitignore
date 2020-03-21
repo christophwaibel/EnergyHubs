@@ -4,6 +4,8 @@
 
 /.vs
 
-/Cplex_ECOS2018/.vs
-/Cplex_ECOS2018/bin
-/Cplex_ECOS2018/Debug
+/Cplex_EnergyHubs/.vs
+/Cplex_EnergyHubs/AdamMSc2020/bin
+/Cplex_EnergyHubs/AdamMSc2020/obj
+/Cplex_EnergyHubs/ECOS2018/bin
+/Cplex_EnergyHubs/ECOS2018/obj
