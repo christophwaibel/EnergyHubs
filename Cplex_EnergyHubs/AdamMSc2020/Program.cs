@@ -18,8 +18,8 @@ namespace AdamMSc2020
                 randomData[i][1] = rnd.NextDouble();
             }
 
-            Tuple<double[][], int[][]> tuple = EhubMisc.Clustering.KMeans(randomData, 3);
-
+            //Tuple<double[][], int[][]> tuple = EhubMisc.Clustering.KMeans(randomData, 3);
+            Tuple<int[], int[][]> tuple = EhubMisc.Clustering.KMedoids(randomData, 3, 50, 34, "MeansApproximation");
           
             Console.ReadKey();
 

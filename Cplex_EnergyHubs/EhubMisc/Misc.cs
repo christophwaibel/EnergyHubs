@@ -81,8 +81,24 @@ namespace EhubMisc
         /// <param name="clusters"></param>
         /// <param name="iterations">50 is enough: Scalable K-Means by Ranked Retrieval. Broder et al. 2014, WSDM'14; http://dx.doi.org/10.1145/2556195.2556260 </param>
         /// <param name="seed"></param>
+        /// <param name="algorithm">Options: {"Simple"}</param>
         /// <returns></returns>
-        public static Tuple<double[][], int[][]> KMeans(double[][] dataset, int clusters, int iterations = 50, int seed = 34)
+        public static Tuple<double[][], int[][]> KMeans(double[][] dataset, int clusters, int iterations = 50, int seed = 34, string algorithm = "Simple")
+        {
+            //if (String.Equals(algorithm, "Simple"))
+            return KMeansSimple(dataset, clusters, iterations, seed);
+        }
+
+
+        /// <summary>
+        /// Simple K-Means algorithm according from Andrew Ng's Machine Learning lecture on coursera 
+        /// </summary>
+        /// <param name="dataset"></param>
+        /// <param name="clusters"></param>
+        /// <param name="iterations"></param>
+        /// <param name="seed"></param>
+        /// <returns></returns>
+        private static Tuple<double[][], int[][]> KMeansSimple(double[][] dataset, int clusters, int iterations, int seed)
         {
             Random rnd = new Random(seed);
 
@@ -90,19 +106,19 @@ namespace EhubMisc
             int m = dataset.Length; // size of dataset
             int K = clusters;
 
-            //// Pseudo code, from Andrew Ng's Machine Learning lecture on coursera
+            //// Pseudo code
             /// could be improved, e.g. https://arxiv.org/pdf/1801.02949.pdf
-            //Randomly initialize K cluster centrods, mu1, mu2, ..., mu_k \in R^n
-            //Repeat {
-            //    // cluster assignment step
-            //    for i=1 to m
-            //        c^(i) := index(from 1 to K) of clister centroid closest to x^(i)
-            //                -> c^(i) = min _k ||x^(i) - mu_k||^2
-
-            //    // move centroid
-            //    for k = 1 to K
-            //        mu_k := mean of points assigned to cluster k
-            //}
+            ///Randomly initialize K cluster centrods, mu1, mu2, ..., mu_k \in R^n
+            ///Repeat {
+            ///    // cluster assignment step
+            ///    for i=1 to m
+            ///        c^(i) := index(from 1 to K) of clister centroid closest to x^(i)
+            ///                -> c^(i) = min _k ||x^(i) - mu_k||^2
+            ///
+            ///    // move centroid
+            ///    for k = 1 to K
+            ///        mu_k := mean of points assigned to cluster k
+            /// }
 
             // initialize random centroids
             List<int> alreadySelected = new List<int>();
@@ -164,19 +180,102 @@ namespace EhubMisc
 
         /// <summary>
         /// K-Medoids clustering
+        /// </summary>
+        /// <param name="dataset"></param>
+        /// <param name="clusters"></param>
+        /// <param name="iteration"></param>
+        /// <param name="seed"></param>
+        /// <param name="algorithm">Options: {"PAM" (default), "MeansApproximation"}</param>
+        /// <returns></returns>
+        public static Tuple<int[], int[][]> KMedoids(double[][] dataset, int clusters, int iteration = 50, int seed = 34, string algorithm = "PAM")
+        {
+            if (String.Equals(algorithm, "MeansApproximation"))
+                return KMedoidsMeanApproximation(dataset, clusters, iteration, seed);
+            else
+                return KMedoidsPAM(dataset, clusters, iteration, seed);
+        }
+
+
+        /// <summary>
+        /// K-Medoids clustering
         /// PAM - Partitioning around medoid. Kaufmann & Rousseeuw, 1987. Wiley Series in Probability and Statistics.
         /// https://doi.org/10.1002/9780470316801.ch2
         /// </summary>
         /// <param name="dataX"></param>
         /// <param name="nClusters"></param>
         /// <returns></returns>
-        public static Tuple<double[,], int[][]> KMedoids(double[,] dataX, int nClusters)
+        private static Tuple<int[], int[][]> KMedoidsPAM(double[][] dataset, int clusters, int iterations, int seed)
         {
-            int dim = dataX.GetLength(1);
+            Random rnd = new Random(seed);
 
-            double[,] means = new double[nClusters, dim];
-            int[][] indices = new int[nClusters][];
-            return Tuple.Create(means, indices);
+            int n = dataset[0].Length; // problem dimension
+            int m = dataset.Length; // size of dataset
+            int K = clusters;
+
+            //// Pseudocode PAM
+            ///
+            /// Input: X (n obs., p variables), K # groups
+            /// .
+            /// // BUILD Phase
+            /// Initialize K medoids M_k        // random selection
+            /// Repeat {
+            ///     Assign each observation to the group with the nearest medoid
+            ///     .
+            ///     // SWAP phase
+            ///     For Each medoid M_k
+            ///         Select randomly a non-medoid data point i
+            ///         Check if the criterion E decreases if we swap their role. 
+            ///             If YES, the data point i becomes the medoid M_k of the cluster C_k
+            /// UNTIL The criterion E does not decrease, or iterations full
+            /// .
+            /// Output: A partition of the instances in K groups characterized by their medoids M_k
+
+
+
+            int[] medoids = new int[clusters];
+            int[][] indices = new int[clusters][];
+            return Tuple.Create(medoids, indices);
+        }
+
+
+        /// <summary>
+        /// Compute K-Means and take the closest existing point of the centroid as medoid
+        /// </summary>
+        /// <param name="dataset"></param>
+        /// <param name="clusters"></param>
+        /// <param name="iterations"></param>
+        /// <param name="seed"></param>
+        /// <returns></returns>
+        private static Tuple<int[], int[][]> KMedoidsMeanApproximation(double[][] dataset, int clusters, int iterations, int seed) 
+        {
+            Tuple<double[][], int[][]> approximation = KMeans(dataset, clusters, iterations, seed, "Simple");
+
+            int n = dataset[0].Length; // problem dimension
+            int m = dataset.Length; // size of dataset
+            int K = clusters;
+
+            //// Pseudocode
+            /// for each cluster 
+            ///     compute distances from centroid to each point within that cluster
+            ///     get the closest point and re-assign it as medoid 
+
+            int[] medoids = new int[clusters];
+            for (int _k = 0; _k<K; _k++)
+            {
+                List<double> distancesToCentroid = new List<double>();
+                List<int> listIndices = new List<int>();
+                double[] centroid = approximation.Item1[_k];
+                for (int i = 0; i<approximation.Item2[_k].Length; i++)
+                {
+                    int index = approximation.Item2[_k][i];                    
+                    distancesToCentroid.Add(Misc.Distance2Pts(dataset[index], centroid));
+                    listIndices.Add(index);
+                }
+                int minimumValueIndex = distancesToCentroid.IndexOf(distancesToCentroid.Min());
+                medoids[_k] = minimumValueIndex;
+            }
+
+            return Tuple.Create(medoids, approximation.Item2);
         }
     }
 }
