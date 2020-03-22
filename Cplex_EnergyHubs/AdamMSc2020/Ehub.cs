@@ -5,62 +5,47 @@ using System.Text;
 using ILOG.CPLEX;
 using ILOG.Concert;
 
+using EhubMisc;
+
 namespace AdamMSc2020
 {
     internal class Ehub
     {
         /// <summary>
-        /// Optimal variables
+        /// Optimal solution
         /// </summary>
-        public List<double> XOptimal { get; private set; }
+        internal EhubOutputs [] Outputs;
 
-        
-        internal Ehub()
+
+        internal Ehub(double [] coolingDemand, double [] heatingDemand, double [] electricityDemand,
+            double[][] irradiance, double [] solarTechSurfaceAreas)
         {
-        
+            // use profiles in clustering functions, return typical profiles        
         }
 
 
-        internal void Solve()
+        internal void Solve(int epsilonCuts)
+        {
+            this.Outputs = new EhubOutputs[epsilonCuts];
+
+            // 1. solve for minCarbon, ignoring cost
+            // 2. solve for minCost, using minCarbon value found in 1 (+ small torelance)
+            // 3. solve for minCost, ignoring Carbon
+            // 4. make epsilonCuts (-2) cuts and solve for each minCost s.t. carbon
+            // 5. report all values into Outputs
+
+
+
+        }
+
+
+        private EhubOutputs EnergyHub(bool minCarbon, double? carbonConstraint = null)
         {
             Cplex cpl = new Cplex();
 
 
-            INumVar[] x = new INumVar[5];
-            for (int i=0; i<x.Length; i++)
-                x[i] = cpl.NumVar(0, double.MaxValue);
-            
-            ILinearNumExpr c1 = cpl.LinearNumExpr();
-            c1.AddTerm(1, x[0]);
-            c1.AddTerm(1, x[1]);
-            c1.AddTerm(1, x[2]);
-            cpl.AddEq(c1, 100.0);
-
-            ILinearNumExpr c2 = cpl.LinearNumExpr();
-            c2.AddTerm(6, x[0]);
-            c2.AddTerm(9, x[1]);
-            c2.AddTerm(1, x[3]);
-            cpl.AddEq(c2, 720);
-
-            ILinearNumExpr c3 = cpl.LinearNumExpr();
-            c3.AddTerm(1, x[1]);
-            c3.AddTerm(1, x[4]);
-            cpl.AddEq(c3, 60);
-
-            ILinearNumExpr f1 = cpl.LinearNumExpr();
-            f1.AddTerm(10, x[0]);
-            ILinearNumExpr f2 = cpl.LinearNumExpr();
-            f2.AddTerm(20, x[1]);
-
-            cpl.AddMaximize(cpl.Sum(f1, f2));
-
-            cpl.Solve();
-
-            this.XOptimal = new List<double>();
-            foreach (INumVar xin in x)
-                this.XOptimal.Add(cpl.GetValue(xin));
-
-            
+            EhubOutputs solution = new EhubOutputs();
+            return solution;
         }
     }
 }
