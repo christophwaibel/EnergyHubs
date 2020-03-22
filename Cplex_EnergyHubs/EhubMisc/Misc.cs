@@ -272,7 +272,7 @@ namespace EhubMisc
                     listIndices.Add(index);
                 }
                 int minimumValueIndex = distancesToCentroid.IndexOf(distancesToCentroid.Min());
-                medoids[_k] = minimumValueIndex;
+                medoids[_k] = listIndices[minimumValueIndex];
             }
 
             return Tuple.Create(medoids, approximation.Item2);
