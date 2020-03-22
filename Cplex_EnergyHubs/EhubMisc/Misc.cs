@@ -164,6 +164,8 @@ namespace EhubMisc
 
         /// <summary>
         /// K-Medoids clustering
+        /// PAM - Partitioning around medoid. Kaufmann & Rousseeuw, 1987. Wiley Series in Probability and Statistics.
+        /// https://doi.org/10.1002/9780470316801.ch2
         /// </summary>
         /// <param name="dataX"></param>
         /// <param name="nClusters"></param>
