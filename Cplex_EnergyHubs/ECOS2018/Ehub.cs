@@ -8,6 +8,8 @@ using System.IO;
 using ILOG.CPLEX;
 using ILOG.Concert;
 
+using EhubMisc;
+
 namespace Cplex_ECOS2018
 {
     /// <summary>
@@ -1749,12 +1751,4 @@ namespace Cplex_ECOS2018
 
     }
 
-
-    public static class Misc
-    {
-        public static bool IsNullOrDefault<T>(this Nullable<T> value) where T : struct
-        {
-            return default(T).Equals(value.GetValueOrDefault());
-        }
-    }
 }
