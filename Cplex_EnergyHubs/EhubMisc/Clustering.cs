@@ -111,14 +111,14 @@ namespace EhubMisc
         /// <param name="seed"></param>
         /// <param name="algorithm">Options: {"PAM" (default), "MeansApproximation"}</param>
         /// <returns></returns>
-        public static Tuple<int[], int[][]> KMedoids(double[][] dataset, int clusters, int iteration = 50, int seed = 34, string algorithm = "PAM")
+        public static Tuple<int[], int[][]> KMedoids(double[][] dataset, int clusters, int iteration = 50, int seed = 34, string algorithm = "PAM_Random")
         {
             if (String.Equals(algorithm, "MeansApproximation"))
                 return KMedoidsMeanApproximation(dataset, clusters, iteration, seed);
             else if (String.Equals(algorithm, "PAM_Exhaustive"))
                 return KMedoidsPAM(dataset, clusters, iteration, seed, "exhaustive");
             else
-                return KMedoidsPAM(dataset, clusters, iteration, seed);
+                return KMedoidsPAM(dataset, clusters, iteration, seed, "random");
         }
 
 
@@ -130,7 +130,7 @@ namespace EhubMisc
         /// <param name="dataX"></param>
         /// <param name="nClusters"></param>
         /// <returns></returns>
-        private static Tuple<int[], int[][]> KMedoidsPAM(double[][] dataset, int clusters, int iterations, int seed, string swapMode = "random")
+        private static Tuple<int[], int[][]> KMedoidsPAM(double[][] dataset, int clusters, int iterations, int seed, string swapMode = "exhaustive")
         {
             Random rnd = new Random(seed);
 
@@ -287,29 +287,69 @@ namespace EhubMisc
 
 
         #region shared functions
-        /// <summary>
-        /// 
-        /// </summary>
-        /// <param name="clusters"></param>
-        /// <param name="dataset"></param>
-        /// <param name="clusterItems"></param>
-        /// <param name="clusterCenters"></param>
-        /// <returns></returns>
-        public static double [] Silhouette(int clusters, double[][] dataset, int [][] clusterItems, double [][] centroids)
+        public static Tuple<double [], double [], double> Silhouette(double[][] dataset, int [][] clusterItems, double [][] centroids)
         {
+            int m = dataset.Length;
+            int n = dataset[0].Length;
+            int K = centroids.Length; 
 
-            return new double[2] { 1, 2 };
+            double[] averageDistance = new double[m];
+            double[] distanceToNearestCluster = new double[m];
+            double []silhouetteSample = new double[m];
+            double[] silhouetteCluster = new double[K];
+            for (int _k=0; _k<K; _k++)
+            {
+                for (int i = 0; i < clusterItems[_k].Length; i++)
+                {
+                    int index = clusterItems[_k][i];
+                    averageDistance[index] = 0.0;
+                    for (int u = 0; u < clusterItems[_k].Length; u++)
+                    {
+                        if (i == u) continue;
+                        averageDistance[index] += Misc.Distance2Pts(dataset[index], dataset[clusterItems[_k][u]]);
+                    }
+                    averageDistance[index] /= (clusterItems[_k].Length - 1);
+
+                    double[] distanceToOtherClusters = new double[K - 1];
+                    int otherCluster = 0;
+                    for(int _q = 0; _q<K; _q++)
+                    {
+                        if (_q == _k) continue;
+                        for(int u = 0; u<clusterItems[_q].Length; u++)
+                            distanceToOtherClusters[otherCluster] += Misc.Distance2Pts(dataset[index], dataset[clusterItems[_q][u]]);
+                        distanceToOtherClusters[otherCluster] /= clusterItems[_q].Length;
+                        otherCluster++;
+                    }
+                    distanceToNearestCluster[index] = distanceToOtherClusters.Min();
+
+                    double a = averageDistance[index];
+                    double b = distanceToNearestCluster[index];
+                    silhouetteSample[index] = (b - a) / (new double[2] { a, b }.Max());
+                }
+
+                silhouetteCluster[_k] = 0.0;
+                for (int i = 0; i < clusterItems[_k].Length; i++)
+                    silhouetteCluster[_k] += silhouetteSample[i];
+                silhouetteCluster[_k] /= clusterItems[_k].Length;
+            }
+
+            double averageSilhouette = 0.0;
+            for(int _k=0; _k<K; _k++)
+                averageSilhouette += (clusterItems[_k].Length * silhouetteCluster[_k]);
+            averageSilhouette /= m;
+
+            return Tuple.Create(silhouetteSample, silhouetteCluster, averageSilhouette);
         }
 
-        public static double[] Silhouette(int clusters, double[][] dataset, int[][] clusterItems, int [] medoids)
+        public static Tuple<double[], double[], double> Silhouette(double[][] dataset, int[][] clusterItems, int [] medoids)
         {
-            int K = clusters;
+            int K = medoids.Length;
             int n = dataset[0].Length;
             double[][] centroids = new double[K][];
             for(int _k=0; _k<K; _k++)
                 centroids[_k] = dataset[medoids[_k]];
 
-            return Silhouette(clusters, dataset, clusterItems, centroids);
+            return Silhouette(dataset, clusterItems, centroids);
         }
 
 

@@ -28,7 +28,7 @@ namespace AdamMSc2020
             //Tuple<int[], int[][]> tuple = EhubMisc.Clustering.KMedoids(randomData, clusters, 50, 34, "PAM_Exhaustive");
             Tuple<int[], int[][]> tuple = EhubMisc.Clustering.KMedoids(randomData, clusters);
 
-            double[] silhouette = EhubMisc.Clustering.Silhouette(clusters, randomData, tuple.Item2, tuple.Item1);
+            Tuple<double[], double[], double> silhouette = EhubMisc.Clustering.Silhouette(randomData, tuple.Item2, tuple.Item1);
             
 
         }
