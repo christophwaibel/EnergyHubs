@@ -288,12 +288,12 @@ namespace EhubMisc
 
         #region shared functions
         /// <summary>
-        /// 
+        /// Computes Silhouette coefficients for clustered items
         /// </summary>
         /// <param name="dataset"></param>
         /// <param name="clusterItems"></param>
         /// <param name="centroids"></param>
-        /// <returns>s(i), average s(i) per cluster, total average s(i)</returns>
+        /// <returns>s(i) for each sample, average s(i) per cluster, total average s(i) of all clusters</returns>
         public static Tuple<double [], double [], double> Silhouette(double[][] dataset, int [][] clusterItems, double [][] centroids)
         {
             int m = dataset.Length;
@@ -350,6 +350,13 @@ namespace EhubMisc
         }
 
 
+        /// <summary>
+        /// Computes Silhouette coefficients for clustered items
+        /// </summary>
+        /// <param name="dataset"></param>
+        /// <param name="clusterItems"></param>
+        /// <param name="medoids"></param>
+        /// <returns>s(i) for each sample, average s(i) per cluster, total average s(i) of all clusters</returns>
         public static Tuple<double[], double[], double> Silhouette(double[][] dataset, int[][] clusterItems, int [] medoids)
         {
             int K = medoids.Length;
