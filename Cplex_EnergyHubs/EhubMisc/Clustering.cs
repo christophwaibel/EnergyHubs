@@ -287,6 +287,13 @@ namespace EhubMisc
 
 
         #region shared functions
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="dataset"></param>
+        /// <param name="clusterItems"></param>
+        /// <param name="centroids"></param>
+        /// <returns>s(i), average s(i) per cluster, total average s(i)</returns>
         public static Tuple<double [], double [], double> Silhouette(double[][] dataset, int [][] clusterItems, double [][] centroids)
         {
             int m = dataset.Length;
@@ -329,8 +336,9 @@ namespace EhubMisc
 
                 silhouetteCluster[_k] = 0.0;
                 for (int i = 0; i < clusterItems[_k].Length; i++)
-                    silhouetteCluster[_k] += silhouetteSample[i];
-                silhouetteCluster[_k] /= clusterItems[_k].Length;
+                    silhouetteCluster[_k] += silhouetteSample[clusterItems[_k][i]];
+                if (clusterItems[_k].Length > 1) silhouetteCluster[_k] /= clusterItems[_k].Length;
+                else silhouetteCluster[_k] = 0.0;
             }
 
             double averageSilhouette = 0.0;
@@ -340,6 +348,7 @@ namespace EhubMisc
 
             return Tuple.Create(silhouetteSample, silhouetteCluster, averageSilhouette);
         }
+
 
         public static Tuple<double[], double[], double> Silhouette(double[][] dataset, int[][] clusterItems, int [] medoids)
         {
