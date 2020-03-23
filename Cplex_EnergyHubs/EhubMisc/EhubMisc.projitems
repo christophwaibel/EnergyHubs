@@ -9,6 +9,7 @@
     <Import_RootNamespace>EhubMisc</Import_RootNamespace>
   </PropertyGroup>
   <ItemGroup>
+    <Compile Include="$(MSBuildThisFileDirectory)Clustering.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Misc.cs" />
   </ItemGroup>
 </Project>
