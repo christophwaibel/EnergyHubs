@@ -121,23 +121,10 @@ namespace EhubMisc
             /// }
 
             // initialize random centroids
-            List<int> alreadySelected = new List<int>();
-            double[][] means = new double[K][];
-            for (int _k = 0; _k < K; _k++)
-            {
-                int selectedIndex = rnd.Next(0, m);
-                if (_k > 0)
-                {
-                    while (alreadySelected.IndexOf(selectedIndex) != -1)
-                        selectedIndex = rnd.Next(0, m);
-                    alreadySelected.Add(selectedIndex);
-                }
-                else alreadySelected.Add(selectedIndex);
+            Tuple<List<int>, double[][]> tuple = selectRandomIndices(K, n, m, rnd, dataset);
+            List<int> alreadySelected = tuple.Item1;
+            double[][] means = tuple.Item2;
 
-                means[_k] = new double[n];
-                for (int _n = 0; _n < n; _n++)
-                    means[_k][_n] = dataset[selectedIndex][_n];
-            }
 
             // iterate
             List<int>[] clusterItems = new List<int>[K];
@@ -213,22 +200,17 @@ namespace EhubMisc
             int K = clusters;
 
             //// Pseudocode PAM
+            /// https://www.geeksforgeeks.org/ml-k-medoids-clustering-with-example/
             ///
-            /// Input: X (n obs., p variables), K # groups
-            /// .
-            /// // BUILD Phase
-            /// Initialize K medoids M_k        // random selection
-            /// Repeat {
-            ///     Assign each observation to the group with the nearest medoid
-            ///     .
-            ///     // SWAP phase
-            ///     For Each medoid M_k
-            ///         Select randomly a non-medoid data point i
-            ///         Check if the criterion E decreases if we swap their role. 
-            ///             If YES, the data point i becomes the medoid M_k of the cluster C_k
-            /// UNTIL The criterion E does not decrease, or iterations full
-            /// .
-            /// Output: A partition of the instances in K groups characterized by their medoids M_k
+            /// cost = sum_{c_i} sum_{p_i in c_i} |p_i - c_i|
+            /// 
+            /// 1. Initialize: select k random points out of the n data points as the medoids.
+            /// 2. Associate each data point to the closest medoid by using any common distance metric methods
+            /// 3. While the cost decreases:
+            ///     For each medoid m, for each data point o which is not a medoid:
+            ///         1. Swap m and o, associate each data point to the closest medoid, recompute the cost
+            ///         2. if the total cost is more than that in the previous step, undo the swap
+
 
 
 
@@ -276,6 +258,40 @@ namespace EhubMisc
             }
 
             return Tuple.Create(medoids, approximation.Item2);
+        }
+
+
+        /// <summary>
+        /// select random indices from a dataset. no double selections
+        /// </summary>
+        /// <param name="K">Number of selections (clusters)</param>
+        /// <param name="n">vector length of a sample (dimension)</param>
+        /// <param name="m">number of samples in dataset</param>
+        /// <param name="rnd">random generator</param>
+        /// <param name="dataset">dataset</param>
+        /// <returns></returns>
+        private static Tuple<List<int>, double [][]> selectRandomIndices(int K, int n, int m, Random rnd, double [][] dataset)
+        {
+            // initialize random centroids
+            List<int> alreadySelected = new List<int>();
+            double[][] means = new double[K][];
+            for (int _k = 0; _k < K; _k++)
+            {
+                int selectedIndex = rnd.Next(0, m);
+                if (_k > 0)
+                {
+                    while (alreadySelected.IndexOf(selectedIndex) != -1)
+                        selectedIndex = rnd.Next(0, m);
+                    alreadySelected.Add(selectedIndex);
+                }
+                else alreadySelected.Add(selectedIndex);
+
+                means[_k] = new double[n];
+                for (int _n = 0; _n < n; _n++)
+                    means[_k][_n] = dataset[selectedIndex][_n];
+            }
+
+            return Tuple.Create(alreadySelected, means);
         }
     }
 }
