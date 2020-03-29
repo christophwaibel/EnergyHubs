@@ -4,6 +4,8 @@ using System.Text;
 
 using System.Linq;
 
+
+
 namespace EhubMisc
 {
     public static class Clustering
@@ -11,29 +13,15 @@ namespace EhubMisc
         #region K-Means
         /// <summary>
         /// K-Means clustering
+        /// Simple K-Means algorithm according from Andrew Ng's Machine Learning lecture on coursera 
         /// </summary>
         /// <param name="dataset"></param>
         /// <param name="clusters"></param>
         /// <param name="iterations">50 is enough: Scalable K-Means by Ranked Retrieval. Broder et al. 2014, WSDM'14; http://dx.doi.org/10.1145/2556195.2556260 </param>
         /// <param name="seed"></param>
-        /// <param name="algorithm">Options: {"Simple"}</param>
+        /// <param name="algorithm">Options: {"KMeans++"(default), "Simple"}</param>
         /// <returns></returns>
-        public static Tuple<double[][], int[][]> KMeans(double[][] dataset, int clusters, int iterations = 50, int seed = 34, string algorithm = "Simple")
-        {
-            //if (String.Equals(algorithm, "Simple"))
-            return KMeansSimple(dataset, clusters, iterations, seed);
-        }
-
-
-        /// <summary>
-        /// Simple K-Means algorithm according from Andrew Ng's Machine Learning lecture on coursera 
-        /// </summary>
-        /// <param name="dataset"></param>
-        /// <param name="clusters"></param>
-        /// <param name="iterations"></param>
-        /// <param name="seed"></param>
-        /// <returns></returns>
-        private static Tuple<double[][], int[][]> KMeansSimple(double[][] dataset, int clusters, int iterations, int seed)
+        public static Tuple<double[][], int[][], double> KMeans(double[][] dataset, int clusters, int iterations = 50, int seed = 34, string algorithm = "KMeans++")
         {
             Random rnd = new Random(seed);
 
@@ -56,10 +44,13 @@ namespace EhubMisc
             /// }
 
             // initialize random centroids
-            Tuple<List<int>, double[][]> tuple = selectRandomIndices(K, n, m, rnd, dataset);
+            Tuple<List<int>, double[][]> tuple;
+            if (String.Equals(algorithm, "Simple"))
+                tuple = selectRandomIndices(K, n, m, rnd, dataset);
+            else
+                tuple = selectKMeansPlusPlusIndices(K, n, m, rnd, dataset);
             List<int> alreadySelected = tuple.Item1;
             double[][] means = tuple.Item2;
-
 
             // iterate
             List<int>[] clusterItems = new List<int>[K];
@@ -96,7 +87,8 @@ namespace EhubMisc
             int[][] indices = new int[K][];
             for (int _k = 0; _k < K; _k++)
                 indices[_k] = clusterItems[_k].ToArray();
-            return Tuple.Create(means, indices);
+            return Tuple.Create(means, indices, totalCostDistance(K, clusterItems, means, dataset));
+
         }
         #endregion
 
@@ -111,14 +103,14 @@ namespace EhubMisc
         /// <param name="seed"></param>
         /// <param name="algorithm">Options: {"PAM" (default), "MeansApproximation"}</param>
         /// <returns></returns>
-        public static Tuple<int[], int[][]> KMedoids(double[][] dataset, int clusters, int iteration = 50, int seed = 34, string algorithm = "PAM_Random")
+        public static Tuple<int[], int[][], double> KMedoids(double[][] dataset, int clusters, int iteration = 50, int seed = 34, string algorithm = "PAM_Random", string startMode = "KMeans++")
         {
             if (String.Equals(algorithm, "MeansApproximation"))
                 return KMedoidsMeanApproximation(dataset, clusters, iteration, seed);
             else if (String.Equals(algorithm, "PAM_Exhaustive"))
-                return KMedoidsPAM(dataset, clusters, iteration, seed, "exhaustive");
+                return KMedoidsPAM(dataset, clusters, iteration, seed, "exhaustive", startMode);
             else
-                return KMedoidsPAM(dataset, clusters, iteration, seed, "random");
+                return KMedoidsPAM(dataset, clusters, iteration, seed, "random", startMode);
         }
 
 
@@ -130,7 +122,7 @@ namespace EhubMisc
         /// <param name="dataX"></param>
         /// <param name="nClusters"></param>
         /// <returns></returns>
-        private static Tuple<int[], int[][]> KMedoidsPAM(double[][] dataset, int clusters, int iterations, int seed, string swapMode = "exhaustive")
+        private static Tuple<int[], int[][], double> KMedoidsPAM(double[][] dataset, int clusters, int iterations, int seed, string swapMode = "exhaustive", string startMode = "KMeans++")
         {
             Random rnd = new Random(seed);
 
@@ -152,7 +144,11 @@ namespace EhubMisc
             ///         
 
             // 1. initialize random centroids
-            Tuple<List<int>, double[][]> tuple = selectRandomIndices(K, n, m, rnd, dataset);
+            Tuple<List<int>, double[][]> tuple;
+            if (string.Equals(startMode, "Random"))
+                tuple = selectRandomIndices(K, n, m, rnd, dataset);
+            else
+                tuple = selectKMeansPlusPlusIndices(K, n, m, rnd, dataset);
             int[] medoids = tuple.Item1.ToArray();
             double[][] means = tuple.Item2;
 
@@ -163,14 +159,15 @@ namespace EhubMisc
 
             // 3. iterate and swap medoids
             bool improvement = true;
-            double newCost = double.MaxValue;
             int currentIteration = 0;
             do
             {
-                double oldCost = cost;
+                double currentLowestCost = cost;
+                int[] storeNewMedoids = new int[K];
 
                 for (int _k = 0; _k < K; _k++)
                 {
+                    storeNewMedoids[_k] = medoids[_k];
                     if (String.Equals(swapMode, "random"))
                     {
                         int rndSwap = rnd.Next(0, clusterItems[_k].Count);
@@ -181,15 +178,13 @@ namespace EhubMisc
                         medoids.CopyTo(tempMedoids, 0);
                         tempMedoids[_k] = rndSwap;
 
-                        List<int>[] tempClusterItems = clusterAssignment(K, m, tempMedoids, dataset);
-                        double tempCost = totalCostDistance(K, tempClusterItems, tempMedoids, dataset);
+                        //List<int>[] tempClusterItems = clusterAssignment(K, m, tempMedoids, dataset);
+                        double tempCost = totalCostDistance(K, clusterItems, tempMedoids, dataset);
 
-                        if (tempCost < cost)
+                        if (tempCost < currentLowestCost)
                         {
-                            cost = tempCost;
-                            newCost = tempCost;
-                            medoids[_k] = rndSwap;
-                            tempClusterItems.CopyTo(clusterItems, 0);
+                            currentLowestCost = tempCost;
+                            storeNewMedoids[_k] = rndSwap;
                         }
                     }
                     // exhaustive
@@ -204,22 +199,27 @@ namespace EhubMisc
                             medoids.CopyTo(tempMedoids, 0);
                             tempMedoids[_k] = swap;
 
-                            List<int>[] tempClusterItems = clusterAssignment(K, m, tempMedoids, dataset);
-                            double tempCost = totalCostDistance(K, tempClusterItems, tempMedoids, dataset);
+                            //List<int>[] tempClusterItems = clusterAssignment(K, m, tempMedoids, dataset);
+                            double tempCost = totalCostDistance(K, clusterItems, tempMedoids, dataset);
 
-                            if (tempCost < cost)
+                            if (tempCost < currentLowestCost)
                             {
-                                cost = tempCost;
-                                newCost = tempCost;
-                                medoids[_k] = swap;
-                                tempClusterItems.CopyTo(clusterItems, 0);
+                                currentLowestCost = tempCost;
+                                storeNewMedoids[_k] = swap;
                             }
                         }
                     }
                 }
 
-                if (newCost >= oldCost)
+                // only re-assign cluster items here
+                if (currentLowestCost >= cost)
                     improvement = false;
+                else
+                { 
+                    storeNewMedoids.CopyTo(medoids, 0);
+                    clusterItems = clusterAssignment(K, m, medoids, dataset);
+                    cost = totalCostDistance(K, clusterItems, medoids, dataset);
+                }
 
                 currentIteration++;
             } while (improvement && currentIteration < iterations);
@@ -228,7 +228,7 @@ namespace EhubMisc
             int[][] indices = new int[K][];
             for (int _k = 0; _k < K; _k++)
                 indices[_k] = clusterItems[_k].ToArray();
-            return Tuple.Create(medoids, indices);
+            return Tuple.Create(medoids, indices, totalCostDistance(K, clusterItems, medoids, dataset));
         }
 
 
@@ -240,9 +240,9 @@ namespace EhubMisc
         /// <param name="iterations"></param>
         /// <param name="seed"></param>
         /// <returns></returns>
-        private static Tuple<int[], int[][]> KMedoidsMeanApproximation(double[][] dataset, int clusters, int iterations, int seed)
+        private static Tuple<int[], int[][], double> KMedoidsMeanApproximation(double[][] dataset, int clusters, int iterations, int seed)
         {
-            Tuple<double[][], int[][]> approximation = KMeans(dataset, clusters, iterations, seed, "Simple");
+            Tuple<double[][], int[][], double> approximation = KMeans(dataset, clusters, iterations, seed, "Simple");
 
             int n = dataset[0].Length; // problem dimension
             int m = dataset.Length; // size of dataset
@@ -280,13 +280,12 @@ namespace EhubMisc
             }
 
             double cost = totalCostDistance(K, clusterItems, medoids, dataset);
-
-            return Tuple.Create(medoids, approximation.Item2);
+            return Tuple.Create(medoids, approximation.Item2, cost);
         }
         #endregion
 
 
-        #region shared functions
+        #region Quality metrics
         /// <summary>
         /// Computes Silhouette coefficients for clustered items
         /// </summary>
@@ -367,6 +366,160 @@ namespace EhubMisc
 
             return Silhouette(dataset, clusterItems, centroids);
         }
+        #endregion
+
+
+        #region shared functions
+        /// <summary>
+        /// Source: 
+        /// Arthur & Vassilvitskii 2007. K-means++: The Advantages of Careful Seeding. 
+        /// SOGA '07: Proceedings of the Eigteenth Annual ACM-SIAM Symposium on Discrete Algorithms. pp. 1027-1035
+        /// </summary>
+        /// <param name="K"></param>
+        /// <param name="n"></param>
+        /// <param name="m"></param>
+        /// <param name="rnd"></param>
+        /// <param name="dataset"></param>
+        /// <returns></returns>
+        private static Tuple<List<int>, double[][]> selectKMeansPlusPlusIndices(int K, int n, int m, Random rnd, double[][] dataset)
+        {
+            //// Pseudo code
+            /// From the Matlab 2017b documentation
+            /// k-means++ algorithm chooses seeds for k-means clustering. I.e., after the seeds are chosen, regular k-means is performed
+            /// 
+            /// 1. Select an observation uniformly at random from the data set X. The chosen observation is the first centroid, and is denoted c_1
+            /// 2. Compute distances from each observation to c_1. Denote the distance between c_j and the observation m as d(x_m, c_j)
+            /// 3. Select the next centroid, c_2 at random from X with probability
+            ///     d^2(x_m, c_1) / sum_{j=1}^n d^2(x_j, c_1)
+            /// 4. To choose center j:
+            ///     a. Compute the distances from each observation to each centroid, and assign each observation to its closest centroid
+            ///     b. For m = 1, ..., n and p = 1, ..., j-1, select centroid j at random from X with probability
+            ///         d^2(x_m, c_p) / sum_{h; x_h \in C_p} d^2(x_h, c_p)
+            ///         where C_p is the set of all observations closest to centroid c_p and x_m belongs to C_p.
+            ///         That is, select each subsequent center with a probability proportional to the distance from itself to the closest center that you already chose.
+            /// 5. Repeat step 4 until k centroids are chosen.
+            /// Arthur and Vassilvitskii demonstrate, using a simulation study for several cluster orientations, that k-means++ achieves faster convergence to a lower
+            /// sum of within-cluster, sum-of-squares point-to-cluster-centroid distances thatn Lloyd's algorithm
+
+
+            List<int> alreadySelected = new List<int>();
+            double[][] means = new double[K][];
+            for (int _k = 0; _k < K; _k++)
+                means[_k] = new double[n];
+
+            // 1. initialize first centroid at uniform random
+            int c1 = rnd.Next(0, m);
+            alreadySelected.Add(c1);
+            for (int _n = 0; _n < n; _n++)
+                means[0][_n] = dataset[c1][_n];
+
+            // 2. compute distances from each oberstaion to c1
+            double[] distancesToC1 = new double[m];
+            double sumDistancesToC1 = 0.0;
+            for (int i = 0; i < m; i++)
+            {
+                distancesToC1[i] = Misc.Distance2Pts(dataset[i], dataset[c1]);
+                sumDistancesToC1 += distancesToC1[i];
+            }
+
+            // 3. select next centroid according to probability
+            Dictionary<int, double> probabilitiesDC1 = new Dictionary<int, double>();
+            for (int i = 0; i < m; i++)
+                probabilitiesDC1.Add(i, distancesToC1[i]);
+
+            probabilitiesDC1 = probabilitiesDC1.OrderBy(x => x.Value).ToDictionary(pair => pair.Key, pair => pair.Value);
+            double tempProbability = 0.0;
+            for (int i = 0; i < m; i++)
+            {
+                tempProbability += probabilitiesDC1[probabilitiesDC1.Keys.ElementAt(i)];
+                probabilitiesDC1[probabilitiesDC1.Keys.ElementAt(i)] = tempProbability;
+            }
+
+            int c2 = 0;
+            do
+            {
+                double rndC2 = rnd.NextDouble() * sumDistancesToC1;
+                for (int i = 0; i < m; i++)
+                {
+                    if (probabilitiesDC1[probabilitiesDC1.Keys.ElementAt(i)] > rndC2)
+                    {
+                        // take previous element
+                        c2 = probabilitiesDC1.Keys.ElementAt(i - 1);
+                        break;
+                    }
+
+                    if (i == n)
+                    {
+                        //last element
+                        c2 = probabilitiesDC1.Keys.ElementAt(i);
+                    }
+                }
+            } while (c2 == c1);
+            alreadySelected.Add(c2);
+            for(int _n=0; _n<n; _n++)
+                means[1][_n] = dataset[c2][_n];
+
+            // 4. choose any more centroid j in K
+            if (K > 2)
+            {
+                // compute distances from each observation to each centroid c1 and c2 and assign each observation to closest centroid
+                List<int>[] clusterItems = clusterAssignment(2, m, new int[2] { c1, c2 }, dataset);
+                int[] clusterC1OrC2 = new int[m];
+                for(int _k=0; _k<2; _k++)
+                    foreach(int item in clusterItems[_k])
+                        clusterC1OrC2[item] = _k;
+
+                double[] distancesToC1OrC2 = new double[m];
+                double sumDistancesToC1OrC2 = 0.0;
+                for(int i=0; i<m; i++)
+                {
+                    int index = alreadySelected[clusterC1OrC2[i]];
+                    distancesToC1OrC2[i] = Misc.Distance2Pts(dataset[i], dataset[alreadySelected[clusterC1OrC2[i]]]);
+                    sumDistancesToC1OrC2 += distancesToC1OrC2[i];
+                }
+                Dictionary<int, double> probabilitiesDCJ = new Dictionary<int, double>();
+                for (int i = 0; i < m; i++)
+                    probabilitiesDCJ.Add(i, distancesToC1OrC2[i]);
+
+                probabilitiesDCJ = probabilitiesDCJ.OrderBy(x => x.Value).ToDictionary(pair => pair.Key, pair => pair.Value);
+                tempProbability = 0.0;
+                for (int i = 0; i < m; i++)
+                {
+                    tempProbability += probabilitiesDCJ[probabilitiesDCJ.Keys.ElementAt(i)];
+                    probabilitiesDCJ[probabilitiesDCJ.Keys.ElementAt(i)] = tempProbability;
+                }
+
+                for (int _k=2; _k<K; _k++)
+                {
+                    int selectedIndex = alreadySelected[0];
+                    while (alreadySelected.IndexOf(selectedIndex) != -1)
+                    {
+                        double rndCj = rnd.NextDouble() * sumDistancesToC1OrC2;
+                        for (int i = 0; i < m; i++)
+                        {
+                            if (probabilitiesDCJ[probabilitiesDCJ.Keys.ElementAt(i)] > rndCj)
+                            {
+                                // take previous element
+                                selectedIndex = probabilitiesDCJ.Keys.ElementAt(i - 1);
+                                break;
+                            }
+
+                            if (i == n)
+                            {
+                                //last element
+                                selectedIndex = probabilitiesDCJ.Keys.ElementAt(i);
+                            }
+                        }
+                    }
+                    alreadySelected.Add(selectedIndex);
+                    for (int _n = 0; _n < n; _n++)
+                        means[_k][_n] = dataset[selectedIndex][_n];
+                }
+            }
+
+
+            return Tuple.Create(alreadySelected, means);
+        }
 
 
         /// <summary>
@@ -429,6 +582,17 @@ namespace EhubMisc
                 for (int i = 0; i < clusterItems[_k].Count; i++)
                     if (clusterItems[_k][i] != medoids[_k])     // might cost more than what it saves, because it only saves one distance calculation
                         cost += Misc.Distance2Pts(dataset[medoids[_k]], dataset[clusterItems[_k][i]]);
+
+            return cost;
+        }
+
+
+        private static double totalCostDistance(int K, List<int>[] clusterItems, double[][] centroids, double [][] dataset)
+        {
+            double cost = 0.0;
+            for (int _k = 0; _k < K; _k++)
+                for (int i = 0; i < clusterItems[_k].Count; i++)
+                    cost += Misc.Distance2Pts(centroids[_k], dataset[clusterItems[_k][i]]);
 
             return cost;
         }

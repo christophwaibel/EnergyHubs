@@ -2,6 +2,8 @@
 using System.IO;
 using System.Collections.Generic;
 
+using System.Linq;
+
 namespace AdamMSc2020
 {
     class Program
@@ -32,10 +34,10 @@ namespace AdamMSc2020
                 }
             }
 
-            //Tuple<double[][], int[][]> tuple = EhubMisc.Clustering.KMeans(randomData, clusters);
-            //Tuple<int[], int[][]> tuple = EhubMisc.Clustering.KMedoids(randomData, clusters, 50, 34, "MeansApproximation");
-            //Tuple<int[], int[][]> tuple = EhubMisc.Clustering.KMedoids(randomData, clusters, 50, 34, "PAM_Exhaustive");
-            Tuple<int[], int[][]> tuple = EhubMisc.Clustering.KMedoids(randomData, clusters);
+            Tuple<double[][], int[][], double> tuple = EhubMisc.Clustering.KMeans(randomData, clusters);
+            //Tuple<int[], int[][], double> tuple = EhubMisc.Clustering.KMedoids(randomData, clusters, 50, 34, "MeansApproximation");
+            //Tuple<int[], int[][], double> tuple = EhubMisc.Clustering.KMedoids(randomData, clusters, 50, 34, "PAM_Exhaustive");
+            //Tuple<int[], int[][], double> tuple = EhubMisc.Clustering.KMedoids(randomData, clusters);
 
             Tuple<double[], double[], double> silhouette = EhubMisc.Clustering.Silhouette(randomData, tuple.Item2, tuple.Item1);
         }
@@ -52,7 +54,7 @@ namespace AdamMSc2020
 
 
             // clustering 
-            Random rnd = new Random(1);
+            int[] seeds = new int[10] { 0, 1, 2, 3, 4, 5, 6, 7, 8, 9 };
             int days = 365;
             int hours = 24;
             int clusters = 12;
@@ -67,16 +69,34 @@ namespace AdamMSc2020
                 }
             }
 
-            //Tuple<double[][], int[][]> clusteredData = EhubMisc.Clustering.KMeans(heating_perDay, clusters);
-            //Tuple<int[], int[][]> clusteredData = EhubMisc.Clustering.KMedoids(heating_perDay, clusters, 50, 34, "MeansApproximation");
-            Tuple<int[], int[][]> clusteredData = EhubMisc.Clustering.KMedoids(heating_perDay, clusters, 50, 34, "PAM_Exhaustive");
-            //Tuple<int[], int[][]> clusteredData = EhubMisc.Clustering.KMedoids(heating_perDay, clusters);
+            List<Tuple<int[], int[][], double>> replicates = new List<Tuple<int[], int[][], double>>();
+            foreach (int seed in seeds)
+                replicates.Add(EhubMisc.Clustering.KMedoids(heating_perDay, clusters, 50, seed, "PAM_Exhaustive"));
 
+            ////Tuple<double[][], int[][]> clusteredData = EhubMisc.Clustering.KMeans(heating_perDay, clusters);
+            ////Tuple<int[], int[][]> clusteredData = EhubMisc.Clustering.KMedoids(heating_perDay, clusters, 50, 34, "MeansApproximation");
+            //Tuple<int[], int[][], double> clusteredData = EhubMisc.Clustering.KMedoids(heating_perDay, clusters, 50, 34, "PAM_Exhaustive");
+            ////Tuple<int[], int[][]> clusteredData = EhubMisc.Clustering.KMedoids(heating_perDay, clusters);
+
+            int minIndex = 0;
+            double minCost = replicates[0].Item3;
+            for(int i=1; i<replicates.Count; i++)
+            {
+                if(replicates[i].Item3 < minCost)
+                {
+                    minIndex = i;
+                    minCost = replicates[i].Item3;
+                }
+            }
+
+            Tuple<int[], int[][], double> clusteredData = replicates[minIndex];
             Tuple<double[], double[], double> silhouette = EhubMisc.Clustering.Silhouette(heating_perDay, clusteredData.Item2, clusteredData.Item1);
 
 
             // write cluster points. make a blank line between two clusters
             // columns 1 to n are the parameters, n+1 is s(i)
+            Dictionary<int, int> idx = new Dictionary<int, int>();
+
             List<string> writeSamples = new List<string>();
             for(int _k=0; _k<clusters; _k++) 
             {
@@ -89,19 +109,22 @@ namespace AdamMSc2020
                     foreach (double parameter in sample)
                         text += parameter.ToString("0.#0") + ",";
                     text += "s_i," + s_i.ToString("0.#0");
-
+                    text += ",#id,"+ index.ToString() + ",medoid," + clusteredData.Item1[_k].ToString();
                     writeSamples.Add(text);
+
+                    idx.Add(index, _k);
                 }
                 writeSamples.Add(""); 
             }
             string outPath = @"c:\temp\ecostest\testsilhouette.csv";
             File.WriteAllLines(outPath, writeSamples.ToArray());
 
-
-            // write centroids / medoids
-
-
-
+            idx = idx.OrderBy(x => x.Key).ToDictionary(pair => pair.Key, pair => pair.Value);
+            List<string> idxString = new List<string>();
+            for (int i=0; i<days; i++)
+                idxString.Add(idx[i].ToString());
+            string outPath2 = @"c:\temp\ecostest\idx.csv";
+            File.WriteAllLines(outPath2, idxString.ToArray());
 
         }
     }
