@@ -22,7 +22,7 @@ namespace EhubMisc
         /// <param name="algorithm">Options: {"KMeans++"(default), "Simple"}</param>
         /// <returns></returns>
         public static Tuple<double[][], int[][], double> KMeans(double[][] dataset, int clusters, int iterations = 50, int seed = 34, 
-            string algorithm = "KMeans++", string distanceMeasure = "SqrdEuclidean")
+            string algorithm = "KMeans++", string distanceMeasure = "SqEuclidean")
         {
             Random rnd = new Random(seed);
 
@@ -104,7 +104,7 @@ namespace EhubMisc
         /// <param name="seed"></param>
         /// <param name="algorithm">Options: {"PAM" (default), "MeansApproximation"}</param>
         /// <returns></returns>
-        public static Tuple<int[], int[][], double> KMedoids(double[][] dataset, int clusters, int iteration = 50, int seed = 34, string algorithm = "PAM_Random", string startMode = "KMeans++", string distanceMeasure = "SqrdEuclidean")
+        public static Tuple<int[], int[][], double> KMedoids(double[][] dataset, int clusters, int iteration = 50, int seed = 34, string algorithm = "PAM_Exhaustive", string startMode = "KMeans++", string distanceMeasure = "SqEuclidean")
         {
             if (String.Equals(algorithm, "MeansApproximation"))
                 return KMedoidsMeanApproximation(dataset, clusters, iteration, seed, distanceMeasure);
@@ -124,7 +124,7 @@ namespace EhubMisc
         /// <param name="nClusters"></param>
         /// <returns></returns>
         private static Tuple<int[], int[][], double> KMedoidsPAM(double[][] dataset, int clusters, int iterations, int seed, 
-            string swapMode = "exhaustive", string startMode = "KMeans++", string distanceMeasure = "SqrdEuclidean")
+            string swapMode = "exhaustive", string startMode = "KMeans++", string distanceMeasure = "SqEuclidean")
         {
             Random rnd = new Random(seed);
 
@@ -240,7 +240,7 @@ namespace EhubMisc
         /// <param name="iterations"></param>
         /// <param name="seed"></param>
         /// <returns></returns>
-        private static Tuple<int[], int[][], double> KMedoidsMeanApproximation(double[][] dataset, int clusters, int iterations, int seed, string distanceMeasure = "SqrdEuclidean")
+        private static Tuple<int[], int[][], double> KMedoidsMeanApproximation(double[][] dataset, int clusters, int iterations, int seed, string distanceMeasure = "SqEuclidean")
         {
             Tuple<double[][], int[][], double> approximation = KMeans(dataset, clusters, iterations, seed, "Simple");
 
@@ -292,7 +292,7 @@ namespace EhubMisc
         /// <param name="dataset"></param>
         /// <param name="clusterItems"></param>
         /// <returns>s(i) for each sample, average s(i) per cluster, total average s(i) of all clusters</returns>
-        public static Tuple<double [], double [], double> Silhouette(double[][] dataset, int [][] clusterItems, string distanceMeasure = "SqrdEuclidean")
+        public static Tuple<double [], double [], double> Silhouette(double[][] dataset, int [][] clusterItems, string distanceMeasure = "SqEuclidean")
         {
             int m = dataset.Length;
             int n = dataset[0].Length;
@@ -361,7 +361,7 @@ namespace EhubMisc
         /// <param name="rnd"></param>
         /// <param name="dataset"></param>
         /// <returns></returns>
-        private static Tuple<List<int>, double[][]> selectKMeansPlusPlusIndices(int K, int n, int m, Random rnd, double[][] dataset, string distanceMeasure = "SqrdEuclidean")
+        private static Tuple<List<int>, double[][]> selectKMeansPlusPlusIndices(int K, int n, int m, Random rnd, double[][] dataset, string distanceMeasure = "SqEuclidean")
         {
             //// Pseudo code
             /// From the Matlab 2017b documentation
@@ -536,7 +536,7 @@ namespace EhubMisc
         }
 
 
-        private static List<int>[] clusterAssignment(int K, int m, int[] medoids, double[][] dataset, string distanceMeasure = "SqrdEuclidean")
+        private static List<int>[] clusterAssignment(int K, int m, int[] medoids, double[][] dataset, string distanceMeasure = "SqEuclidean")
         {
             List<int>[] clusterItems = new List<int>[K];
             for (int _k = 0; _k < K; _k++)
@@ -555,7 +555,7 @@ namespace EhubMisc
         }
 
 
-        private static double totalCostDistance(int K, List<int>[] clusterItems, int[] medoids, double[][] dataset, string distanceMeasure = "SqrdEuclidean")
+        private static double totalCostDistance(int K, List<int>[] clusterItems, int[] medoids, double[][] dataset, string distanceMeasure = "SqEuclidean")
         {
             double cost = 0.0;
             for (int _k = 0; _k < K; _k++)
@@ -567,7 +567,7 @@ namespace EhubMisc
         }
 
 
-        private static double totalCostDistance(int K, List<int>[] clusterItems, double[][] centroids, double [][] dataset, string distanceMeasure = "SqrdEuclidean")
+        private static double totalCostDistance(int K, List<int>[] clusterItems, double[][] centroids, double [][] dataset, string distanceMeasure = "SqEuclidean")
         {
             double cost = 0.0;
             for (int _k = 0; _k < K; _k++)

@@ -38,10 +38,10 @@ namespace AdamMSc2020
 
             Tuple<double[][], int[][], double> tuple = EhubMisc.Clustering.KMeans(randomData, clusters);
             //Tuple<int[], int[][], double> tuple = EhubMisc.Clustering.KMedoids(randomData, clusters, 50, 34, "MeansApproximation");
-            //Tuple<int[], int[][], double> tuple = EhubMisc.Clustering.KMedoids(randomData, clusters, 50, 34, "PAM_Exhaustive");
+            //Tuple<int[], int[][], double> tuple = EhubMisc.Clustering.KMedoids(randomData, clusters, 50, 34, "PAM_Random");
             //Tuple<int[], int[][], double> tuple = EhubMisc.Clustering.KMedoids(randomData, clusters);
 
-            Tuple<double[], double[], double> silhouette = EhubMisc.Clustering.Silhouette(randomData, tuple.Item2, "SqrdEuclidean");
+            Tuple<double[], double[], double> silhouette = EhubMisc.Clustering.Silhouette(randomData, tuple.Item2);
         }
 
 
@@ -150,7 +150,7 @@ namespace AdamMSc2020
             clusters[2] = new int[3] { 6, 7, 8 };
 
 
-            Tuple<double[], double[], double> silhouette = EhubMisc.Clustering.Silhouette(X, clusters, "SqrdEuclidean");
+            Tuple<double[], double[], double> silhouette = EhubMisc.Clustering.Silhouette(X, clusters);
             foreach (double si in silhouette.Item1)
                 Console.WriteLine(si.ToString("0.#00"));
             Console.ReadKey();
