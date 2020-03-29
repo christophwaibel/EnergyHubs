@@ -9,3 +9,14 @@ C:\Users\Christoph\Documents\GitHub\EnergyHubs\Cplex_EnergyHubs\ECOS2018\obj\Deb
 C:\Users\Christoph\Documents\GitHub\EnergyHubs\Cplex_EnergyHubs\ECOS2018\obj\Debug\Cplex_ECOS2018.exe
 C:\Users\Christoph\Documents\GitHub\EnergyHubs\Cplex_EnergyHubs\ECOS2018\obj\Debug\Cplex_ECOS2018.pdb
 C:\Users\Christoph\Documents\GitHub\EnergyHubs\Cplex_EnergyHubs\ECOS2018\obj\Debug\ECOS2018.csprojAssemblyReference.cache
+C:\Users\Christoph\Documents\GitHub\EnergyHubs\CplexEnergyHubs\ECOS2018\obj\Debug\ECOS2018.csprojAssemblyReference.cache
+C:\Users\Christoph\Documents\GitHub\EnergyHubs\CplexEnergyHubs\ECOS2018\obj\Debug\Cplex_ECOS2018.exe
+C:\Users\Christoph\Documents\GitHub\EnergyHubs\CplexEnergyHubs\ECOS2018\obj\Debug\Cplex_ECOS2018.pdb
+C:\Users\Christoph\Documents\GitHub\EnergyHubs\CplexEnergyHubs\ECOS2018\bin\Debug\Cplex_ECOS2018.exe.config
+C:\Users\Christoph\Documents\GitHub\EnergyHubs\CplexEnergyHubs\ECOS2018\bin\Debug\Cplex_ECOS2018.exe
+C:\Users\Christoph\Documents\GitHub\EnergyHubs\CplexEnergyHubs\ECOS2018\bin\Debug\Cplex_ECOS2018.pdb
+C:\Users\Christoph\Documents\GitHub\EnergyHubs\CplexEnergyHubs\ECOS2018\bin\Debug\ILOG.Concert.dll
+C:\Users\Christoph\Documents\GitHub\EnergyHubs\CplexEnergyHubs\ECOS2018\bin\Debug\ILOG.CPLEX.dll
+C:\Users\Christoph\Documents\GitHub\EnergyHubs\CplexEnergyHubs\ECOS2018\bin\Debug\ILOG.Concert.xml
+C:\Users\Christoph\Documents\GitHub\EnergyHubs\CplexEnergyHubs\ECOS2018\bin\Debug\ILOG.CPLEX.xml
+C:\Users\Christoph\Documents\GitHub\EnergyHubs\CplexEnergyHubs\ECOS2018\obj\Debug\ECOS2018.csproj.CopyComplete

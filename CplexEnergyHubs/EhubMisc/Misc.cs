@@ -13,15 +13,16 @@ namespace EhubMisc
         }
 
 
-        public static double Distance2Pts(double[] x1, double[] x2)
+        public static double Distance2Pts(double[] x1, double[] x2, string distanceMeasure = "SqrdEuclidean")
         {
             int n = x1.Length;
             if (x2.Length < n) n = x2.Length;
 
             double distance = 0.0;
-            for (int i = 0; i < n; i++)
+            for (int i = 0; i < n; i++) 
                 distance += Math.Pow(x1[i] - x2[i], 2);
-            distance = Math.Sqrt(distance);
+            if(string.Equals(distanceMeasure, "Euclidean"))
+                distance = Math.Sqrt(distance);
 
             return distance;
         }

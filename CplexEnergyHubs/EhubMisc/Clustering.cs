@@ -21,7 +21,8 @@ namespace EhubMisc
         /// <param name="seed"></param>
         /// <param name="algorithm">Options: {"KMeans++"(default), "Simple"}</param>
         /// <returns></returns>
-        public static Tuple<double[][], int[][], double> KMeans(double[][] dataset, int clusters, int iterations = 50, int seed = 34, string algorithm = "KMeans++")
+        public static Tuple<double[][], int[][], double> KMeans(double[][] dataset, int clusters, int iterations = 50, int seed = 34, 
+            string algorithm = "KMeans++", string distanceMeasure = "SqrdEuclidean")
         {
             Random rnd = new Random(seed);
 
@@ -48,7 +49,7 @@ namespace EhubMisc
             if (String.Equals(algorithm, "Simple"))
                 tuple = selectRandomIndices(K, n, m, rnd, dataset);
             else
-                tuple = selectKMeansPlusPlusIndices(K, n, m, rnd, dataset);
+                tuple = selectKMeansPlusPlusIndices(K, n, m, rnd, dataset, distanceMeasure);
             List<int> alreadySelected = tuple.Item1;
             double[][] means = tuple.Item2;
 
@@ -65,7 +66,7 @@ namespace EhubMisc
                 {
                     List<double> distancesToCentroids = new List<double>();
                     foreach (double[] centroid in means)
-                        distancesToCentroids.Add(Misc.Distance2Pts(dataset[i], centroid));
+                        distancesToCentroids.Add(Misc.Distance2Pts(dataset[i], centroid, distanceMeasure));
 
                     int minimumValueIndex = distancesToCentroids.IndexOf(distancesToCentroids.Min());
                     clusterItems[minimumValueIndex].Add(i);
@@ -87,7 +88,7 @@ namespace EhubMisc
             int[][] indices = new int[K][];
             for (int _k = 0; _k < K; _k++)
                 indices[_k] = clusterItems[_k].ToArray();
-            return Tuple.Create(means, indices, totalCostDistance(K, clusterItems, means, dataset));
+            return Tuple.Create(means, indices, totalCostDistance(K, clusterItems, means, dataset, distanceMeasure));
 
         }
         #endregion
@@ -103,14 +104,14 @@ namespace EhubMisc
         /// <param name="seed"></param>
         /// <param name="algorithm">Options: {"PAM" (default), "MeansApproximation"}</param>
         /// <returns></returns>
-        public static Tuple<int[], int[][], double> KMedoids(double[][] dataset, int clusters, int iteration = 50, int seed = 34, string algorithm = "PAM_Random", string startMode = "KMeans++")
+        public static Tuple<int[], int[][], double> KMedoids(double[][] dataset, int clusters, int iteration = 50, int seed = 34, string algorithm = "PAM_Random", string startMode = "KMeans++", string distanceMeasure = "SqrdEuclidean")
         {
             if (String.Equals(algorithm, "MeansApproximation"))
-                return KMedoidsMeanApproximation(dataset, clusters, iteration, seed);
+                return KMedoidsMeanApproximation(dataset, clusters, iteration, seed, distanceMeasure);
             else if (String.Equals(algorithm, "PAM_Exhaustive"))
-                return KMedoidsPAM(dataset, clusters, iteration, seed, "exhaustive", startMode);
+                return KMedoidsPAM(dataset, clusters, iteration, seed, "exhaustive", startMode, distanceMeasure);
             else
-                return KMedoidsPAM(dataset, clusters, iteration, seed, "random", startMode);
+                return KMedoidsPAM(dataset, clusters, iteration, seed, "random", startMode, distanceMeasure);
         }
 
 
@@ -122,7 +123,8 @@ namespace EhubMisc
         /// <param name="dataX"></param>
         /// <param name="nClusters"></param>
         /// <returns></returns>
-        private static Tuple<int[], int[][], double> KMedoidsPAM(double[][] dataset, int clusters, int iterations, int seed, string swapMode = "exhaustive", string startMode = "KMeans++")
+        private static Tuple<int[], int[][], double> KMedoidsPAM(double[][] dataset, int clusters, int iterations, int seed, 
+            string swapMode = "exhaustive", string startMode = "KMeans++", string distanceMeasure = "SqrdEuclidean")
         {
             Random rnd = new Random(seed);
 
@@ -148,14 +150,14 @@ namespace EhubMisc
             if (string.Equals(startMode, "Random"))
                 tuple = selectRandomIndices(K, n, m, rnd, dataset);
             else
-                tuple = selectKMeansPlusPlusIndices(K, n, m, rnd, dataset);
+                tuple = selectKMeansPlusPlusIndices(K, n, m, rnd, dataset, distanceMeasure);
             int[] medoids = tuple.Item1.ToArray();
             double[][] means = tuple.Item2;
 
             // 2.a cluster assignment
-            List<int>[] clusterItems = clusterAssignment(K, m, medoids, dataset);
+            List<int>[] clusterItems = clusterAssignment(K, m, medoids, dataset, distanceMeasure);
             // 2.b cost
-            double cost = totalCostDistance(K, clusterItems, medoids, dataset);
+            double cost = totalCostDistance(K, clusterItems, medoids, dataset, distanceMeasure);
 
             // 3. iterate and swap medoids
             bool improvement = true;
@@ -178,8 +180,7 @@ namespace EhubMisc
                         medoids.CopyTo(tempMedoids, 0);
                         tempMedoids[_k] = rndSwap;
 
-                        //List<int>[] tempClusterItems = clusterAssignment(K, m, tempMedoids, dataset);
-                        double tempCost = totalCostDistance(K, clusterItems, tempMedoids, dataset);
+                        double tempCost = totalCostDistance(K, clusterItems, tempMedoids, dataset, distanceMeasure);
 
                         if (tempCost < currentLowestCost)
                         {
@@ -199,8 +200,7 @@ namespace EhubMisc
                             medoids.CopyTo(tempMedoids, 0);
                             tempMedoids[_k] = swap;
 
-                            //List<int>[] tempClusterItems = clusterAssignment(K, m, tempMedoids, dataset);
-                            double tempCost = totalCostDistance(K, clusterItems, tempMedoids, dataset);
+                            double tempCost = totalCostDistance(K, clusterItems, tempMedoids, dataset, distanceMeasure);
 
                             if (tempCost < currentLowestCost)
                             {
@@ -217,8 +217,8 @@ namespace EhubMisc
                 else
                 { 
                     storeNewMedoids.CopyTo(medoids, 0);
-                    clusterItems = clusterAssignment(K, m, medoids, dataset);
-                    cost = totalCostDistance(K, clusterItems, medoids, dataset);
+                    clusterItems = clusterAssignment(K, m, medoids, dataset, distanceMeasure);
+                    cost = totalCostDistance(K, clusterItems, medoids, dataset, distanceMeasure);
                 }
 
                 currentIteration++;
@@ -228,7 +228,7 @@ namespace EhubMisc
             int[][] indices = new int[K][];
             for (int _k = 0; _k < K; _k++)
                 indices[_k] = clusterItems[_k].ToArray();
-            return Tuple.Create(medoids, indices, totalCostDistance(K, clusterItems, medoids, dataset));
+            return Tuple.Create(medoids, indices, cost);
         }
 
 
@@ -240,7 +240,7 @@ namespace EhubMisc
         /// <param name="iterations"></param>
         /// <param name="seed"></param>
         /// <returns></returns>
-        private static Tuple<int[], int[][], double> KMedoidsMeanApproximation(double[][] dataset, int clusters, int iterations, int seed)
+        private static Tuple<int[], int[][], double> KMedoidsMeanApproximation(double[][] dataset, int clusters, int iterations, int seed, string distanceMeasure = "SqrdEuclidean")
         {
             Tuple<double[][], int[][], double> approximation = KMeans(dataset, clusters, iterations, seed, "Simple");
 
@@ -262,7 +262,7 @@ namespace EhubMisc
                 for (int i = 0; i < approximation.Item2[_k].Length; i++)
                 {
                     int index = approximation.Item2[_k][i];
-                    distancesToCentroid.Add(Misc.Distance2Pts(dataset[index], centroid));
+                    distancesToCentroid.Add(Misc.Distance2Pts(dataset[index], centroid, distanceMeasure));
                     listIndices.Add(index);
                 }
                 int minimumValueIndex = distancesToCentroid.IndexOf(distancesToCentroid.Min());
@@ -279,7 +279,7 @@ namespace EhubMisc
                 }
             }
 
-            double cost = totalCostDistance(K, clusterItems, medoids, dataset);
+            double cost = totalCostDistance(K, clusterItems, medoids, dataset, distanceMeasure);
             return Tuple.Create(medoids, approximation.Item2, cost);
         }
         #endregion
@@ -291,13 +291,12 @@ namespace EhubMisc
         /// </summary>
         /// <param name="dataset"></param>
         /// <param name="clusterItems"></param>
-        /// <param name="centroids"></param>
         /// <returns>s(i) for each sample, average s(i) per cluster, total average s(i) of all clusters</returns>
-        public static Tuple<double [], double [], double> Silhouette(double[][] dataset, int [][] clusterItems, double [][] centroids)
+        public static Tuple<double [], double [], double> Silhouette(double[][] dataset, int [][] clusterItems, string distanceMeasure = "SqrdEuclidean")
         {
             int m = dataset.Length;
             int n = dataset[0].Length;
-            int K = centroids.Length; 
+            int K = clusterItems.Length; 
 
             double[] averageDistance = new double[m];
             double[] distanceToNearestCluster = new double[m];
@@ -312,7 +311,7 @@ namespace EhubMisc
                     for (int u = 0; u < clusterItems[_k].Length; u++)
                     {
                         if (i == u) continue;
-                        averageDistance[index] += Misc.Distance2Pts(dataset[index], dataset[clusterItems[_k][u]]);
+                        averageDistance[index] += Misc.Distance2Pts(dataset[index], dataset[clusterItems[_k][u]], distanceMeasure);
                     }
                     averageDistance[index] /= (clusterItems[_k].Length - 1);
 
@@ -322,7 +321,7 @@ namespace EhubMisc
                     {
                         if (_q == _k) continue;
                         for(int u = 0; u<clusterItems[_q].Length; u++)
-                            distanceToOtherClusters[otherCluster] += Misc.Distance2Pts(dataset[index], dataset[clusterItems[_q][u]]);
+                            distanceToOtherClusters[otherCluster] += Misc.Distance2Pts(dataset[index], dataset[clusterItems[_q][u]], distanceMeasure);
                         distanceToOtherClusters[otherCluster] /= clusterItems[_q].Length;
                         otherCluster++;
                     }
@@ -347,25 +346,6 @@ namespace EhubMisc
 
             return Tuple.Create(silhouetteSample, silhouetteCluster, averageSilhouette);
         }
-
-
-        /// <summary>
-        /// Computes Silhouette coefficients for clustered items
-        /// </summary>
-        /// <param name="dataset"></param>
-        /// <param name="clusterItems"></param>
-        /// <param name="medoids"></param>
-        /// <returns>s(i) for each sample, average s(i) per cluster, total average s(i) of all clusters</returns>
-        public static Tuple<double[], double[], double> Silhouette(double[][] dataset, int[][] clusterItems, int [] medoids)
-        {
-            int K = medoids.Length;
-            int n = dataset[0].Length;
-            double[][] centroids = new double[K][];
-            for(int _k=0; _k<K; _k++)
-                centroids[_k] = dataset[medoids[_k]];
-
-            return Silhouette(dataset, clusterItems, centroids);
-        }
         #endregion
 
 
@@ -381,7 +361,7 @@ namespace EhubMisc
         /// <param name="rnd"></param>
         /// <param name="dataset"></param>
         /// <returns></returns>
-        private static Tuple<List<int>, double[][]> selectKMeansPlusPlusIndices(int K, int n, int m, Random rnd, double[][] dataset)
+        private static Tuple<List<int>, double[][]> selectKMeansPlusPlusIndices(int K, int n, int m, Random rnd, double[][] dataset, string distanceMeasure = "SqrdEuclidean")
         {
             //// Pseudo code
             /// From the Matlab 2017b documentation
@@ -418,7 +398,7 @@ namespace EhubMisc
             double sumDistancesToC1 = 0.0;
             for (int i = 0; i < m; i++)
             {
-                distancesToC1[i] = Misc.Distance2Pts(dataset[i], dataset[c1]);
+                distancesToC1[i] = Misc.Distance2Pts(dataset[i], dataset[c1], distanceMeasure);
                 sumDistancesToC1 += distancesToC1[i];
             }
 
@@ -474,7 +454,7 @@ namespace EhubMisc
                 for(int i=0; i<m; i++)
                 {
                     int index = alreadySelected[clusterC1OrC2[i]];
-                    distancesToC1OrC2[i] = Misc.Distance2Pts(dataset[i], dataset[alreadySelected[clusterC1OrC2[i]]]);
+                    distancesToC1OrC2[i] = Misc.Distance2Pts(dataset[i], dataset[alreadySelected[clusterC1OrC2[i]]], distanceMeasure);
                     sumDistancesToC1OrC2 += distancesToC1OrC2[i];
                 }
                 Dictionary<int, double> probabilitiesDCJ = new Dictionary<int, double>();
@@ -556,7 +536,7 @@ namespace EhubMisc
         }
 
 
-        private static List<int>[] clusterAssignment(int K, int m, int[] medoids, double[][] dataset)
+        private static List<int>[] clusterAssignment(int K, int m, int[] medoids, double[][] dataset, string distanceMeasure = "SqrdEuclidean")
         {
             List<int>[] clusterItems = new List<int>[K];
             for (int _k = 0; _k < K; _k++)
@@ -565,7 +545,7 @@ namespace EhubMisc
             {
                 List<double> distancesToCentroids = new List<double>();
                 for (int _k = 0; _k < K; _k++)
-                    distancesToCentroids.Add(Misc.Distance2Pts(dataset[i], dataset[medoids[_k]]));
+                    distancesToCentroids.Add(Misc.Distance2Pts(dataset[i], dataset[medoids[_k]], distanceMeasure));
 
                 int minimumValueIndex = distancesToCentroids.IndexOf(distancesToCentroids.Min());
                 clusterItems[minimumValueIndex].Add(i);
@@ -575,24 +555,24 @@ namespace EhubMisc
         }
 
 
-        private static double totalCostDistance(int K, List<int>[] clusterItems, int[] medoids, double[][] dataset)
+        private static double totalCostDistance(int K, List<int>[] clusterItems, int[] medoids, double[][] dataset, string distanceMeasure = "SqrdEuclidean")
         {
             double cost = 0.0;
             for (int _k = 0; _k < K; _k++)
                 for (int i = 0; i < clusterItems[_k].Count; i++)
                     if (clusterItems[_k][i] != medoids[_k])     // might cost more than what it saves, because it only saves one distance calculation
-                        cost += Misc.Distance2Pts(dataset[medoids[_k]], dataset[clusterItems[_k][i]]);
+                        cost += Misc.Distance2Pts(dataset[medoids[_k]], dataset[clusterItems[_k][i]], distanceMeasure);
 
             return cost;
         }
 
 
-        private static double totalCostDistance(int K, List<int>[] clusterItems, double[][] centroids, double [][] dataset)
+        private static double totalCostDistance(int K, List<int>[] clusterItems, double[][] centroids, double [][] dataset, string distanceMeasure = "SqrdEuclidean")
         {
             double cost = 0.0;
             for (int _k = 0; _k < K; _k++)
                 for (int i = 0; i < clusterItems[_k].Count; i++)
-                    cost += Misc.Distance2Pts(centroids[_k], dataset[clusterItems[_k][i]]);
+                    cost += Misc.Distance2Pts(centroids[_k], dataset[clusterItems[_k][i]], distanceMeasure);
 
             return cost;
         }

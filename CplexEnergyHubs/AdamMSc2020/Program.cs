@@ -12,7 +12,9 @@ namespace AdamMSc2020
         {
             //ClusterRandomData();
 
-            ClusterLoadData();
+            //ClusterLoadData();
+
+            SilhouetteTest();
 
         }
 
@@ -39,7 +41,7 @@ namespace AdamMSc2020
             //Tuple<int[], int[][], double> tuple = EhubMisc.Clustering.KMedoids(randomData, clusters, 50, 34, "PAM_Exhaustive");
             //Tuple<int[], int[][], double> tuple = EhubMisc.Clustering.KMedoids(randomData, clusters);
 
-            Tuple<double[], double[], double> silhouette = EhubMisc.Clustering.Silhouette(randomData, tuple.Item2, tuple.Item1);
+            Tuple<double[], double[], double> silhouette = EhubMisc.Clustering.Silhouette(randomData, tuple.Item2, "SqrdEuclidean");
         }
 
 
@@ -90,7 +92,7 @@ namespace AdamMSc2020
             }
 
             Tuple<int[], int[][], double> clusteredData = replicates[minIndex];
-            Tuple<double[], double[], double> silhouette = EhubMisc.Clustering.Silhouette(heating_perDay, clusteredData.Item2, clusteredData.Item1);
+            Tuple<double[], double[], double> silhouette = EhubMisc.Clustering.Silhouette(heating_perDay, clusteredData.Item2);
 
 
             // write cluster points. make a blank line between two clusters
@@ -126,6 +128,32 @@ namespace AdamMSc2020
             string outPath2 = @"c:\temp\ecostest\idx.csv";
             File.WriteAllLines(outPath2, idxString.ToArray());
 
+        }
+
+
+        static void SilhouetteTest()
+        {
+            double[][] X = new double[9][];
+            X[0] = new double[2] { 1, 0 };
+            X[1] = new double[2] { 1, 1 };
+            X[2] = new double[2] { 1, 2 };
+            X[3] = new double[2] { 2, 3 };
+            X[4] = new double[2] { 2, 2 };
+            X[5] = new double[2] { 1, 2 };
+            X[6] = new double[2] { 3, 1 };
+            X[7] = new double[2] { 3, 3 };
+            X[8] = new double[2] { 2, 1 };
+
+            int[][] clusters = new int[3][];
+            clusters[0] = new int[2] { 0, 1 };
+            clusters[1] = new int[4] { 2, 3, 4, 5 };
+            clusters[2] = new int[3] { 6, 7, 8 };
+
+
+            Tuple<double[], double[], double> silhouette = EhubMisc.Clustering.Silhouette(X, clusters, "SqrdEuclidean");
+            foreach (double si in silhouette.Item1)
+                Console.WriteLine(si.ToString("0.#00"));
+            Console.ReadKey();
         }
     }
 }
