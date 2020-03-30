@@ -100,9 +100,7 @@ namespace AdamMSc2020
                             string[] split = lines[li].Split(new char[2] { ';', ',' });
                             solar.Add(new double[split.Length]);
                             for (int i = 0; i < split.Length; i++)
-                            {
                                 solar[li][i] = Convert.ToDouble(split[i]);
-                            }
                         }
                     }
                     else if (string.Equals(fname, "solarAreas.csv"))
@@ -126,11 +124,11 @@ namespace AdamMSc2020
             double[][] fullProfiles = new double[numLoads][];
             for (int i = 0; i < numLoads; i++)
                 fullProfiles[i] = new double[hoursPerYear];               
-            string[] loadTypes = new string[numLoads]; // { "heating", "cooling", "electricity", "solar" };
+            string[] loadTypes = new string[numLoads]; 
             loadTypes[0] = "heating";
             loadTypes[1] = "cooling";
             loadTypes[2] = "electricity";
-            bool[] peakDays = new bool[numLoads]; // { true, true, true, false };
+            bool[] peakDays = new bool[numLoads]; 
             peakDays[0] = true;
             peakDays[1] = true;
             peakDays[2] = true;
@@ -153,7 +151,15 @@ namespace AdamMSc2020
             EhubMisc.DemandParameterization.TypicalDays typicalDays = EhubMisc.DemandParameterization.GenerateTypicalDays(fullProfiles, loadTypes, numberOfTypicalDays, peakDays);
 
 
+            // Running Energy Hub
+            Console.WriteLine(@"*************************************************************************************");
+            Console.WriteLine("Running MILP now...");
 
+
+
+            // Storing Results
+            Console.WriteLine(@"*************************************************************************************");
+            Console.WriteLine("Saving results into {0}...", path+ @"results\");
         }
 
 
