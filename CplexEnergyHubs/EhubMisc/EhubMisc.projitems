@@ -10,6 +10,8 @@
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="$(MSBuildThisFileDirectory)Clustering.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)EhubOutputs.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)HorizonReduction.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Misc.cs" />
   </ItemGroup>
 </Project>

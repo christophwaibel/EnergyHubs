@@ -14,9 +14,148 @@ namespace AdamMSc2020
 
             //ClusterLoadData();
 
-            SilhouetteTest();
+            //SilhouetteTest();
+
+            RunAdamsEhub();
+        }
+
+
+        static void RunAdamsEhub()
+        {
+            const int daysPerYear = 365;
+            const int hoursPerDay = 24;
+            const int hoursPerYear = 8760;
+            const int numberOfTypicalDays = 12;
+
+            string[] dog = EhubMisc.Misc.AsciiDrawing(0);
+            foreach (string d in dog)
+                Console.WriteLine(d);
+
+            Console.WriteLine();
+            Console.WriteLine("Hi Adam! This is your EnergyHub. Also, above is a puppy.");
+            Console.WriteLine();
+            Console.WriteLine(@"*************************************************************************************");
+            Console.WriteLine(@"Please enter the path of your inputs folder in the following format: 'c:\inputs\'");
+            Console.WriteLine("The folder should contain following '.csv' files:");
+            Console.WriteLine();
+            string[] fileNames = new string[5] { "heatingLoads.csv", "coolingLoads.csv", "electricityLoads.csv", "solarLoads.csv", "solarAreas.csv" };
+            foreach (string fname in fileNames)
+                Console.WriteLine("- '{0}'", fname);
+            Console.WriteLine();
+            Console.WriteLine(@"*************************************************************************************");
+            Console.Write("Enter your path now and confirm by hitting the Enter-key: ");
+
+            string path = Console.ReadLine();
+            Console.WriteLine();
+            if (!path.EndsWith(@"\"))
+                path = path + @"\";
+
+            // error checking of the input path: all 4 files existing? is their structure fine?
+            Console.WriteLine(@"*************************************************************************************");
+            // load data
+
+            List<double> heating = new List<double>();
+            List<double> cooling = new List<double>();
+            List<double> electricity = new List<double>();
+            List<double[]> solar = new List<double[]>();
+            List<double> solarArea = new List<double>();
+            foreach (string fname in fileNames)
+            {
+                if (!File.Exists(path + fname))
+                {
+                    Console.Write("'{0}' does not exist in '{1}'... Hit any key to abort the program: ", fname, path);
+                    Console.ReadKey();
+                    return;
+                }
+                else
+                {
+                    string[] lines = File.ReadAllLines(path + fname);
+                    if (lines.Length != hoursPerYear && !string.Equals(fname, fileNames[fileNames.Length - 1]))
+                    {
+                        Console.Write("'{0}' does not have {1} elements, but {2}... Hit any key to abort the program: ", path + fname, hoursPerYear, lines.Length);
+                        Console.ReadKey();
+                        return;
+                    }
+                    else if (string.Equals(fname, fileNames[fileNames.Length - 1]))
+                        if (lines.Length != solar[0].Length)
+                        {
+                            Console.Write("'{0}' contains {1} surface area elements, but {2} contains {3} irradiance profiles... Hit any key to abort the program: ",
+                                path + fname, lines.Length, path + fileNames[fileNames.Length - 2], solar[0].Length);
+                            Console.ReadKey();
+                            return;
+                        }
+                    if (string.Equals(fname, "heatingLoads.csv"))
+                        foreach (string line in lines)
+                            heating.Add(Convert.ToDouble(line));
+                    else if (string.Equals(fname, "coolingLoads.csv"))
+                        foreach (string line in lines)
+                            cooling.Add(Convert.ToDouble(line));
+                    else if (string.Equals(fname, "electricityLoads.csv"))
+                        foreach (string line in lines)
+                            electricity.Add(Convert.ToDouble(line));
+                    else if (string.Equals(fname, "solarLoads.csv"))
+                    {
+                        for (int li = 0; li < lines.Length; li++)
+                        {
+                            string[] split = lines[li].Split(new char[2] { ';', ',' });
+                            solar.Add(new double[split.Length]);
+                            for (int i = 0; i < split.Length; i++)
+                            {
+                                solar[li][i] = Convert.ToDouble(split[i]);
+                            }
+                        }
+                    }
+                    else if (string.Equals(fname, "solarAreas.csv"))
+                        foreach (string line in lines)
+                            solarArea.Add(Convert.ToDouble(line));
+                }
+            }
+
+            // get length of "solar.csv", that determines how many solar profiles we have
+            int numberOfSolarAreas = solar[0].Length;
+
+
+            Console.WriteLine("Data read successfully...");
+            Console.WriteLine();
+
+            // data preparation, clustering and typical days
+            Console.WriteLine(@"*************************************************************************************");
+            Console.WriteLine("Clustering and Generating typical days...");
+
+            int numLoads = fileNames.Length - 2 + numberOfSolarAreas; // heating, cooling, electricity, solar. however, solar will include several profiles
+            double[][] fullProfiles = new double[numLoads][];
+            for (int i = 0; i < numLoads; i++)
+                fullProfiles[i] = new double[hoursPerYear];               
+            string[] loadTypes = new string[numLoads]; // { "heating", "cooling", "electricity", "solar" };
+            loadTypes[0] = "heating";
+            loadTypes[1] = "cooling";
+            loadTypes[2] = "electricity";
+            bool[] peakDays = new bool[numLoads]; // { true, true, true, false };
+            peakDays[0] = true;
+            peakDays[1] = true;
+            peakDays[2] = true;
+
+            for (int t = 0; t < hoursPerYear; t++) 
+            { 
+                fullProfiles[0][t] = heating[t];
+                fullProfiles[1][t] = cooling[t];
+                fullProfiles[2][t] = electricity[t];
+            }
+
+            for (int i = 3; i < numLoads; i++) 
+            {
+                peakDays[i] = false;
+                loadTypes[i] = "solar";
+                for(int t=0; t<hoursPerYear; t++)
+                    fullProfiles[i][t] = solar[t][i-3];
+            }
+
+            EhubMisc.DemandParameterization.TypicalDays typicalDays = EhubMisc.DemandParameterization.GenerateTypicalDays(fullProfiles, loadTypes, numberOfTypicalDays, peakDays);
+
+
 
         }
+
 
 
         static void ClusterRandomData()

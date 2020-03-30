@@ -7,6 +7,42 @@ namespace EhubMisc
 {
     public static class Misc
     {
+        public static string[] AsciiDrawing(int graphic)
+        {
+            /// Art by Susie Oviatt, from: https://www.asciiart.eu/animals/dogs
+            string[] dog = new string[28];
+            dog[0] = @"                          ..,,,,,,,,,..";
+            dog[1] = @"                     .,;%%%%%%%%%%%%%%%%%%%%;,.";
+            dog[2] = @"                   %%%%%%%%%%%%%%%%%%%%////%%%%%%, .,;%%;,"; 
+            dog[3] = @"            .,;%/,%%%%%/////%%%%%%%%%%%%%%////%%%%,%%//%%%, ";
+            dog[4] = @"        .,;%%%%/,%%%///%%%%%%%%%%%%%%%%%%%%%%%%%%%%,////%%%%;, ";
+            dog[5] = @"     .,%%%%%%//,%%%%%%%%%%%%%%%%@@%a%%%%%%%%%%%%%%%%,%%/%%%%%%%;, ";
+            dog[6] = @"   .,%//%%%%//,%%%%///////%%%%%%%@@@%%%%%%///////%%%%,%%//%%%%%%%%, ";
+            dog[7] = @" ,%%%%%///%%//,%%//%%%%%///%%%%%@@@%%%%%////%%%%%%%%%,/%%%%%%%%%%%%% ";
+            dog[8] = @".%%%%%%%%%////,%%%%%%%//%///%%%%@@@@%%%////%%/////%%%,/;%%%%%%%%/%%% ";
+            dog[9] = @"%/%%%%%%%/////,%%%%///%%////%%%@@@@@%%%///%%/%%%%%//%,////%%%%//%%%' ";
+            dog[10] = @"%//%%%%%//////,%/%a`  'a%///%%%@@@@@@%%////a`  'a%%%%,//%///%/%%%%% ";
+            dog[11] = @"%///%%%%%%///,%%%%@@aa@@%//%%%@@@@S@@@%%///@@aa@@%%%%%,/%////%%%%% ";
+            dog[12] = @"%%//%%%%%%%//,%%%%%///////%%%@S@@@@SS@@@%%/////%%%%%%%,%////%%%%%' ";
+            dog[13] = @"%%//%%%%%%%//,%%%%/////%%@%@SS@@@@@@@S@@@@%%%%/////%%%,////%%%%%' ";
+            dog[14] = @"`%/%%%%//%%//,%%%///%%%%@@@S@@@@@@@@@@@@@@@S%%%%////%%,///%%%%%' ";
+            dog[15] = @"  %%%%//%%%%/,%%%%%%%%@@@@@@@@@@@@@@@@@@@@@SS@%%%%%%%%,//%%%%%' ";
+            dog[16] = @"  `%%%//%%%%/,%%%%@%@@@@@@@@@@@@@@@@@@@@@@@@@S@@%%%%%,/////%%' ";
+            dog[17] = @"   `%%%//%%%/,%%%@@@SS@@SSs@@@@@@@@@@@@@sSS@@@@@@%%%,//%%//%' ";
+            dog[18] = @"    `%%%%%%/  %% S@@SS@@@@@Ss` .,,.    'sS@@@S@@@@%'  ///%/%' ";
+            dog[19] = @"      `%%%/    % SS@@@@SSS@@S.         .S@@SSS@@@@'    //%%'";
+            dog[20] = @"                /`S@@@@@@SSSSSs,     ,sSSSSS@@@@@' ";
+            dog[21] = @"              %%//`@@@@@@@@@@@@@Ss,sS@@@@@@@@@@@'/ ";
+            dog[22] = @"            %%%%@@00`@@@@@@@@@@@@@'@@@@@@@@@@@'//%% ";
+            dog[23] = @"        %%%%%% a %@@@@000aaaaaaaaa00a00aaaaaaa00 %@%%%%%";
+            dog[24] = @"        %%%%%% a %%@@@@@@@@@@000000000000000000@@@%@@%%%@%%%";
+            dog[25] = @"       %%%%%% a %%@@@%@@@@@@@@@@@00000000000000@@@@@@@@@%@@%%@%%";
+            dog[26] = @"        %%% aa %@@@@@@@@@@@@@@0000000000000000000000@@@@@@@@%@@@%%%%";
+            dog[27] = @"          %%@@@@@@@@@@@@@@@00000000000000000000000000000@@@@@@@@@%%%%%";
+
+            return dog;
+        }
+
         public static bool IsNullOrDefault<T>(this Nullable<T> value) where T : struct
         {
             return default(T).Equals(value.GetValueOrDefault());
@@ -28,50 +64,4 @@ namespace EhubMisc
         }
     }
 
-
-    /// <summary>
-    /// Outputs. new struct per epsilon cut
-    /// </summary>
-    public struct EhubOutputs
-    {
-        internal double carbon;             // annual carbon.
-        internal double cost;               // cost. levelized.
-        internal double OPEX;               // annual operation cost.
-        internal double CAPEX;              // capital cost. levelized.
-
-        // Technology sizing
-        internal double[] x_pv;             // pv sizing [m2]
-        internal double x_bat;              // battery 
-        internal double x_hp;               // heat pump. assume it reaches peak heat temperatures as simplification.
-        internal double x_tes;              // thermal storage
-        internal double x_chp;              // combined heat and power
-        internal double x_ac;               // air condition
-        internal double x_boi;              // gas boiler
-
-        // Operation. Time resolved.
-        internal double[] x_elecpur;        // purchase from grid
-        internal double[] x_feedin;         // feedin
-        internal double[] x_batdischarge;   // battery discharge
-        internal double[] x_batcharge;      // battery charge
-        internal double[] x_batsoc;         // battery state of charge
-        internal double[] x_tesdischarge;   // thermal energy storage (tes) discharge
-        internal double[] x_tescharge;      // tes charge
-        internal double[] x_tessoc;         // tes state of charge
-        internal double[] x_hp_op;          // heat pump operation
-        internal double[] x_boi_op;         // boiler operation
-        internal double[] x_chp_op_e;       // chp operation electricity
-        internal double[] x_chp_op_h;       // chp operation heat
-        internal double[] x_chp_dump;       // chp heat dumped
-
-        internal double[] b_pvprod;     // total pv production
-        internal double[] b_pvprod_Roof;// pv production roof
-        internal double[] b_pvprod_E;   // pv prod East
-        internal double[] b_pvprod_S_a; // pv prod South A
-        internal double[] b_pvprod_S_b; // pv prod South B
-        internal double[] b_pvprod_W_a; // pv prod West A
-        internal double[] b_pvprod_W_b; // pv prod West B
-    }
-
-
-    
 }

@@ -20,7 +20,9 @@ namespace AdamMSc2020
         internal Ehub(double [] coolingDemand, double [] heatingDemand, double [] electricityDemand,
             double[][] irradiance, double [] solarTechSurfaceAreas)
         {
-            // use profiles in clustering functions, return typical profiles        
+            // use profiles in clustering functions, return typical profiles 
+            
+
         }
 
 
@@ -30,7 +32,7 @@ namespace AdamMSc2020
 
             // 1. solve for minCarbon, ignoring cost
             // 2. solve for minCost, using minCarbon value found in 1 (+ small torelance)
-            // 3. solve for minCost, ignoring Carbon
+            // 3. solve for minCost, ignoring Carbon (then, solve for minCarbon, using mincost as constraint. check, if it makes a difference in carbon)
             // 4. make epsilonCuts (-2) cuts and solve for each minCost s.t. carbon
             // 5. report all values into Outputs
 
@@ -39,7 +41,7 @@ namespace AdamMSc2020
         }
 
 
-        private EhubOutputs EnergyHub(bool minCarbon, double? carbonConstraint = null)
+        private EhubOutputs EnergyHub(string objective = "cost", double? carbonConstraint = null, double? costConstraint = null)
         {
             Cplex cpl = new Cplex();
 
