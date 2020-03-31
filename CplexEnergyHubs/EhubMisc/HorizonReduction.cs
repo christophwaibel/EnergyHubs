@@ -66,7 +66,7 @@ namespace EhubMisc
 
         /// <summary>
         /// Generating typical demand profile days from an annual hourly time series.
-        /// Source: Dominguez-Munoz, Cejudo-Lopez, Carrillo-Andres (2011). "Selection of typical demand days for CHP optimization"
+        /// Loosely based on: Dominguez-Munoz, Cejudo-Lopez, Carrillo-Andres (2011). "Selection of typical demand days for CHP optimization"
         /// Energy and Buildings 43(11), pp. 3036-3043. doi: 10.1016/j.enbuild.2011.07.024
         /// </summary>
         /// <param name="fullProfiles">Full annual hourly demand profiles. First index for demand types, second index for timesteps.</param>
