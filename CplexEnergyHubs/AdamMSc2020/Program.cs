@@ -155,6 +155,8 @@ namespace AdamMSc2020
             Console.WriteLine(@"*************************************************************************************");
             Console.WriteLine("Running MILP now...");
 
+            // how to use the scaling factors properly? generally, only for oeprational cost and carbon emission, but not for tech sizing. However, for storage sizing, they need to be considered. Also for PV total production (feed in and storage)
+
 
 
             // Storing Results
