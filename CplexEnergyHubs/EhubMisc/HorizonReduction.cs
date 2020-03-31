@@ -5,7 +5,7 @@ using System.Text;
 using System.Threading.Tasks;
 
 namespace EhubMisc
-{            
+{
     public static class DemandParameterization
     {
         /// <summary>
@@ -78,8 +78,8 @@ namespace EhubMisc
         {
             TypicalDays typicalDays = new TypicalDays();
 
-            //int[] seeds = new int[10] { 0, 1, 2, 3, 4, 5, 6, 7, 8, 9 };
-            int[] seeds = new int[1] { 42 };
+            int[] seeds = new int[10] { 0, 1, 2, 3, 4, 5, 6, 7, 8, 9 };
+            //int[] seeds = new int[1] { 42 };
             int days = 365;
             int hoursPerDay = 24;
             int numberOfLoadTypes = loadTypes.Length;
@@ -243,16 +243,10 @@ namespace EhubMisc
                     {
                         int _hourA = h + d * hoursPerDay;
                         int _hourB = h + load * hoursPerDay;
-                        if (typicalDays.IsPeakDay[d])
-                        {
-                            // get it from original data, where peak days have not been culled from 
+                        if (typicalDays.IsPeakDay[d]) // get it from original data, where peak days have not been culled from 
                             typicalDays.DayProfiles[load][_hourA] = Xcomplete[typicalDays.DayOfTheYear[d] - 1][_hourB] * (upperBounds[load] - lowerBounds[load]) + lowerBounds[load];
-                        }
-                        else
-                        {
-                            // get it from X
+                        else // get it from X
                             typicalDays.DayProfiles[load][_hourA] = X[typicalDays.DayOfTheYear[d] - 1][_hourB] * (upperBounds[load] - lowerBounds[load]) + lowerBounds[load];
-                        }
                     }
                 }
             }
@@ -275,15 +269,12 @@ namespace EhubMisc
                 typicalDays.ScalingFactorPerTimestep[load] = new double[typicalDays.NumOfDays * hoursPerDay];
                 for (int d = 0; d < typicalDays.NumOfDays; d++)
                 {
-                    sumOfAllClusterDays[d] = 1.0;
-                    sumOfMedoids[d] = 1.0;
-
-                    double _factor = 0.0;
-                    if (!typicalDays.IsPeakDay[d])
+                    double _factor= 0.0;
+                    double _sumOfAllClusterDays = 0.0;
+                    double _sumOfMedoid = 0.0;
+                    for (int h = 0; h < hoursPerDay; h++)
                     {
-                        double _sumOfAllClusterDays = 0.0;
-                        double _sumOfMedoid = 0.0;
-                        for (int h = 0; h < hoursPerDay; h++)
+                        if (!typicalDays.IsPeakDay[d])
                         {
                             _sumOfMedoid += X[typicalDays.DayOfTheYear[d] - 1][h + load * hoursPerDay];
                             for (int i = 0; i < typicalDays.ClusterIdPerDay.Length; i++)
@@ -294,29 +285,24 @@ namespace EhubMisc
                                 }
                             }
                         }
-                        sumOfMedoids[d] = _sumOfMedoid;
-                        sumOfAllClusterDays[d] = _sumOfAllClusterDays;
-
-                        _factor = _sumOfAllClusterDays / _sumOfMedoid;
-                        if (double.IsInfinity(_factor) || double.IsNaN(_factor)) _factor = 1.0;
-
-                        if(load == 1 && _sumOfMedoid != 0)
+                        else
                         {
-                            Console.WriteLine("it happens");
+                            _sumOfMedoid += Xcomplete[typicalDays.DayOfTheYear[d] - 1][h + load * hoursPerDay];
+                            _sumOfAllClusterDays += Xcomplete[typicalDays.DayOfTheYear[d] - 1][h + load * hoursPerDay];
                         }
                     }
-                    else
-                    {
-                        sumOfMedoids[d] = 1.0;
-                        sumOfAllClusterDays[d] = 1.0;
-                        _factor = 1.0;
-                    }
+
+                    sumOfMedoids[d] = _sumOfMedoid;
+                    sumOfAllClusterDays[d] = _sumOfAllClusterDays;
+
+                    _factor = _sumOfAllClusterDays / _sumOfMedoid;
+                    if (double.IsInfinity(_factor) || double.IsNaN(_factor)) _factor = 1.0;
 
                     factor[d] = _factor;
                 }
 
                 // store all the lost data of _sumOfAllClusterDays
-                //    // needs to be put somewhere. distributing equally amongst all days that have medoid != 0?
+                //    distributing equally amongst all days that have medoid != 0
                 if (sumOfMedoids.Contains(0))
                 {
                     double missing = 0.0;
@@ -330,16 +316,16 @@ namespace EhubMisc
 
                     int countDaysToDistribute = 0;
                     bool[] distributeHere = new bool[typicalDays.NumOfDays];
-                    for(int d=0; d<typicalDays.NumOfDays; d++)
+                    for (int d = 0; d < typicalDays.NumOfDays; d++)
                     {
-                        if(sumOfMedoids[d] != 0 && !typicalDays.IsPeakDay[d])
+                        if (sumOfMedoids[d] != 0) 
                         {
                             countDaysToDistribute++;
                             distributeHere[d] = true;
                         }
                     }
                     double distributePerTypicalDay = missing / countDaysToDistribute;
-                    for(int d=0; d<typicalDays.NumOfDays; d++)
+                    for (int d = 0; d < typicalDays.NumOfDays; d++)
                     {
                         if (distributeHere[d])
                             factor[d] = (sumOfAllClusterDays[d] + distributePerTypicalDay) / sumOfMedoids[d];
@@ -347,11 +333,8 @@ namespace EhubMisc
 
                 }
 
-                for(int d=0; d<typicalDays.NumOfDays; d++)
+                for (int d = 0; d < typicalDays.NumOfDays; d++)
                 {
-                    //if(!typicalDays.IsPeakDay[d])
-
-
                     for (int h = 0; h < hoursPerDay; h++)
                     {
                         typicalDays.ScalingFactorPerTimestep[load][h + d * hoursPerDay] = factor[d];
