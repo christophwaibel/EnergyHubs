@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 
 namespace EhubMisc
 {
-    public static class DemandParameterization
+    public static class HorizonReduction
     {
         /// <summary>
         /// Typical days of a full annual hourly time series

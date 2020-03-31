@@ -162,7 +162,7 @@ namespace AdamMSc2020
             }
 
             // TO DO: load in GHI time series, add it to full profiles (right after heating, cooling, elec), and use it for clustering. exclude other solar profiles from clustering, but they need to be reshaped too
-            EhubMisc.DemandParameterization.TypicalDays typicalDays = EhubMisc.DemandParameterization.GenerateTypicalDays(fullProfiles, loadTypes, numberOfTypicalDays, peakDays, useForClustering);
+            EhubMisc.HorizonReduction.TypicalDays typicalDays = EhubMisc.HorizonReduction.GenerateTypicalDays(fullProfiles, loadTypes, numberOfTypicalDays, peakDays, useForClustering);
 
 
             // Running Energy Hub
