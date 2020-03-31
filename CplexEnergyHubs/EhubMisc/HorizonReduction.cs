@@ -73,6 +73,7 @@ namespace EhubMisc
         /// <param name="loadTypes">Description for each demand type, e.g. {"cooling", "heating", "electricity"}.</param>
         /// <param name="numberOfTypicalDays">Number of typical days.</param>
         /// <param name="peakDays">Adding the peak day per demand type? One boolean per demand type. Days will be added to the regular typical days. E.g. 12 typical days + peak days.</param>
+        /// <param name="useForClustering">Specifying which load type is used in the clustering. e.g. it might be wise to not include 20 solar profiles in the clustering ,because they get too much emphasize. instead, just use heating, cooling, electricity, and one profile for global horizontal irradiance. this array correspond to the loadTypes string array</param>
         /// <returns>Returns a TypicalDays structure</returns>
         public static TypicalDays GenerateTypicalDays(double[][] fullProfiles, string[] loadTypes, int numberOfTypicalDays, bool[] peakDays, bool [] useForClustering, bool verbose = true)
         {
@@ -132,12 +133,14 @@ namespace EhubMisc
 
             double[][] Xcomplete = new double[days][];
             double[][] X = new double[days - typicalDays.NumOfPeakDays][];
+            double[][] Xclustering = new double[days - typicalDays.NumOfPeakDays][];
             _dayCounter = 0;
             for (int d = 0; d < days; d++)
             {
                 if (!typicalDays.DayOfTheYear.Contains(d + 1))
                 {
                     X[_dayCounter] = new double[hoursPerDay * numberOfLoadTypes];
+                    Xclustering[_dayCounter] = new double[hoursPerDay * useForClustering.Count(c => c)];
                     _dayCounter++;
                 }
                 Xcomplete[d] = new double[hoursPerDay * numberOfLoadTypes];
@@ -148,7 +151,11 @@ namespace EhubMisc
                         double _value = (fullProfiles[load][h + (d * hoursPerDay)] - lowerBounds[load]) / (upperBounds[load] - lowerBounds[load]);
                         int _hour = h + (load * hoursPerDay);
                         if (!typicalDays.DayOfTheYear.Contains(d + 1))
+                        {
                             X[_dayCounter - 1][_hour] = _value;
+                            if(useForClustering[load])
+                                Xclustering[_dayCounter - 1][_hour] = _value;
+                        }
                         Xcomplete[d][_hour] = _value;
                     }
                 }
@@ -171,7 +178,7 @@ namespace EhubMisc
             Parallel.For(0, seeds.Length, seed =>
             {
                 if (verbose) Console.WriteLine("Performing clustering for seed {0} of {1} total seeds...", seed + 1, seeds.Length);
-                replicates[seed] = EhubMisc.Clustering.KMedoids(X, clusters, 50, seed);
+                replicates[seed] = EhubMisc.Clustering.KMedoids(Xclustering, clusters, 50, seed);
                 if (verbose) Console.WriteLine("...clustering finished for seed {0} of {1} total seeds.", seed + 1, seeds.Length);
             });
 
