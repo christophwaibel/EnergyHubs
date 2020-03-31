@@ -38,7 +38,7 @@ namespace AdamMSc2020
             Console.WriteLine(@"Please enter the path of your inputs folder in the following format: 'c:\inputs\'");
             Console.WriteLine("The folder should contain following '.csv' files:");
             Console.WriteLine();
-            string[] fileNames = new string[5] { "heatingLoads.csv", "coolingLoads.csv", "electricityLoads.csv", "solarLoads.csv", "solarAreas.csv" };
+            string[] fileNames = new string[6] { "heatingLoads.csv", "coolingLoads.csv", "electricityLoads.csv", "ghi.csv", "solarLoads.csv", "solarAreas.csv" };
             foreach (string fname in fileNames)
                 Console.WriteLine("- '{0}'", fname);
             Console.WriteLine();
@@ -57,6 +57,7 @@ namespace AdamMSc2020
             List<double> heating = new List<double>();
             List<double> cooling = new List<double>();
             List<double> electricity = new List<double>();
+            List<double> ghi = new List<double>();
             List<double[]> solar = new List<double[]>();
             List<double> solarArea = new List<double>();
             foreach (string fname in fileNames)
@@ -93,6 +94,9 @@ namespace AdamMSc2020
                     else if (string.Equals(fname, "electricityLoads.csv"))
                         foreach (string line in lines)
                             electricity.Add(Convert.ToDouble(line));
+                    else if (string.Equals(fname, "ghi.csv"))
+                        foreach (string line in lines)
+                            ghi.Add(Convert.ToDouble(line));
                     else if (string.Equals(fname, "solarLoads.csv"))
                     {
                         for (int li = 0; li < lines.Length; li++)
@@ -128,27 +132,37 @@ namespace AdamMSc2020
             loadTypes[0] = "heating";
             loadTypes[1] = "cooling";
             loadTypes[2] = "electricity";
+            loadTypes[3] = "ghi";
             bool[] peakDays = new bool[numLoads]; 
             peakDays[0] = true;
             peakDays[1] = true;
             peakDays[2] = true;
+            peakDays[3] = false;
 
+            bool[] useForClustering = new bool[fullProfiles.Length]; // specificy here, which load is used for clustering. the others are just reshaped
             for (int t = 0; t < hoursPerYear; t++) 
             { 
                 fullProfiles[0][t] = heating[t];
                 fullProfiles[1][t] = cooling[t];
                 fullProfiles[2][t] = electricity[t];
+                fullProfiles[3][t] = ghi[t];
+                useForClustering[0] = true;
+                useForClustering[1] = true;
+                useForClustering[2] = true;
+                useForClustering[3] = true;
             }
 
-            for (int i = 3; i < numLoads; i++) 
+            for (int i = 4; i < numLoads; i++) 
             {
+                useForClustering[i] = false;
                 peakDays[i] = false;
                 loadTypes[i] = "solar";
                 for(int t=0; t<hoursPerYear; t++)
-                    fullProfiles[i][t] = solar[t][i-3];
+                    fullProfiles[i][t] = solar[t][i-4];
             }
 
-            EhubMisc.DemandParameterization.TypicalDays typicalDays = EhubMisc.DemandParameterization.GenerateTypicalDays(fullProfiles, loadTypes, numberOfTypicalDays, peakDays);
+            // TO DO: load in GHI time series, add it to full profiles (right after heating, cooling, elec), and use it for clustering. exclude other solar profiles from clustering, but they need to be reshaped too
+            EhubMisc.DemandParameterization.TypicalDays typicalDays = EhubMisc.DemandParameterization.GenerateTypicalDays(fullProfiles, loadTypes, numberOfTypicalDays, peakDays, useForClustering);
 
 
             // Running Energy Hub

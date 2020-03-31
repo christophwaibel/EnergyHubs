@@ -74,7 +74,7 @@ namespace EhubMisc
         /// <param name="numberOfTypicalDays">Number of typical days.</param>
         /// <param name="peakDays">Adding the peak day per demand type? One boolean per demand type. Days will be added to the regular typical days. E.g. 12 typical days + peak days.</param>
         /// <returns>Returns a TypicalDays structure</returns>
-        public static TypicalDays GenerateTypicalDays(double[][] fullProfiles, string[] loadTypes, int numberOfTypicalDays, bool[] peakDays, bool verbose = true)
+        public static TypicalDays GenerateTypicalDays(double[][] fullProfiles, string[] loadTypes, int numberOfTypicalDays, bool[] peakDays, bool [] useForClustering, bool verbose = true)
         {
             TypicalDays typicalDays = new TypicalDays();
 
