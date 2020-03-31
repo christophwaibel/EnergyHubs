@@ -5,7 +5,7 @@ using System.Text;
 using System.Threading.Tasks;
 
 namespace EhubMisc
-{
+{            
     public static class DemandParameterization
     {
         /// <summary>
@@ -30,9 +30,17 @@ namespace EhubMisc
             /// </summary>
             public double[][] DayProfiles;
             /// <summary>
-            /// Indicating, how many days one typical day represents. In other words, the cluster sizes. Note: The peak days will always only be DaysPerTypicalDay[peakday] = 1.
+            /// Indicating, how many days one typical day represents. In other words, the cluster sizes. Note: The peak days will NOT necessarly be DaysPerTypicalDay[peakday] = 1, because it is sorted according to day of the year. Refer to ClusterID
             /// </summary>
             public int[] DaysPerTypicalDay;
+            /// <summary>
+            /// Sorted cluster IDs, sorted according to day of the year.
+            /// </summary>
+            public int[] ClusterID;
+            /// <summary>
+            /// Indicates whether this typical day is a peak day. If so, then it also only has DayPerTypicalDay[day] = 1
+            /// </summary>
+            public bool[] IsPeakDay;
             /// <summary>
             /// Description of each load type, e.g. {"heating", "cooling", "electricity"}
             /// </summary>
@@ -46,17 +54,13 @@ namespace EhubMisc
             /// </summary>
             public int[] ClusterIdPerDay;
             /// <summary>
-            /// Scaling factor for entire DayProfiles, such that DayProfiles x DaysPerTypicalDay matches the total annual loads of the original load profiles. ScalingFactor[LoadType] already applied to DayProfiles[LoadType][]
+            /// Scaling factor per load and per timestep. Note: if IsTypicalDay[day], then ScalingFactorPerTimestep[load][timestep->day] = 1.0; else, it can be any factor. Needs to be used in energy hub to account for total carbon emissions and cost, to match original total loads
             /// </summary>
-            public double[] ScalingFactor;
+            public double[][] ScalingFactorPerTimestep;
             /// <summary>
             /// Total loads per LoadType. The sum of the original 8760 timeseries should match the sum of DayProfiles x DaysPerTypicalDay.
             /// </summary>
             public double[] TotalLoads;
-            /// <summary>
-            /// Sum of DayProfiles x DaysPerTypicalDay, if no scaling had been applied. Will likely not match the original 8760 timeseries.
-            /// </summary>
-            public double[] TotalLoadsWithoutScaling;
         }
 
 
@@ -131,7 +135,11 @@ namespace EhubMisc
             _dayCounter = 0;
             for (int d = 0; d < days; d++)
             {
-                X[_dayCounter] = new double[hoursPerDay * numberOfLoadTypes];
+                if (!typicalDays.DayOfTheYear.Contains(d + 1))
+                {
+                    X[_dayCounter] = new double[hoursPerDay * numberOfLoadTypes];
+                    _dayCounter++;
+                }
                 Xcomplete[d] = new double[hoursPerDay * numberOfLoadTypes];
                 for (int h = 0; h < hoursPerDay; h++)
                 {
@@ -140,12 +148,10 @@ namespace EhubMisc
                         double _value = (fullProfiles[load][h + (d * hoursPerDay)] - lowerBounds[load]) / (upperBounds[load] - lowerBounds[load]);
                         int _hour = h + (load * hoursPerDay);
                         if (!typicalDays.DayOfTheYear.Contains(d + 1))
-                            X[_dayCounter][_hour] = _value;
+                            X[_dayCounter - 1][_hour] = _value;
                         Xcomplete[d][_hour] = _value;
                     }
                 }
-                if (!typicalDays.DayOfTheYear.Contains(d + 1)) 
-                    _dayCounter++;
             }
 
 
@@ -191,72 +197,167 @@ namespace EhubMisc
                 typicalDays.DaysPerTypicalDay[d] = clusteredData.Item2[d].Length;
             }
 
+            typicalDays.ClusterID = new int[typicalDays.NumOfDays];
+            for (int i = 0; i < typicalDays.NumOfDays; i++)
+                typicalDays.ClusterID[i] = -1;
+
             Dictionary<int, int> idx = new Dictionary<int, int>();
             for (int _k = 0; _k < clusters; _k++)
+            {
                 for (int i = 0; i < clusteredData.Item2[_k].Length; i++)
                 {
                     int index = clusteredData.Item2[_k][i];
                     idx.Add(index, _k);
                 }
+                typicalDays.ClusterID[_k] = _k;
+            }
             idx = idx.OrderBy(x => x.Key).ToDictionary(pair => pair.Key, pair => pair.Value);
             typicalDays.ClusterIdPerDay = new int[idx.Count];
             for (int i = 0; i < idx.Count; i++)
                 typicalDays.ClusterIdPerDay[i] = idx[i];
 
 
-            // sort DayOfTheYear (key) and DayPerTypicalDay (value)
-            //make a bool array for peakdays, sorted also
-            bool[] _peakDays = new bool[typicalDays.NumOfDays];
-            for(int d=typicalDays.NumOfTypicalDays; d<typicalDays.NumOfDays; d++)
-                _peakDays[d] = true;
+            /// 4. Sort DayOfTheYear (key) and DayPerTypicalDay (value)
+            ///      make a bool array for peakdays, sorted also
+            typicalDays.IsPeakDay = new bool[typicalDays.NumOfDays];
+            for (int d = typicalDays.NumOfTypicalDays; d < typicalDays.NumOfDays; d++)
+                typicalDays.IsPeakDay[d] = true;
             int[] _copyDaysOfTheYear = new int[typicalDays.NumOfDays];
+            int[] _copyDaysOfTheYear2 = new int[typicalDays.NumOfDays];
             typicalDays.DayOfTheYear.CopyTo(_copyDaysOfTheYear, 0);
-            Array.Sort(_copyDaysOfTheYear, _peakDays);
+            typicalDays.DayOfTheYear.CopyTo(_copyDaysOfTheYear2, 0);
+            Array.Sort(_copyDaysOfTheYear, typicalDays.IsPeakDay);
+            Array.Sort(_copyDaysOfTheYear2, typicalDays.ClusterID);
             Array.Sort(typicalDays.DayOfTheYear, typicalDays.DaysPerTypicalDay);
 
 
+            /// 5. fill the final profiles for the MILP with the medoids and peak day profiles
+            ///     reverse normalization at the same time
             typicalDays.DayProfiles = new double[numberOfLoadTypes][];
             for (int load = 0; load < numberOfLoadTypes; load++)
             {
-                // fill the final profiles for the MILP with the medoids profiles
                 typicalDays.DayProfiles[load] = new double[hoursPerDay * typicalDays.NumOfDays];
                 for (int d = 0; d < typicalDays.NumOfDays; d++)
+                {
                     for (int h = 0; h < hoursPerDay; h++)
                     {
-                        if (_peakDays[d])
+                        int _hourA = h + d * hoursPerDay;
+                        int _hourB = h + load * hoursPerDay;
+                        if (typicalDays.IsPeakDay[d])
                         {
                             // get it from original data, where peak days have not been culled from 
-                            typicalDays.DayProfiles[load][h + d * hoursPerDay] = Xcomplete[typicalDays.DayOfTheYear[d]][h + load * hoursPerDay];
+                            typicalDays.DayProfiles[load][_hourA] = Xcomplete[typicalDays.DayOfTheYear[d] - 1][_hourB] * (upperBounds[load] - lowerBounds[load]) + lowerBounds[load];
                         }
                         else
                         {
                             // get it from X
-                            typicalDays.DayProfiles[load][h + d * hoursPerDay] = X[typicalDays.DayOfTheYear[d]][h + load * hoursPerDay];
+                            typicalDays.DayProfiles[load][_hourA] = X[typicalDays.DayOfTheYear[d] - 1][_hourB] * (upperBounds[load] - lowerBounds[load]) + lowerBounds[load];
                         }
-
                     }
-
-                //for (int d = 0; d < numberOfTypicalDays; d++)
-                //    for (int h = 0; h < hoursPerDay; h++)
-                //        typicalDays.DayProfiles[load][h + d * hoursPerDay] = X[clusteredData.Item1[d]][h + load * hoursPerDay]; 
-
-                //// fill it with the peak days
-                //for(int d=0; d<typicalDays.NumOfPeakDays; d++)
-                //    for(int h=0; h<hoursPerDay; h++)
-                //        typicalDays.DayProfiles[load][h + d * hoursPerDay + numberOfTypicalDays * hoursPerDay] = X[typicalDays.DayOfTheYear[d + numberOfTypicalDays]][h + load * hoursPerDay];
+                }
             }
 
-            
-            /// 4. revert normalization for DayProfiles (and X and Xcomplete?)
+
+            /// 6. Calculation of scaling factors
+            ///     for each load type
+            ///         for each cluster
+            ///             sum of loads of all days in that cluster must match the sum of loads of the medoid
+            ///             this factor will be used in the energyhub to scale up the carbon emissions and operational cost, so all the days of that cluster are accounted for
+            ///             NOTE! numOfDays approach as in the Matlab code is inprecise? Because the medoid is not the perfect mean. Also, the factor should differ for each load type
+            typicalDays.ScalingFactorPerTimestep = new double[numberOfLoadTypes][];
+
+            for (int load = 0; load < numberOfLoadTypes; load++)
+            {
+                double[] sumOfAllClusterDays = new double[typicalDays.NumOfDays];
+                double[] sumOfMedoids = new double[typicalDays.NumOfDays];
+                double[] factor = new double[typicalDays.NumOfDays];
+
+                typicalDays.ScalingFactorPerTimestep[load] = new double[typicalDays.NumOfDays * hoursPerDay];
+                for (int d = 0; d < typicalDays.NumOfDays; d++)
+                {
+                    sumOfAllClusterDays[d] = 1.0;
+                    sumOfMedoids[d] = 1.0;
+
+                    double _factor = 0.0;
+                    if (!typicalDays.IsPeakDay[d])
+                    {
+                        double _sumOfAllClusterDays = 0.0;
+                        double _sumOfMedoid = 0.0;
+                        for (int h = 0; h < hoursPerDay; h++)
+                        {
+                            _sumOfMedoid += X[typicalDays.DayOfTheYear[d] - 1][h + load * hoursPerDay];
+                            for (int i = 0; i < typicalDays.ClusterIdPerDay.Length; i++)
+                            {
+                                if (typicalDays.ClusterIdPerDay[i] == typicalDays.ClusterID[d])
+                                {
+                                    _sumOfAllClusterDays += X[i][h + load * hoursPerDay];
+                                }
+                            }
+                        }
+                        sumOfMedoids[d] = _sumOfMedoid;
+                        sumOfAllClusterDays[d] = _sumOfAllClusterDays;
+
+                        _factor = _sumOfAllClusterDays / _sumOfMedoid;
+                        if (double.IsInfinity(_factor) || double.IsNaN(_factor)) _factor = 1.0;
+
+                        if(load == 1 && _sumOfMedoid != 0)
+                        {
+                            Console.WriteLine("it happens");
+                        }
+                    }
+                    else
+                    {
+                        sumOfMedoids[d] = 1.0;
+                        sumOfAllClusterDays[d] = 1.0;
+                        _factor = 1.0;
+                    }
+
+                    factor[d] = _factor;
+                }
+
+                // store all the lost data of _sumOfAllClusterDays
+                //    // needs to be put somewhere. distributing equally amongst all days that have medoid != 0?
+                if (sumOfMedoids.Contains(0))
+                {
+                    double missing = 0.0;
+                    for (int d = 0; d < typicalDays.NumOfDays; d++)
+                    {
+                        if (sumOfMedoids[d] == 0)
+                        {
+                            missing += sumOfAllClusterDays[d];
+                        }
+                    }
+
+                    int countDaysToDistribute = 0;
+                    bool[] distributeHere = new bool[typicalDays.NumOfDays];
+                    for(int d=0; d<typicalDays.NumOfDays; d++)
+                    {
+                        if(sumOfMedoids[d] != 0 && !typicalDays.IsPeakDay[d])
+                        {
+                            countDaysToDistribute++;
+                            distributeHere[d] = true;
+                        }
+                    }
+                    double distributePerTypicalDay = missing / countDaysToDistribute;
+                    for(int d=0; d<typicalDays.NumOfDays; d++)
+                    {
+                        if (distributeHere[d])
+                            factor[d] = (sumOfAllClusterDays[d] + distributePerTypicalDay) / sumOfMedoids[d];
+                    }
+
+                }
+
+                for(int d=0; d<typicalDays.NumOfDays; d++)
+                {
+                    //if(!typicalDays.IsPeakDay[d])
 
 
-            /// 5. Calculation of scaling factors
-            ///     summing total loads for all observations in a cluster
-            ///     summing total loads
-
-
-            // ScalingFactor
-            // TotalLoadsWithoutScaling
+                    for (int h = 0; h < hoursPerDay; h++)
+                    {
+                        typicalDays.ScalingFactorPerTimestep[load][h + d * hoursPerDay] = factor[d];
+                    }
+                }
+            }
 
 
             return typicalDays;
