@@ -22,8 +22,6 @@ namespace AdamMSc2020
 
         static void RunAdamsEhub()
         {
-            const int daysPerYear = 365;
-            const int hoursPerDay = 24;
             const int hoursPerYear = 8760;
             const int numberOfTypicalDays = 12;
 
@@ -38,9 +36,10 @@ namespace AdamMSc2020
             Console.WriteLine(@"Please enter the path of your inputs folder in the following format: 'c:\inputs\'");
             Console.WriteLine("The folder should contain following '.csv' files:");
             Console.WriteLine();
-            string[] fileNames = new string[6] { "heatingLoads.csv", "coolingLoads.csv", "electricityLoads.csv", "ghi.csv", "solarLoads.csv", "solarAreas.csv" };
+            string[] fileNames = new string[7] { "heatingLoads.csv", "coolingLoads.csv", "electricityLoads.csv", "ghi.csv", "dhwLoads.csv", "solarLoads.csv", "solarAreas.csv" };
             foreach (string fname in fileNames)
                 Console.WriteLine("- '{0}'", fname);
+            int indexSolar = fileNames.Length - 2;
             Console.WriteLine();
             Console.WriteLine(@"*************************************************************************************");
             Console.Write("Enter your path now and confirm by hitting the Enter-key: ");
@@ -58,6 +57,7 @@ namespace AdamMSc2020
             List<double> cooling = new List<double>();
             List<double> electricity = new List<double>();
             List<double> ghi = new List<double>();
+            List<double> dhw = new List<double>();
             List<double[]> solar = new List<double[]>();
             List<double> solarArea = new List<double>();
             foreach (string fname in fileNames)
@@ -97,6 +97,9 @@ namespace AdamMSc2020
                     else if (string.Equals(fname, "ghi.csv"))
                         foreach (string line in lines)
                             ghi.Add(Convert.ToDouble(line));
+                    else if (string.Equals(fname, "dhwLoads.csv"))
+                        foreach (string line in lines)
+                            dhw.Add(Convert.ToDouble(line));
                     else if (string.Equals(fname, "solarLoads.csv"))
                     {
                         for (int li = 0; li < lines.Length; li++)
@@ -133,11 +136,13 @@ namespace AdamMSc2020
             loadTypes[1] = "cooling";
             loadTypes[2] = "electricity";
             loadTypes[3] = "ghi";
+            loadTypes[4] = "dhw";
             bool[] peakDays = new bool[numLoads]; 
             peakDays[0] = true;
             peakDays[1] = true;
             peakDays[2] = true;
             peakDays[3] = false;
+            peakDays[4] = false;
 
             bool[] useForClustering = new bool[fullProfiles.Length]; // specificy here, which load is used for clustering. the others are just reshaped
             for (int t = 0; t < hoursPerYear; t++) 
@@ -146,19 +151,21 @@ namespace AdamMSc2020
                 fullProfiles[1][t] = cooling[t];
                 fullProfiles[2][t] = electricity[t];
                 fullProfiles[3][t] = ghi[t];
+                fullProfiles[4][t] = dhw[t];
                 useForClustering[0] = true;
                 useForClustering[1] = true;
                 useForClustering[2] = true;
                 useForClustering[3] = true;
+                useForClustering[4] = false;
             }
 
-            for (int i = 4; i < numLoads; i++) 
+            for (int i = indexSolar; i < numLoads; i++) 
             {
                 useForClustering[i] = false;
                 peakDays[i] = false;
                 loadTypes[i] = "solar";
                 for(int t=0; t<hoursPerYear; t++)
-                    fullProfiles[i][t] = solar[t][i-4];
+                    fullProfiles[i][t] = solar[t][i-indexSolar];
             }
 
             // TO DO: load in GHI time series, add it to full profiles (right after heating, cooling, elec), and use it for clustering. exclude other solar profiles from clustering, but they need to be reshaped too

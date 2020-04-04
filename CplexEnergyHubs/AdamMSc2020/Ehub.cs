@@ -46,6 +46,44 @@ namespace AdamMSc2020
             Cplex cpl = new Cplex();
 
 
+            /// checking for objectives and cost/carbon constraints
+            /// 
+            bool isCarbonMinimization = false;
+            bool isCostMinimization = false;
+            switch (objective)
+            {
+                default:
+                case "cost":
+                    isCostMinimization = true;
+                    break;
+                case "carbon":
+                    isCarbonMinimization = true;
+                    break;
+            }
+
+            bool hasCarbonConstraint = false;
+            bool hasCostConstraint = false;
+            if (!carbonConstraint.IsNullOrDefault())
+                hasCarbonConstraint = true;
+            if (!costConstraint.IsNullOrDefault())
+                hasCostConstraint = true;
+
+
+            /// Variables
+            /// 
+            INumVar[] x_pv = new INumVar[1];
+
+
+
+
+
+
+
+
+
+
+            /// outputs
+            /// 
             EhubOutputs solution = new EhubOutputs();
             return solution;
         }
