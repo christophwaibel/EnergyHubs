@@ -25,12 +25,11 @@ namespace AdamMSc2020
             const int hoursPerYear = 8760;
             const int numberOfTypicalDays = 12;
 
-            string[] dog = EhubMisc.Misc.AsciiDrawing(0);
-            foreach (string d in dog)
-                Console.WriteLine(d);
+
+
 
             Console.WriteLine();
-            Console.WriteLine("Hi Adam! This is your EnergyHub. Also, above is a puppy.");
+            Console.WriteLine("Hi Adam! This is your EnergyHub.");
             Console.WriteLine();
             Console.WriteLine(@"*************************************************************************************");
             Console.WriteLine(@"Please enter the path of your inputs folder in the following format: 'c:\inputs\'");
@@ -49,7 +48,7 @@ namespace AdamMSc2020
             if (!path.EndsWith(@"\"))
                 path = path + @"\";
 
-            // error checking of the input path: all 4 files existing? is their structure fine?
+            /// error checking of the input path: all 4 files existing? is their structure fine?
             Console.WriteLine(@"*************************************************************************************");
             // load data
 
@@ -64,6 +63,7 @@ namespace AdamMSc2020
             {
                 if (!File.Exists(path + fname))
                 {
+                    WriteError();
                     Console.Write("'{0}' does not exist in '{1}'... Hit any key to abort the program: ", fname, path);
                     Console.ReadKey();
                     return;
@@ -73,6 +73,7 @@ namespace AdamMSc2020
                     string[] lines = File.ReadAllLines(path + fname);
                     if (lines.Length != hoursPerYear && !string.Equals(fname, fileNames[fileNames.Length - 1]))
                     {
+                        WriteError();
                         Console.Write("'{0}' does not have {1} elements, but {2}... Hit any key to abort the program: ", path + fname, hoursPerYear, lines.Length);
                         Console.ReadKey();
                         return;
@@ -80,6 +81,7 @@ namespace AdamMSc2020
                     else if (string.Equals(fname, fileNames[fileNames.Length - 1]))
                         if (lines.Length != solar[0].Length)
                         {
+                            WriteError();
                             Console.Write("'{0}' contains {1} surface area elements, but {2} contains {3} irradiance profiles... Hit any key to abort the program: ",
                                 path + fname, lines.Length, path + fileNames[fileNames.Length - 2], solar[0].Length);
                             Console.ReadKey();
@@ -123,7 +125,7 @@ namespace AdamMSc2020
             Console.WriteLine("Data read successfully...");
             Console.WriteLine();
 
-            // data preparation, clustering and typical days
+            /// data preparation, clustering and typical days
             Console.WriteLine(@"*************************************************************************************");
             Console.WriteLine("Clustering and Generating typical days...");
 
@@ -172,19 +174,50 @@ namespace AdamMSc2020
             EhubMisc.HorizonReduction.TypicalDays typicalDays = EhubMisc.HorizonReduction.GenerateTypicalDays(fullProfiles, loadTypes, numberOfTypicalDays, peakDays, useForClustering);
 
 
-            // Running Energy Hub
+            /// Running Energy Hub
             Console.WriteLine(@"*************************************************************************************");
             Console.WriteLine("Running MILP now...");
-
+            double[][] typicalSolarLoads = new double[solarArea.Count][];
+            double[][] typicalSolarWeights = new double[solarArea.Count][];
+            for (int i = 0; i < numLoads - indexSolar; i++) 
+            {
+                typicalSolarLoads[i] = typicalDays.DayProfiles[indexSolar + i];
+                typicalSolarWeights[i] = typicalDays.ScalingFactorPerTimestep[indexSolar + i];
+            }
+            Ehub ehub = new Ehub(typicalDays.DayProfiles[0], typicalDays.DayProfiles[1], typicalDays.DayProfiles[2], typicalDays.DayProfiles[4],
+                typicalSolarLoads, solarArea.ToArray(),
+                typicalDays.ScalingFactorPerTimestep[0], typicalDays.ScalingFactorPerTimestep[1], typicalDays.ScalingFactorPerTimestep[2], typicalDays.ScalingFactorPerTimestep[4],
+                typicalSolarWeights);
+            ehub.Solve(1);
             // how to use the scaling factors properly? generally, only for oeprational cost and carbon emission, but not for tech sizing. However, for storage sizing, they need to be considered. Also for PV total production (feed in and storage)
 
 
 
-            // Storing Results
+            /// Storing Results
             Console.WriteLine(@"*************************************************************************************");
             Console.WriteLine("Saving results into {0}...", path+ @"results\");
+
+
+            /// Waiting for user to close window
+            Console.WriteLine(@"*************************************************************************************");
+            Console.WriteLine("Hit any key to close program...: ");
+            Console.ReadKey();
+
+
         }
 
+        static void WriteError()
+        {
+            string[] dog = EhubMisc.Misc.AsciiDrawing(0);
+
+            foreach (string d in dog)
+                Console.WriteLine(d);
+
+            Console.WriteLine("Debug-Puppy found an error...");
+            //Console.WriteLine(errorMessage);
+            //Console.WriteLine("Hit any key to abort program...");
+            //Console.ReadKey();
+        }
 
 
         static void ClusterRandomData()

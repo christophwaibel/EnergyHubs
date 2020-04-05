@@ -12,22 +12,22 @@ namespace EhubMisc
         /// <remarks>Source: Garcia-Domingo et al. (2014), found in Mavromatidis et al (2015).</remarks>
         /// <param name="Tamb"></param>
         /// <param name="I"></param>
-        /// <param name="pv_NCOT"></param>
-        /// <param name="pv_T_aNCOT"></param>
-        /// <param name="pv_P_NCOT"></param>
+        /// <param name="NOCT"></param>
+        /// <param name="T_aNOCT"></param>
+        /// <param name="P_NOCT"></param>
         /// <param name="pv_beta_ref"></param>
-        /// <param name="pv_n_ref"></param>
+        /// <param name="n_ref"></param>
         /// <returns></returns>
         public static double[] CalculateEfficiencyPhotovoltaic(double[] Tamb, double[] I,
-    double pv_NCOT, double pv_T_aNCOT, double pv_P_NCOT, double pv_beta_ref, double pv_n_ref)
+    double NOCT, double T_aNOCT, double P_NOCT, double beta_ref, double n_ref)
         {
             int horizon = Tamb.Length;
             double[] nPV = new double[horizon];
 
             for (int t = 0; t < horizon; t++)
             {
-                double Tcell = Tamb[t] + ((pv_NCOT - pv_T_aNCOT) / pv_P_NCOT) * I[t];
-                nPV[t] = pv_n_ref * (1 - pv_beta_ref * (Tcell - 25));
+                double Tcell = Tamb[t] + ((NOCT - T_aNOCT) / P_NOCT) * I[t];
+                nPV[t] = n_ref * (1 - beta_ref * (Tcell - 25));
             }
             return nPV;
         }
@@ -63,14 +63,14 @@ namespace EhubMisc
         /// <param name="Tamb"></param>
         /// <param name="Tsup"></param>
         /// <returns></returns>
-        public static double[] CalculateCOPHeatPump(double[] Tamb, double Tsup, double hp_pi1, double hp_pi2, double hp_pi3, double hp_pi4)
+        public static double[] CalculateCOPHeatPump(double[] Tamb, double Tsup, double pi1, double pi2, double pi3, double pi4)
         {
             int horizon = Tamb.Length;
             double[] COP_HP = new double[horizon];
 
             for (int t = 0; t < horizon; t++)
             {
-                COP_HP[t] = hp_pi1 * Math.Exp(hp_pi2 * (Tsup - Tamb[t])) + hp_pi3 * Math.Exp(hp_pi4 * (Tsup - Tamb[t]));
+                COP_HP[t] = pi1 * Math.Exp(pi2 * (Tsup - Tamb[t])) + pi3 * Math.Exp(pi4 * (Tsup - Tamb[t]));
             }
             return COP_HP;
         }
