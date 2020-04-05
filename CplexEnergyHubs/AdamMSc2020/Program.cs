@@ -231,7 +231,7 @@ namespace AdamMSc2020
                 typicalSolarWeights,
                 typicalDays.DayProfiles[5],
                 technologyParameters);
-            ehub.Solve(5);
+            ehub.Solve(5, true);
 
 
             /// Storing Results
