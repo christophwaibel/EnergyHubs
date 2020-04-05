@@ -26,8 +26,6 @@ namespace AdamMSc2020
             const int numberOfTypicalDays = 12;
 
 
-
-
             Console.WriteLine();
             Console.WriteLine("Hi Adam! This is your EnergyHub.");
             Console.WriteLine();
@@ -233,9 +231,7 @@ namespace AdamMSc2020
                 typicalSolarWeights,
                 typicalDays.DayProfiles[5],
                 technologyParameters);
-            ehub.Solve(1);
-            // how to use the scaling factors properly? generally, only for oeprational cost and carbon emission, but not for tech sizing. However, for storage sizing, they need to be considered. Also for PV total production (feed in and storage)
-
+            ehub.Solve(5);
 
 
             /// Storing Results
@@ -247,7 +243,6 @@ namespace AdamMSc2020
             Console.WriteLine(@"*************************************************************************************");
             Console.WriteLine("Hit any key to close program...: ");
             Console.ReadKey();
-
 
         }
 

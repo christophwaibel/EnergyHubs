@@ -17,70 +17,70 @@ namespace AdamMSc2020
         internal EhubOutputs [] Outputs;
 
         #region inputs demand and typical days
-        public double [] CoolingDemand { get; private set; }
-        public double [] HeatingDemand { get; private set; }
-        public double [] ElectricityDemand { get; private set; }
-        public double [] DHWDemand { get; private set; }
-        public double [][] SolarLoads { get; private set; }
-        public double [] SolarAreas { get; private set; }
+        internal double [] CoolingDemand { get; private set; }
+        internal double [] HeatingDemand { get; private set; }
+        internal double [] ElectricityDemand { get; private set; }
+        internal double [] DHWDemand { get; private set; }
+        internal double [][] SolarLoads { get; private set; }
+        internal double [] SolarAreas { get; private set; }
 
-        public double[] CoolingWeights { get; private set; }
-        public double[] HeatingWeights { get; private set; }
-        public double[] ElectricityWeights { get; private set; }
-        public double[] DHWWeights { get; private set; }
-        public double[][] SolarWeights { get; private set; }
+        internal double[] CoolingWeights { get; private set; }
+        internal double[] HeatingWeights { get; private set; }
+        internal double[] ElectricityWeights { get; private set; }
+        internal double[] DHWWeights { get; private set; }
+        internal double[][] SolarWeights { get; private set; }
 
-        public int NumberOfSolarAreas { get; private set; }
+        internal int NumberOfSolarAreas { get; private set; }
 
-        public int Horizon { get; private set; }
+        internal int Horizon { get; private set; }
         #endregion
 
 
 
 
         #region inputs cost parameters
-        public double CostPV { get; private set; }
-        public double AnnuityPV { get; private set; }
-        public double c_PV { get; private set; }
-        public double [] c_Grid { get; private set; }
-        public double [] c_FeedIn { get; private set; }
-        public double InterestRate { get; private set; }
+        internal double CostPV { get; private set; }
+        internal double AnnuityPV { get; private set; }
+        internal double c_PV { get; private set; }
+        internal double [] c_Grid { get; private set; }
+        internal double [] c_FeedIn { get; private set; }
+        internal double InterestRate { get; private set; }
 
         #endregion
 
 
         #region inputs LCA parameters
-        public double[] lca_GridEmissions { get; private set; }
-        public double lca_PVEmissions { get; private set; }
+        internal double[] lca_GridEmissions { get; private set; }
+        internal double lca_PVEmissions { get; private set; }
 
         #endregion
 
 
         #region inputs technical parameters
-        public double LifetimePV { get; private set; }
-        public double[] AmbientTemperature { get; private set; }
-        public double[][] a_PVEfficiency { get; private set; }
+        internal double LifetimePV { get; private set; }
+        internal double[] AmbientTemperature { get; private set; }
+        internal double[][] a_PVEfficiency { get; private set; }
 
         /// <summary>
         /// Nominal operating cell temperature
         /// </summary>
-        public double pv_NOCT { get; private set; }
+        internal double pv_NOCT { get; private set; }
         /// <summary>
         /// reference temperature for NOCT
         /// </summary>
-        public double pv_T_aNOCT { get; private set; }
+        internal double pv_T_aNOCT { get; private set; }
         /// <summary>
         /// Irradiation of NOCT
         /// </summary>
-        public double pv_P_NOCT { get; private set; }
+        internal double pv_P_NOCT { get; private set; }
         /// <summary>
         /// temperature coefficient
         /// </summary>
-        public double pv_beta_ref { get; private set; }
+        internal double pv_beta_ref { get; private set; }
         /// <summary>
         /// PV efficiency under NOCT
         /// </summary>
-        public double pv_n_ref { get; private set; }
+        internal double pv_n_ref { get; private set; }
         #endregion
 
 
@@ -132,8 +132,6 @@ namespace AdamMSc2020
 
 
         }
-
-
 
 
         internal void Solve(int epsilonCuts)
@@ -305,8 +303,6 @@ namespace AdamMSc2020
                 opex.AddTerm(this.c_Grid[t], x_purchase[t]);
                 opex.AddTerm(this.c_FeedIn[t], x_feedin[t]);
             }
-
-
 
 
             /// Objective function
