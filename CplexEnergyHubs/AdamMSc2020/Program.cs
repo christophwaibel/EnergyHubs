@@ -123,6 +123,40 @@ namespace AdamMSc2020
                 }
             }
 
+            // load technology parameters
+            Dictionary<string, double> technologyParameters = new Dictionary<string, double>();
+            string technologyParametersFile = "technologyParameters.csv";
+            if (!File.Exists(path + technologyParametersFile))
+            {
+                WriteError();
+                Console.Write("'{0}' does not exist in '{1}'... Hit any key to abort the program: ", technologyParametersFile, path);
+                Console.ReadKey();
+                return;
+            }
+            else
+            {
+                string[] lines = File.ReadAllLines(path + technologyParametersFile);
+                for (int li = 0; li < lines.Length; li++)
+                {
+                    string[] split = lines[li].Split(new char[2] { ';', ',' });
+                    split = split.Where(x => !string.IsNullOrEmpty(x)).ToArray();
+                    if (split.Length != 2)
+                    {
+                        WriteError();
+                        Console.WriteLine("Reading line {0}:..... '{1}'", li+1, lines[li]);
+                        Console.Write("'{0}' contains {1} cells in line {2}, but it should only contain 2 - the first being a string and the second a number... Hit any key to abort the program: ",
+                            path + technologyParametersFile, split.Length, li+1); 
+                        Console.ReadKey();
+                        return;
+                    }
+                    else
+                    {
+                        if (technologyParameters.ContainsKey(split[0])) continue;
+                        technologyParameters.Add(split[0], Convert.ToDouble(split[1]));
+                    }
+                }
+            }
+
             // get length of "solar.csv", that determines how many solar profiles we have
             int numberOfSolarAreas = solar[0].Length;
 
@@ -197,7 +231,8 @@ namespace AdamMSc2020
                 typicalSolarLoads, solarArea.ToArray(),
                 typicalDays.ScalingFactorPerTimestep[0], typicalDays.ScalingFactorPerTimestep[1], typicalDays.ScalingFactorPerTimestep[2], typicalDays.ScalingFactorPerTimestep[4],
                 typicalSolarWeights,
-                typicalDays.DayProfiles[5]);
+                typicalDays.DayProfiles[5],
+                technologyParameters);
             ehub.Solve(1);
             // how to use the scaling factors properly? generally, only for oeprational cost and carbon emission, but not for tech sizing. However, for storage sizing, they need to be considered. Also for PV total production (feed in and storage)
 
