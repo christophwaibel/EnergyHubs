@@ -35,7 +35,8 @@ namespace AdamMSc2020
             Console.WriteLine(@"Please enter the path of your inputs folder in the following format: 'c:\inputs\'");
             Console.WriteLine("The folder should contain following '.csv' files:");
             Console.WriteLine();
-            string[] fileNames = new string[7] { "heatingLoads.csv", "coolingLoads.csv", "electricityLoads.csv", "ghi.csv", "dhwLoads.csv", "solarLoads.csv", "solarAreas.csv" };
+            string[] fileNames = new string[8] { "heatingLoads.csv", "coolingLoads.csv", "electricityLoads.csv", "ghi.csv", "dhwLoads.csv", "Tamb.csv",
+                "solarLoads.csv", "solarAreas.csv" };
             foreach (string fname in fileNames)
                 Console.WriteLine("- '{0}'", fname);
             int indexSolar = fileNames.Length - 2;
@@ -57,6 +58,7 @@ namespace AdamMSc2020
             List<double> electricity = new List<double>();
             List<double> ghi = new List<double>();
             List<double> dhw = new List<double>();
+            List<double> Tamb = new List<double>();
             List<double[]> solar = new List<double[]>();
             List<double> solarArea = new List<double>();
             foreach (string fname in fileNames)
@@ -102,6 +104,9 @@ namespace AdamMSc2020
                     else if (string.Equals(fname, "dhwLoads.csv"))
                         foreach (string line in lines)
                             dhw.Add(Convert.ToDouble(line));
+                    else if (string.Equals(fname, "Tamb.csv"))
+                        foreach (string line in lines)
+                            Tamb.Add(Convert.ToDouble(line));
                     else if (string.Equals(fname, "solarLoads.csv"))
                     {
                         for (int li = 0; li < lines.Length; li++)
@@ -131,20 +136,22 @@ namespace AdamMSc2020
 
             int numLoads = fileNames.Length - 2 + numberOfSolarAreas; // heating, cooling, electricity, solar. however, solar will include several profiles
             double[][] fullProfiles = new double[numLoads][];
+            string[] loadTypes = new string[numLoads];
+            bool[] peakDays = new bool[numLoads];
             for (int i = 0; i < numLoads; i++)
-                fullProfiles[i] = new double[hoursPerYear];               
-            string[] loadTypes = new string[numLoads]; 
+                fullProfiles[i] = new double[hoursPerYear];
             loadTypes[0] = "heating";
             loadTypes[1] = "cooling";
             loadTypes[2] = "electricity";
             loadTypes[3] = "ghi";
             loadTypes[4] = "dhw";
-            bool[] peakDays = new bool[numLoads]; 
+            loadTypes[5] = "Tamb";
             peakDays[0] = true;
             peakDays[1] = true;
             peakDays[2] = true;
             peakDays[3] = false;
             peakDays[4] = false;
+            peakDays[5] = false;
 
             bool[] useForClustering = new bool[fullProfiles.Length]; // specificy here, which load is used for clustering. the others are just reshaped
             for (int t = 0; t < hoursPerYear; t++) 
@@ -154,11 +161,13 @@ namespace AdamMSc2020
                 fullProfiles[2][t] = electricity[t];
                 fullProfiles[3][t] = ghi[t];
                 fullProfiles[4][t] = dhw[t];
+                fullProfiles[5][t] = Tamb[t];
                 useForClustering[0] = true;
                 useForClustering[1] = true;
                 useForClustering[2] = true;
                 useForClustering[3] = true;
                 useForClustering[4] = false;
+                useForClustering[5] = false;
             }
 
             for (int i = indexSolar; i < numLoads; i++) 
@@ -187,7 +196,8 @@ namespace AdamMSc2020
             Ehub ehub = new Ehub(typicalDays.DayProfiles[0], typicalDays.DayProfiles[1], typicalDays.DayProfiles[2], typicalDays.DayProfiles[4],
                 typicalSolarLoads, solarArea.ToArray(),
                 typicalDays.ScalingFactorPerTimestep[0], typicalDays.ScalingFactorPerTimestep[1], typicalDays.ScalingFactorPerTimestep[2], typicalDays.ScalingFactorPerTimestep[4],
-                typicalSolarWeights);
+                typicalSolarWeights,
+                typicalDays.DayProfiles[5]);
             ehub.Solve(1);
             // how to use the scaling factors properly? generally, only for oeprational cost and carbon emission, but not for tech sizing. However, for storage sizing, they need to be considered. Also for PV total production (feed in and storage)
 
@@ -213,7 +223,9 @@ namespace AdamMSc2020
             foreach (string d in dog)
                 Console.WriteLine(d);
 
-            Console.WriteLine("Debug-Puppy found an error...");
+            Console.WriteLine();
+            Console.WriteLine("                      Debug-Puppy found an error...");
+            Console.WriteLine();
             //Console.WriteLine(errorMessage);
             //Console.WriteLine("Hit any key to abort program...");
             //Console.ReadKey();

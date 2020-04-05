@@ -16,6 +16,7 @@ namespace AdamMSc2020
         /// </summary>
         internal EhubOutputs [] Outputs;
 
+        #region inputs demand and typical days
         public double [] CoolingDemand { get; private set; }
         public double [] HeatingDemand { get; private set; }
         public double [] ElectricityDemand { get; private set; }
@@ -32,29 +33,35 @@ namespace AdamMSc2020
         public int NumberOfSolarAreas { get; private set; }
 
         public int Horizon { get; private set; }
+        #endregion
 
 
-
+        #region inputs cost parameters
         public double c_PV { get; private set; }
         public double [] c_Grid { get; private set; }
         public double [] c_FeedIn { get; private set; }
 
+        #endregion
 
 
+        #region LCA parameters
+        public double[] lca_GridEmissions { get; private set; }
+        public double lca_PVEmissions { get; private set; }
 
-        #region technology efficiencies
+        #endregion
+
+
+        #region inputs technology parameters (no cost and carbon)
         public double[] AmbientTemperature { get; private set; }
         public double[][] a_PVEfficiency { get; private set; }
 
         #endregion
 
 
-        public double[] lca_GridEmissions { get; private set; }
-        public double lca_PVEmissions { get; private set; }
+        #region MILP stuff
+        private const double M = 9999999;   // Big M method
 
-
-        private const double M = 9999999;
-
+        #endregion
 
 
         /// <summary>
@@ -70,7 +77,8 @@ namespace AdamMSc2020
         internal Ehub(double [] heatingDemand, double[] coolingDemand, double[] electricityDemand, double [] dhwDemand,
             double[][] irradiance, double [] solarTechSurfaceAreas,
             double [] weightsOfHeatingLoads, double [] weightsOfCoolingLoads, double [] weightsOfElectricityLoads, double [] weightsOfDHWLoads, 
-            double [][] weightsOfSolarLoads)
+            double [][] weightsOfSolarLoads,
+            double [] ambientTemperature)
         {
             this.CoolingDemand = coolingDemand;
             this.HeatingDemand = heatingDemand;
@@ -92,10 +100,11 @@ namespace AdamMSc2020
 
             /// read in these parameters as struct parameters
             /// 
+            this.AmbientTemperature = ambientTemperature;
+
             this.c_PV = 100.0;
             this.c_FeedIn = new double[this.Horizon];
             this.c_Grid = new double[this.Horizon];
-            this.AmbientTemperature = new double[this.Horizon];
             this.lca_GridEmissions = new double[this.Horizon];
             this.lca_PVEmissions = 0.0;
 
@@ -103,7 +112,6 @@ namespace AdamMSc2020
             {
                 this.c_FeedIn[t] = -0.15;
                 this.c_Grid[t] = 0.15;
-                this.AmbientTemperature[t] = 10.0;
                 this.lca_GridEmissions[t] = 0.49;
             }
 
