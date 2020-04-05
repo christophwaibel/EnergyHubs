@@ -495,10 +495,35 @@ namespace AdamMSc2020
             /// outputs
             /// 
             EhubOutputs solution = new EhubOutputs();
+            if (!success) return solution;
+            
             solution.carbon = cpl.GetValue(carbonEmissions);
             solution.OPEX = cpl.GetValue(opex) + OM_PV;
             solution.CAPEX = cpl.GetValue(capex);
             solution.cost = solution.OPEX + solution.CAPEX;
+
+            solution.x_pv = new double[this.NumberOfSolarAreas];
+            for (int i = 0; i < this.NumberOfSolarAreas; i++)
+                solution.x_pv[i] = cpl.GetValue(x_PV[i]);
+            solution.x_bat = cpl.GetValue(x_Battery);
+
+            solution.b_pvprod = new double[this.Horizon];
+            solution.b_pvprodUnscaled = new double[this.Horizon];
+            solution.x_batcharge = new double[this.Horizon];
+            solution.x_batdischarge = new double[this.Horizon];
+            solution.x_batsoc = new double[this.Horizon];
+            solution.x_elecpur = new double[this.Horizon];
+            solution.x_feedin = new double[this.Horizon];
+            for (int t = 0; t < this.Horizon; t++)
+            {
+                solution.b_pvprod[t] = cpl.GetValue(x_PV_productionScaled[t]);
+                solution.b_pvprodUnscaled[t] = cpl.GetValue(x_PV_production[t]);
+                solution.x_batcharge[t] = cpl.GetValue(x_BatteryCharge[t]);
+                solution.x_batdischarge[t] = cpl.GetValue(x_BatteryDischarge[t]);
+                solution.x_batsoc[t] = cpl.GetValue(x_BatteryStored[t]);
+                solution.x_elecpur[t] = cpl.GetValue(x_Purchase[t]);
+                solution.x_feedin[t] = cpl.GetValue(x_FeedIn[t]);
+            }
             return solution;
         }
     }
