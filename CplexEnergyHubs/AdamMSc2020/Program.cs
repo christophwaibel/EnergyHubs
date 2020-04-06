@@ -37,7 +37,7 @@ namespace AdamMSc2020
                 "solarLoads.csv", "solarAreas.csv" };
             foreach (string fname in fileNames)
                 Console.WriteLine("- '{0}'", fname);
-            int indexSolar = fileNames.Length - 2;
+            int indexSolar = fileNames.Length - 3;  // solar areas, solar loads, and dhw
             Console.WriteLine();
             Console.WriteLine(@"*************************************************************************************");
             Console.Write("Enter your path now and confirm by hitting the Enter-key: ");
@@ -166,7 +166,7 @@ namespace AdamMSc2020
             Console.WriteLine(@"*************************************************************************************");
             Console.WriteLine("Clustering and Generating typical days...");
 
-            int numLoads = fileNames.Length - 2 + numberOfSolarAreas; // heating, cooling, electricity, solar. however, solar will include several profiles
+            int numLoads = fileNames.Length - 2 + numberOfSolarAreas - 1; // heating, cooling, electricity, solar. however, solar will include several profiles. - 1 dhw
             double[][] fullProfiles = new double[numLoads][];
             string[] loadTypes = new string[numLoads];
             bool[] peakDays = new bool[numLoads];
@@ -176,30 +176,26 @@ namespace AdamMSc2020
             loadTypes[1] = "cooling";
             loadTypes[2] = "electricity";
             loadTypes[3] = "ghi";
-            loadTypes[4] = "dhw";
-            loadTypes[5] = "Tamb";
+            loadTypes[4] = "Tamb";
             peakDays[0] = true;
             peakDays[1] = true;
             peakDays[2] = true;
             peakDays[3] = false;
             peakDays[4] = false;
-            peakDays[5] = false;
 
             bool[] useForClustering = new bool[fullProfiles.Length]; // specificy here, which load is used for clustering. the others are just reshaped
             for (int t = 0; t < hoursPerYear; t++) 
             { 
-                fullProfiles[0][t] = heating[t];
+                fullProfiles[0][t] = heating[t] + dhw[t];
                 fullProfiles[1][t] = cooling[t];
                 fullProfiles[2][t] = electricity[t];
                 fullProfiles[3][t] = ghi[t];
-                fullProfiles[4][t] = dhw[t];
-                fullProfiles[5][t] = Tamb[t];
+                fullProfiles[4][t] = Tamb[t];
                 useForClustering[0] = true;
                 useForClustering[1] = true;
                 useForClustering[2] = true;
                 useForClustering[3] = true;
                 useForClustering[4] = false;
-                useForClustering[5] = false;
             }
 
             for (int i = indexSolar; i < numLoads; i++) 
@@ -225,11 +221,11 @@ namespace AdamMSc2020
                 typicalSolarLoads[i] = typicalDays.DayProfiles[indexSolar + i];
                 typicalSolarWeights[i] = typicalDays.ScalingFactorPerTimestep[indexSolar + i];
             }
-            Ehub ehub = new Ehub(typicalDays.DayProfiles[0], typicalDays.DayProfiles[1], typicalDays.DayProfiles[2], typicalDays.DayProfiles[4],
+            Ehub ehub = new Ehub(typicalDays.DayProfiles[0], typicalDays.DayProfiles[1], typicalDays.DayProfiles[2],
                 typicalSolarLoads, solarArea.ToArray(),
-                typicalDays.ScalingFactorPerTimestep[0], typicalDays.ScalingFactorPerTimestep[1], typicalDays.ScalingFactorPerTimestep[2], typicalDays.ScalingFactorPerTimestep[4],
+                typicalDays.ScalingFactorPerTimestep[0], typicalDays.ScalingFactorPerTimestep[1], typicalDays.ScalingFactorPerTimestep[2], 
                 typicalSolarWeights,
-                typicalDays.DayProfiles[5],
+                typicalDays.DayProfiles[4],
                 technologyParameters);
             ehub.Solve(5, true);
 

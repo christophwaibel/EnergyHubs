@@ -22,14 +22,12 @@ namespace AdamMSc2020
         internal double[] CoolingDemand { get; private set; }
         internal double[] HeatingDemand { get; private set; }
         internal double[] ElectricityDemand { get; private set; }
-        internal double[] DHWDemand { get; private set; }
         internal double[][] SolarLoads { get; private set; }
         internal double[] SolarAreas { get; private set; }
 
         internal double[] CoolingWeights { get; private set; }
         internal double[] HeatingWeights { get; private set; }
         internal double[] ElectricityWeights { get; private set; }
-        internal double[] DHWWeights { get; private set; }
         internal double[][] SolarWeights { get; private set; }
 
         internal int NumberOfSolarAreas { get; private set; }
@@ -185,13 +183,12 @@ namespace AdamMSc2020
         /// <param name="heatingDemand"></param>
         /// <param name="coolingDemand"></param>
         /// <param name="electricityDemand"></param>
-        /// <param name="dhwDemand"></param>
         /// <param name="irradiance"></param>
         /// <param name="solarTechSurfaceAreas"></param>
         /// <param name="weightsOfLoads">If typical days are used, these weights are used to account for how many days a typical day represents</param>
-        internal Ehub(double [] heatingDemand, double[] coolingDemand, double[] electricityDemand, double [] dhwDemand,
+        internal Ehub(double [] heatingDemand, double[] coolingDemand, double[] electricityDemand,
             double[][] irradiance, double [] solarTechSurfaceAreas,
-            double [] weightsOfHeatingLoads, double [] weightsOfCoolingLoads, double [] weightsOfElectricityLoads, double [] weightsOfDHWLoads, 
+            double [] weightsOfHeatingLoads, double [] weightsOfCoolingLoads, double [] weightsOfElectricityLoads, 
             double [][] weightsOfSolarLoads,
             double [] ambientTemperature,
             Dictionary<string, double> technologyParameters)
@@ -199,14 +196,12 @@ namespace AdamMSc2020
             this.CoolingDemand = coolingDemand;
             this.HeatingDemand = heatingDemand;
             this.ElectricityDemand = electricityDemand;
-            this.DHWDemand = dhwDemand;
             this.SolarLoads = irradiance;
             this.SolarAreas = solarTechSurfaceAreas;
 
             this.CoolingWeights = weightsOfCoolingLoads;
             this.HeatingWeights = weightsOfHeatingLoads;
             this.ElectricityWeights = weightsOfElectricityLoads;
-            this.DHWWeights = weightsOfDHWLoads;
             this.SolarWeights = weightsOfSolarLoads;
 
             this.NumberOfSolarAreas = solarTechSurfaceAreas.Length;
@@ -679,9 +674,9 @@ namespace AdamMSc2020
                 // elec demand must be met by PV production, battery and grid, minus feed in
                 for (int i = 0; i < this.NumberOfSolarAreas; i++)
                 {
-                    double pvElec = this.SolarLoads[i][t] * this.SolarWeights[i][t] * 0.001 * a_PV_Efficiency[i][t];
+                    double pvElec = this.SolarLoads[i][t]  * 0.001 * this.a_PV_Efficiency[i][t];
                     elecGeneration.AddTerm(pvElec, x_PV[i]);
-                    x_PV_production[t].AddTerm(this.SolarLoads[i][t] * 0.001 * a_PV_Efficiency[i][t], x_PV[i]);
+                    x_PV_production[t].AddTerm(this.SolarLoads[i][t] * 0.001 * this.a_PV_Efficiency[i][t], x_PV[i]);
                     x_PV_productionScaled[t].AddTerm(pvElec, x_PV[i]);
                     OM_PV += pvElec * this.c_PV_OM;
                 }
@@ -731,9 +726,9 @@ namespace AdamMSc2020
 
                 /// ////////////////////////////////////////////////////////////////////////
                 /// Energy Balance
-                cpl.AddEq(x_AirCon_op[t], this.CoolingDemand[t] * this.CoolingWeights[t]);
-                cpl.AddEq(cpl.Diff(thermalGeneration, thermalAdditionalDemand), this.HeatingDemand[t] * this.HeatingWeights[t]);
-                cpl.AddGe(cpl.Diff(elecGeneration, elecAdditionalDemand), this.ElectricityDemand[t] * this.ElectricityWeights[t]);
+                cpl.AddEq(x_AirCon_op[t], this.CoolingDemand[t] );
+                cpl.AddEq(cpl.Diff(thermalGeneration, thermalAdditionalDemand), this.HeatingDemand[t] );
+                cpl.AddGe(cpl.Diff(elecGeneration, elecAdditionalDemand), this.ElectricityDemand[t] );
             }
 
 
@@ -857,15 +852,14 @@ namespace AdamMSc2020
 
             //if (!this.multithreading)
             //    cpl.SetParam(Cplex.Param.Threads, 1);
-
+            EhubOutputs solution = new EhubOutputs();
             try
             {
                 bool success = cpl.Solve();
+                if (!success) return solution;
                 /// ////////////////////////////////////////////////////////////////////////
                 /// Outputs
                 /// ////////////////////////////////////////////////////////////////////////
-                EhubOutputs solution = new EhubOutputs();
-                if (!success) return solution;
 
                 solution.carbon = cpl.GetValue(carbonEmissions);
                 solution.OPEX = cpl.GetValue(opex) + OM_PV;
@@ -922,7 +916,7 @@ namespace AdamMSc2020
             }
             catch
             {
-                return new EhubOutputs();
+                return solution;
             }
         }
     }
