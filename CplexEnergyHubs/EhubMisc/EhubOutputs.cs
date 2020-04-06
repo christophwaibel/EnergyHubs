@@ -22,17 +22,18 @@
         // Operation. Time resolved.
         internal double[] x_elecpur;        // purchase from grid
         internal double[] x_feedin;         // feedin
-        internal double[] x_batdischarge;   // battery discharge
-        internal double[] x_batcharge;      // battery charge
-        internal double[] x_batsoc;         // battery state of charge
-        internal double[] x_tesdischarge;   // thermal energy storage (tes) discharge
-        internal double[] x_tescharge;      // tes charge
-        internal double[] x_tessoc;         // tes state of charge
+        internal double[] x_bat_discharge;   // battery discharge
+        internal double[] x_bat_charge;      // battery charge
+        internal double[] x_bat_soc;         // battery state of charge
+        internal double[] x_tes_discharge;   // thermal energy storage (tes) discharge
+        internal double[] x_tes_charge;      // tes charge
+        internal double[] x_tes_soc;         // tes state of charge
         internal double[] x_hp_op;          // heat pump operation
         internal double[] x_boi_op;         // boiler operation
         internal double[] x_chp_op_e;       // chp operation electricity
         internal double[] x_chp_op_h;       // chp operation heat
         internal double[] x_chp_dump;       // chp heat dumped
+        internal double[] x_ac_op;          // air con operation
 
         internal double[] b_pvprod;     // total pv production
         internal double[] b_pvprod_Roof;// pv production roof

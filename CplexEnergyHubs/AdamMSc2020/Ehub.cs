@@ -97,7 +97,8 @@ namespace AdamMSc2020
         internal double tes_decay { get; private set; }
         internal double tes_max_ch { get; private set; }
         internal double tes_max_disch { get; private set; }
-    
+        internal double b_MaxTES { get; private set; }
+
         #endregion
 
 
@@ -124,6 +125,7 @@ namespace AdamMSc2020
         /// Cost Parameters
         /// ////////////////////////////////////////////////////////////////////////
         internal double InterestRate { get; private set; }
+        internal double c_NaturalGas { get; private set; }
 
         // Investment Cost
         internal double CostPV { get; private set; }
@@ -166,12 +168,12 @@ namespace AdamMSc2020
         internal double[] c_FeedIn { get; private set; }
         #endregion
 
-   
 
+
+        #region MILP stuff
         /// ////////////////////////////////////////////////////////////////////////
         /// MILP
         /// ////////////////////////////////////////////////////////////////////////
-        #region MILP stuff
         private const double M = 9999999;   // Big M method
         #endregion
 
@@ -216,8 +218,6 @@ namespace AdamMSc2020
             /// 
             this.AmbientTemperature = ambientTemperature;
             this.SetParameters(technologyParameters);
-
-
         }
 
 
@@ -353,6 +353,10 @@ namespace AdamMSc2020
                 this.bat_min_state = 0.3;
 
             // TES
+            if (technologyParameters.ContainsKey("b_MaxTES"))
+                this.b_MaxTES = technologyParameters["b_MaxTES"];
+            else
+                this.b_MaxTES = 1400.0;
             if (technologyParameters.ContainsKey("tes_ch_eff"))
                 this.tes_ch_eff = technologyParameters["tes_ch_eff"];
             else
@@ -425,6 +429,11 @@ namespace AdamMSc2020
                 this.InterestRate = technologyParameters["InterestRate"];
             else
                 this.InterestRate = 0.08;
+            if (technologyParameters.ContainsKey("c_NaturalGas"))
+                this.c_NaturalGas = technologyParameters["c_NaturalGas"];
+            else
+                this.c_NaturalGas = 0.09;
+
 
             this.c_FeedIn = new double[this.Horizon];
             this.c_Grid = new double[this.Horizon];
@@ -566,48 +575,108 @@ namespace AdamMSc2020
             /// Variables
             /// ////////////////////////////////////////////////////////////////////////
 
-            // PV
-            INumVar[] x_PV = new INumVar[this.NumberOfSolarAreas];
-            ILinearNumExpr[] x_PV_production = new ILinearNumExpr[this.Horizon];  // dummy expression to store total PV electricity production
-            ILinearNumExpr[] x_PV_productionScaled = new ILinearNumExpr[this.Horizon];  // dummy expression to store total PV electricity production. scaled with individual weights
-            double OM_PV = 0.0; // operation maintanence for PV
-
-            for (int i = 0; i < this.NumberOfSolarAreas; i++)
-                x_PV[i] = cpl.NumVar(0, this.SolarAreas[i]);
-
-            INumVar[] y = new INumVar[this.Horizon];    // binary to indicate if PV is used (=1). no selling and purchasing from the grid at the same time allowed
+            // grid
             INumVar[] x_Purchase = new INumVar[this.Horizon];
             INumVar[] x_FeedIn = new INumVar[this.Horizon];
 
+            // PV
+            INumVar[] x_PV = new INumVar[this.NumberOfSolarAreas];
+            ILinearNumExpr[] x_PV_production = new ILinearNumExpr[Horizon];  // dummy expression to store total PV electricity production
+            ILinearNumExpr[] x_PV_productionScaled = new ILinearNumExpr[this.Horizon];  // dummy expression to store total PV electricity production. scaled with individual weights
+            double OM_PV = 0.0; // operation maintanence for PV
+            for (int i = 0; i < this.NumberOfSolarAreas; i++)
+                x_PV[i] = cpl.NumVar(0, this.SolarAreas[i]);
+            INumVar[] y_PV = new INumVar[this.Horizon];    // binary to indicate if PV is used (=1). no selling and purchasing from the grid at the same time allowed
+            
+            // AirCon
+            INumVar x_AirCon = cpl.NumVar(0.0, System.Double.MaxValue);
+            INumVar[] x_AirCon_op = new INumVar[this.Horizon];
+
+            // Boiler
+            INumVar x_Boiler = cpl.NumVar(0.0, System.Double.MaxValue);
+            INumVar[] x_Boiler_op = new INumVar[this.Horizon];
+
+            // CHP
+            INumVar x_CHP = cpl.NumVar(0.0, System.Double.MaxValue);
+            INumVar[] x_CHP_op_e = new INumVar[this.Horizon];
+            INumVar[] x_CHP_op_th = new INumVar[this.Horizon];
+            INumVar[] x_CHP_op_dump = new INumVar[this.Horizon];
+
+            // ASHP
+            INumVar x_ASHP = cpl.NumVar(0.0, System.Double.MaxValue);
+            INumVar[] x_ASHP_op = new INumVar[this.Horizon];
+
             // Battery
             INumVar x_Battery = cpl.NumVar(0.0, this.b_MaxBattery);     // kWh
-            INumVar[] x_BatteryCharge = new INumVar[this.Horizon];      // kW
-            INumVar[] x_BatteryDischarge = new INumVar[this.Horizon];   // kW
-            INumVar[] x_BatteryStored = new INumVar[this.Horizon];      // kW
+            INumVar[] x_Battery_charge = new INumVar[this.Horizon];     // kW
+            INumVar[] x_Battery_discharge = new INumVar[this.Horizon];  // kW
+            INumVar[] x_Battery_soc = new INumVar[this.Horizon];        // kWh
+
+            // TES
+            INumVar x_TES = cpl.NumVar(0.0, this.b_MaxTES);             // kWh
+            INumVar[] x_TES_charge = new INumVar[this.Horizon];         // kW
+            INumVar[] x_TES_discharge = new INumVar[this.Horizon];      // kW
+            INumVar[] x_TES_soc = new INumVar[this.Horizon];            // kWh
 
             for (int t = 0; t < this.Horizon; t++)
             {
-                y[t] = cpl.BoolVar();
+                y_PV[t] = cpl.BoolVar();
                 x_Purchase[t] = cpl.NumVar(0, System.Double.MaxValue);
                 x_FeedIn[t] = cpl.NumVar(0, System.Double.MaxValue);
                 x_PV_production[t] = cpl.LinearNumExpr();
                 x_PV_productionScaled[t] = cpl.LinearNumExpr();
 
-                x_BatteryCharge[t] = cpl.NumVar(0.0, System.Double.MaxValue);
-                x_BatteryDischarge[t] = cpl.NumVar(0.0, System.Double.MaxValue);
-                x_BatteryStored[t] = cpl.NumVar(0.0, System.Double.MaxValue);
+                x_CHP_op_e[t] = cpl.NumVar(0.0, System.Double.MaxValue);
+                x_CHP_op_th[t] = cpl.NumVar(0.0, System.Double.MaxValue);
+                x_CHP_op_dump[t] = cpl.NumVar(0.0, System.Double.MaxValue);
+
+                x_AirCon_op[t] = cpl.NumVar(0.0, System.Double.MaxValue);
+                x_Boiler_op[t] = cpl.NumVar(0.0, System.Double.MaxValue);
+                x_ASHP_op[t] = cpl.NumVar(0.0, System.Double.MaxValue);
+
+                x_Battery_charge[t] = cpl.NumVar(0.0, System.Double.MaxValue);
+                x_Battery_discharge[t] = cpl.NumVar(0.0, System.Double.MaxValue);
+                x_Battery_soc[t] = cpl.NumVar(0.0, System.Double.MaxValue);
+
+                x_TES_charge[t] = cpl.NumVar(0.0, System.Double.MaxValue);
+                x_TES_discharge[t] = cpl.NumVar(0.0, System.Double.MaxValue);
+                x_TES_soc[t] = cpl.NumVar(0.0, System.Double.MaxValue);
             }
 
 
             /// ////////////////////////////////////////////////////////////////////////
             /// Constraints
             /// ////////////////////////////////////////////////////////////////////////
+            /// 
+
+            // meeting demands
             ILinearNumExpr carbonEmissions = cpl.LinearNumExpr();
             for(int t=0; t<this.Horizon; t++)
             {
-                // elec demand must be met by PV production, battery and grid, minus feed in
                 ILinearNumExpr elecGeneration = cpl.LinearNumExpr();
                 ILinearNumExpr elecAdditionalDemand = cpl.LinearNumExpr();
+                ILinearNumExpr thermalGeneration = cpl.LinearNumExpr();
+                ILinearNumExpr thermalAdditionalDemand = cpl.LinearNumExpr();
+
+                /// ////////////////////////////////////////////////////////////////////////
+                /// Cooling
+                elecAdditionalDemand.AddTerm(1 / this.a_AirCon_Efficiency[t], x_AirCon_op[t]);
+
+
+                /// ////////////////////////////////////////////////////////////////////////
+                /// Heating
+                thermalGeneration.AddTerm(1, x_Boiler_op[t]);
+                thermalGeneration.AddTerm(1, x_CHP_op_th[t]);
+                thermalGeneration.AddTerm(1, x_ASHP_op[t]);
+                thermalGeneration.AddTerm(1, x_TES_discharge[t]);
+                elecAdditionalDemand.AddTerm(1 / this.a_ASHP_Efficiency[t], x_ASHP_op[t]);
+                thermalAdditionalDemand.AddTerm(1, x_TES_charge[t]);
+                thermalAdditionalDemand.AddTerm(1, x_CHP_op_dump[t]);
+
+
+                /// ////////////////////////////////////////////////////////////////////////
+                /// Electricity
+                // elec demand must be met by PV production, battery and grid, minus feed in
                 for (int i = 0; i < this.NumberOfSolarAreas; i++)
                 {
                     double pvElec = this.SolarLoads[i][t] * this.SolarWeights[i][t] * 0.001 * a_PV_Efficiency[i][t];
@@ -617,42 +686,98 @@ namespace AdamMSc2020
                     OM_PV += pvElec * this.c_PV_OM;
                 }
                 elecGeneration.AddTerm(1, x_Purchase[t]);
-                elecGeneration.AddTerm(1, x_BatteryDischarge[t]);
+                elecGeneration.AddTerm(1, x_Battery_discharge[t]);
+                elecGeneration.AddTerm(this.c_chp_htp, x_CHP_op_e[t]);
                 elecAdditionalDemand.AddTerm(1, x_FeedIn[t]);
-                elecAdditionalDemand.AddTerm(1, x_BatteryCharge[t]);
-                cpl.AddGe(cpl.Diff(elecGeneration, elecAdditionalDemand), this.ElectricityDemand[t] * this.ElectricityWeights[t]);
+                elecAdditionalDemand.AddTerm(1, x_Battery_charge[t]);
 
+
+                /// ////////////////////////////////////////////////////////////////////////
+                /// PV Technical Constraints
                 // pv production must be greater equal feedin
                 cpl.AddGe(x_PV_productionScaled[t], x_FeedIn[t]);
-
                 // donnot allow feedin and purchase at the same time. y = 1 means elec is produced
-                cpl.AddLe(x_Purchase[t], cpl.Prod(M, y[t]));    
-                cpl.AddLe(x_FeedIn[t], cpl.Prod(M, cpl.Diff(1, y[t])));
+                cpl.AddLe(x_Purchase[t], cpl.Prod(M, y_PV[t]));    
+                cpl.AddLe(x_FeedIn[t], cpl.Prod(M, cpl.Diff(1, y_PV[t])));
 
-                // co2 emissions from grid
-                carbonEmissions.AddTerm((this.lca_GridElectricity / 1000), x_Purchase[t]);
+
+                /// ////////////////////////////////////////////////////////////////////////
+                /// CHP Technical Constraints
+                // heat recovery and heat dump from CHP is equal to electricity generation by CHP times heat to power ratio
+                ILinearNumExpr chpheatrecov = cpl.LinearNumExpr();
+                ILinearNumExpr chpheatfromelec = cpl.LinearNumExpr();
+                chpheatrecov.AddTerm(1, x_CHP_op_th[t]);
+                chpheatrecov.AddTerm(1, x_CHP_op_dump[t]);
+                chpheatfromelec.AddTerm(this.c_chp_htp, x_CHP_op_e[t]);
+                cpl.AddEq(chpheatrecov, chpheatfromelec);
+                // Limiting the amount of heat that chps can dump
+                cpl.AddLe(x_CHP_op_dump[t], cpl.Prod(this.c_chp_heatdump, x_CHP_op_th[t]));
+
+
+                /// ////////////////////////////////////////////////////////////////////////
+                /// Sizing
+                cpl.AddLe(x_AirCon_op[t], x_AirCon);
+                cpl.AddLe(x_CHP_op_e[t], x_CHP);
+                cpl.AddLe(x_Boiler_op[t], x_Boiler);
+                cpl.AddLe(x_ASHP_op[t], x_ASHP);
+
+
+                /// ////////////////////////////////////////////////////////////////////////
+                /// Emissions
+                carbonEmissions.AddTerm(this.lca_GridElectricity, x_Purchase[t]);     // data needs to be kgCO2eq./kWh
+                carbonEmissions.AddTerm(1/this.lca_NaturalGas, x_Boiler_op[t]);
+                carbonEmissions.AddTerm(1 / this.lca_NaturalGas, x_CHP_op_e[t]);
+
+
+                /// ////////////////////////////////////////////////////////////////////////
+                /// Energy Balance
+                cpl.AddEq(x_AirCon_op[t], this.CoolingDemand[t] * this.CoolingWeights[t]);
+                cpl.AddEq(cpl.Diff(thermalGeneration, thermalAdditionalDemand), this.HeatingDemand[t] * this.HeatingWeights[t]);
+                cpl.AddGe(cpl.Diff(elecGeneration, elecAdditionalDemand), this.ElectricityDemand[t] * this.ElectricityWeights[t]);
             }
 
-            // battery model
+
+            /// ////////////////////////////////////////////////////////////////////////
+            /// battery model
             for (int t=0; t<this.Horizon-1; t++)
             {
                 ILinearNumExpr batteryState = cpl.LinearNumExpr();
-                batteryState.AddTerm((1 - this.bat_decay), x_BatteryStored[t]);
-                batteryState.AddTerm(this.bat_ch_eff, x_BatteryCharge[t]);
-                batteryState.AddTerm(-1 / this.bat_disch_eff, x_BatteryDischarge[t]);
-                cpl.AddEq(x_BatteryStored[t + 1], batteryState);
+                batteryState.AddTerm((1 - this.bat_decay), x_Battery_soc[t]);
+                batteryState.AddTerm(this.bat_ch_eff, x_Battery_charge[t]);
+                batteryState.AddTerm(-1 / this.bat_disch_eff, x_Battery_discharge[t]);
+                cpl.AddEq(x_Battery_soc[t + 1], batteryState);
             }
-            cpl.AddGe(x_BatteryStored[0], cpl.Prod(x_Battery, this.bat_min_state)); // initial state of battery >= min_state
-            cpl.AddEq(x_BatteryStored[0], cpl.Diff(x_BatteryStored[this.Horizon - 1], x_BatteryDischarge[this.Horizon - 1])); // initial state equals the last state minis discharge at last timestep
-            cpl.AddEq(x_BatteryDischarge[0], 0);        // no discharge at t=0
+            cpl.AddGe(x_Battery_soc[0], cpl.Prod(x_Battery, this.bat_min_state)); // initial state of battery >= min_state
+            cpl.AddEq(x_Battery_soc[0], cpl.Diff(x_Battery_soc[this.Horizon - 1], x_Battery_discharge[this.Horizon - 1])); // initial state equals the last state minis discharge at last timestep
+            cpl.AddEq(x_Battery_discharge[0], 0);        // no discharge at t=0
 
             for (int t=0; t<this.Horizon; t++)
             {
-                cpl.AddGe(x_BatteryStored[t], cpl.Prod(x_Battery, this.bat_min_state));     // min state of charge
-                cpl.AddLe(x_BatteryCharge[t], cpl.Prod(x_Battery, this.bat_max_ch));        // battery charging
-                cpl.AddLe(x_BatteryDischarge[t], cpl.Prod(x_Battery, this.bat_max_disch));  // battery discharging
-                cpl.AddLe(x_BatteryStored[t], x_Battery);                                   // battery sizing
+                cpl.AddGe(x_Battery_soc[t], cpl.Prod(x_Battery, this.bat_min_state));     // min state of charge
+                cpl.AddLe(x_Battery_charge[t], cpl.Prod(x_Battery, this.bat_max_ch));        // battery charging
+                cpl.AddLe(x_Battery_discharge[t], cpl.Prod(x_Battery, this.bat_max_disch));  // battery discharging
+                cpl.AddLe(x_Battery_soc[t], x_Battery);                                   // battery sizing
             }
+
+            /// ////////////////////////////////////////////////////////////////////////
+            /// TES model
+            for (int t = 0; t < this.Horizon - 1; t++)
+            {
+                ILinearNumExpr tesState = cpl.LinearNumExpr();
+                tesState.AddTerm((1 - this.tes_decay), x_TES_soc[t]);
+                tesState.AddTerm(this.tes_ch_eff, x_TES_charge[t]);
+                tesState.AddTerm(-1 / this.tes_disch_eff, x_TES_discharge[t]);
+                cpl.AddEq(x_TES_soc[t + 1], tesState);
+            }
+            cpl.AddEq(x_TES_soc[0], x_TES_soc[this.Horizon - 1]);
+            cpl.AddEq(x_TES_discharge[0], 0);
+            for (int t = 0; t < this.Horizon; t++)
+            {
+                cpl.AddLe(x_TES_charge[t], cpl.Prod(x_TES, this.tes_max_ch));
+                cpl.AddLe(x_TES_discharge[t], cpl.Prod(x_TES, this.tes_max_disch));
+                cpl.AddLe(x_TES_soc[t], x_TES);
+            }
+
 
 
             /// ////////////////////////////////////////////////////////////////////////
@@ -661,6 +786,11 @@ namespace AdamMSc2020
             for (int i=0; i<this.NumberOfSolarAreas; i++)
                 carbonEmissions.AddTerm(this.lca_PV, x_PV[i]);
             carbonEmissions.AddTerm(this.lca_Battery, x_Battery);
+            carbonEmissions.AddTerm(this.lca_AirCon, x_AirCon);
+            carbonEmissions.AddTerm(this.lca_ASHP, x_ASHP);
+            carbonEmissions.AddTerm(this.lca_Boiler, x_Boiler);
+            carbonEmissions.AddTerm(this.lca_CHP, x_CHP);
+            carbonEmissions.AddTerm(this.lca_TES, x_TES);
 
             /// checking for objectives and cost/carbon constraints
             /// 
@@ -676,6 +806,7 @@ namespace AdamMSc2020
                 hasCostConstraint = true;
 
 
+
             /// ////////////////////////////////////////////////////////////////////////
             /// Cost coefficients formulation
             /// ////////////////////////////////////////////////////////////////////////
@@ -684,13 +815,25 @@ namespace AdamMSc2020
             for (int i = 0; i < this.NumberOfSolarAreas; i++)
                 capex.AddTerm(this.c_PV, x_PV[i]);
             capex.AddTerm(this.c_Battery, x_Battery);
+            capex.AddTerm(this.c_AirCon, x_AirCon);
+            capex.AddTerm(this.c_ASHP, x_ASHP);
+            capex.AddTerm(this.c_Boiler, x_Boiler);
+            capex.AddTerm(this.c_CHP, x_CHP);
+            capex.AddTerm(this.c_TES, x_TES);
 
             for (int t = 0; t < this.Horizon; t++)
             {
+                opex.AddTerm(this.c_NaturalGas / this.c_chp_eff, x_CHP_op_e[t]);
+                opex.AddTerm(this.c_NaturalGas / this.a_boi_eff, x_Boiler_op[t]);
                 opex.AddTerm(this.c_Grid[t], x_Purchase[t]);
                 opex.AddTerm(this.c_FeedIn[t], x_FeedIn[t]);
 
-                opex.AddTerm(this.c_Battery_OM, x_BatteryDischarge[t]);    // assuming discharging is causing deterioration
+                opex.AddTerm(this.c_Battery_OM, x_Battery_discharge[t]);    // assuming discharging is causing deterioration
+                opex.AddTerm(this.c_Boiler_OM, x_Boiler_op[t]);
+                opex.AddTerm(this.c_AirCon_OM, x_AirCon_op[t]);
+                opex.AddTerm(this.c_CHP_OM, x_CHP_op_e[t]);
+                opex.AddTerm(this.c_ASHP_OM, x_ASHP_op[t]);
+                opex.AddTerm(this.c_TES_OM, x_TES_discharge[t]);
             }
 
 
@@ -715,43 +858,72 @@ namespace AdamMSc2020
             //if (!this.multithreading)
             //    cpl.SetParam(Cplex.Param.Threads, 1);
 
-            bool success = cpl.Solve();
-
-
-            /// ////////////////////////////////////////////////////////////////////////
-            /// Outputs
-            /// ////////////////////////////////////////////////////////////////////////
-            EhubOutputs solution = new EhubOutputs();
-            if (!success) return solution;
-            
-            solution.carbon = cpl.GetValue(carbonEmissions);
-            solution.OPEX = cpl.GetValue(opex) + OM_PV;
-            solution.CAPEX = cpl.GetValue(capex);
-            solution.cost = solution.OPEX + solution.CAPEX;
-
-            solution.x_pv = new double[this.NumberOfSolarAreas];
-            for (int i = 0; i < this.NumberOfSolarAreas; i++)
-                solution.x_pv[i] = cpl.GetValue(x_PV[i]);
-            solution.x_bat = cpl.GetValue(x_Battery);
-
-            solution.b_pvprod = new double[this.Horizon];
-            solution.b_pvprodUnscaled = new double[this.Horizon];
-            solution.x_batcharge = new double[this.Horizon];
-            solution.x_batdischarge = new double[this.Horizon];
-            solution.x_batsoc = new double[this.Horizon];
-            solution.x_elecpur = new double[this.Horizon];
-            solution.x_feedin = new double[this.Horizon];
-            for (int t = 0; t < this.Horizon; t++)
+            try
             {
-                solution.b_pvprod[t] = cpl.GetValue(x_PV_productionScaled[t]);
-                solution.b_pvprodUnscaled[t] = cpl.GetValue(x_PV_production[t]);
-                solution.x_batcharge[t] = cpl.GetValue(x_BatteryCharge[t]);
-                solution.x_batdischarge[t] = cpl.GetValue(x_BatteryDischarge[t]);
-                solution.x_batsoc[t] = cpl.GetValue(x_BatteryStored[t]);
-                solution.x_elecpur[t] = cpl.GetValue(x_Purchase[t]);
-                solution.x_feedin[t] = cpl.GetValue(x_FeedIn[t]);
+                bool success = cpl.Solve();
+                /// ////////////////////////////////////////////////////////////////////////
+                /// Outputs
+                /// ////////////////////////////////////////////////////////////////////////
+                EhubOutputs solution = new EhubOutputs();
+                if (!success) return solution;
+
+                solution.carbon = cpl.GetValue(carbonEmissions);
+                solution.OPEX = cpl.GetValue(opex) + OM_PV;
+                solution.CAPEX = cpl.GetValue(capex);
+                solution.cost = solution.OPEX + solution.CAPEX;
+
+                solution.x_pv = new double[this.NumberOfSolarAreas];
+                for (int i = 0; i < this.NumberOfSolarAreas; i++)
+                    solution.x_pv[i] = cpl.GetValue(x_PV[i]);
+                solution.x_bat = cpl.GetValue(x_Battery);
+                solution.x_tes = cpl.GetValue(x_TES);
+                solution.x_chp = cpl.GetValue(x_CHP);
+                solution.x_boi = cpl.GetValue(x_Boiler);
+                solution.x_hp = cpl.GetValue(x_ASHP);
+                solution.x_ac = cpl.GetValue(x_AirCon);
+
+                solution.b_pvprod = new double[this.Horizon];
+                solution.b_pvprodUnscaled = new double[this.Horizon];
+                solution.x_bat_charge = new double[this.Horizon];
+                solution.x_bat_discharge = new double[this.Horizon];
+                solution.x_bat_soc = new double[this.Horizon];
+                solution.x_elecpur = new double[this.Horizon];
+                solution.x_feedin = new double[this.Horizon];
+                solution.x_boi_op = new double[this.Horizon];
+                solution.x_ac_op = new double[this.Horizon];
+                solution.x_hp_op = new double[this.Horizon];
+                solution.x_chp_op_e = new double[this.Horizon];
+                solution.x_chp_op_h = new double[this.Horizon];
+                solution.x_chp_dump = new double[this.Horizon];
+                solution.x_tes_charge = new double[this.Horizon];
+                solution.x_tes_discharge = new double[this.Horizon];
+                solution.x_tes_soc = new double[this.Horizon];
+                for (int t = 0; t < this.Horizon; t++)
+                {
+                    solution.b_pvprod[t] = cpl.GetValue(x_PV_productionScaled[t]);
+                    solution.b_pvprodUnscaled[t] = cpl.GetValue(x_PV_production[t]);
+                    solution.x_bat_charge[t] = cpl.GetValue(x_Battery_charge[t]);
+                    solution.x_bat_discharge[t] = cpl.GetValue(x_Battery_discharge[t]);
+                    solution.x_bat_soc[t] = cpl.GetValue(x_Battery_soc[t]);
+                    solution.x_elecpur[t] = cpl.GetValue(x_Purchase[t]);
+                    solution.x_feedin[t] = cpl.GetValue(x_FeedIn[t]);
+                    solution.x_boi_op[t] = cpl.GetValue(x_Boiler_op[t]);
+                    solution.x_ac_op[t] = cpl.GetValue(x_AirCon_op[t]);
+                    solution.x_hp_op[t] = cpl.GetValue(x_ASHP_op[t]);
+                    solution.x_chp_op_e[t] = cpl.GetValue(x_CHP_op_e[t]);
+                    solution.x_chp_op_h[t] = cpl.GetValue(x_CHP_op_th[t]);
+                    solution.x_chp_dump[t] = cpl.GetValue(x_CHP_op_dump[t]);
+                    solution.x_tes_charge[t] = cpl.GetValue(x_TES_charge[t]);
+                    solution.x_tes_discharge[t] = cpl.GetValue(x_TES_discharge[t]);
+                    solution.x_tes_soc[t] = cpl.GetValue(x_TES_soc[t]);
+                }
+
+                return solution;
             }
-            return solution;
+            catch
+            {
+                return new EhubOutputs();
+            }
         }
     }
 }

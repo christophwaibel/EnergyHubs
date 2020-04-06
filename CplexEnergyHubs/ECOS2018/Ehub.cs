@@ -713,17 +713,17 @@ namespace Cplex_ECOS2018
             outs.b_pvprod_E = new double[this.horizon];
             outs.b_pvprod_Roof = new double[this.horizon];
 
-            outs.x_batcharge = new double[this.horizon];
-            outs.x_batdischarge = new double[this.horizon];
-            outs.x_batsoc = new double[this.horizon];
+            outs.x_bat_charge = new double[this.horizon];
+            outs.x_bat_discharge = new double[this.horizon];
+            outs.x_bat_soc = new double[this.horizon];
             outs.x_pv = new double[this.b_solar_area.Length];
             for (int t = 0; t < this.horizon; t++)
             {
                 outs.x_elecpur[t] = cpl.GetValue(x_purchase[t]);
                 outs.x_feedin[t] = cpl.GetValue(x_feedin[t]);
-                outs.x_batcharge[t] = cpl.GetValue(x_batch[t]);
-                outs.x_batdischarge[t] = cpl.GetValue(x_batdis[t]);
-                outs.x_batsoc[t] = cpl.GetValue(x_batstor[t]);
+                outs.x_bat_charge[t] = cpl.GetValue(x_batch[t]);
+                outs.x_bat_discharge[t] = cpl.GetValue(x_batdis[t]);
+                outs.x_bat_soc[t] = cpl.GetValue(x_batstor[t]);
                 outs.b_pvprod[t] = 0;
                 outs.b_pvprod_S_a[t] = 0;
                 outs.b_pvprod_S_b[t] = 0;
@@ -1137,12 +1137,12 @@ namespace Cplex_ECOS2018
             outs.b_pvprod_E = new double[this.horizon];
             outs.b_pvprod_Roof = new double[this.horizon];
 
-            outs.x_batcharge = new double[this.horizon];
-            outs.x_batdischarge = new double[this.horizon];
-            outs.x_batsoc = new double[this.horizon];
-            outs.x_tescharge = new double[this.horizon];
-            outs.x_tesdischarge = new double[this.horizon];
-            outs.x_tessoc = new double[this.horizon];
+            outs.x_bat_charge = new double[this.horizon];
+            outs.x_bat_discharge = new double[this.horizon];
+            outs.x_bat_soc = new double[this.horizon];
+            outs.x_tes_charge = new double[this.horizon];
+            outs.x_tes_discharge = new double[this.horizon];
+            outs.x_tes_soc = new double[this.horizon];
             outs.x_hp_op = new double[this.horizon];
             outs.x_boi_op = new double[this.horizon];
             outs.x_chp_op_e = new double[this.horizon];
@@ -1154,12 +1154,12 @@ namespace Cplex_ECOS2018
             {
                 outs.x_elecpur[t] = cpl.GetValue(x_purchase[t]);
                 outs.x_feedin[t] = cpl.GetValue(x_feedin[t]);
-                outs.x_batcharge[t] = cpl.GetValue(x_bat_ch[t]);
-                outs.x_batdischarge[t] = cpl.GetValue(x_bat_dis[t]);
-                outs.x_batsoc[t] = cpl.GetValue(x_bat_soc[t]);
-                outs.x_tescharge[t] = cpl.GetValue(x_tes_ch[t]);
-                outs.x_tesdischarge[t] = cpl.GetValue(x_tes_dis[t]);
-                outs.x_tessoc[t] = cpl.GetValue(x_tes_soc[t]);
+                outs.x_bat_charge[t] = cpl.GetValue(x_bat_ch[t]);
+                outs.x_bat_discharge[t] = cpl.GetValue(x_bat_dis[t]);
+                outs.x_bat_soc[t] = cpl.GetValue(x_bat_soc[t]);
+                outs.x_tes_charge[t] = cpl.GetValue(x_tes_ch[t]);
+                outs.x_tes_discharge[t] = cpl.GetValue(x_tes_dis[t]);
+                outs.x_tes_soc[t] = cpl.GetValue(x_tes_soc[t]);
                 outs.x_hp_op[t] = cpl.GetValue(x_hp_op[t]);
                 outs.x_boi_op[t] = cpl.GetValue(x_boi_op[t]);
                 outs.x_chp_op_e[t] = cpl.GetValue(x_chp_op_e[t]);
