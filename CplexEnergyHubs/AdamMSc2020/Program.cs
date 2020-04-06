@@ -16,9 +16,21 @@ namespace AdamMSc2020
 
             //SilhouetteTest();
 
-            RunAdamsEhub();
+            Console.WriteLine("Run Energyhub for a single set of demand profiles: Enter '1'");
+            Console.WriteLine("Run Energyhubs for several sets of demand profiles: Enter '2'");
+            Console.WriteLine();
+            int mode = Convert.ToInt32(Console.ReadLine());
+            if (mode == 2)
+                RunMultipleEhubs();
+            else
+                RunAdamsEhub();
         }
 
+
+        static void RunMultipleEhubs()
+        {
+
+        }
 
         static void RunAdamsEhub()
         {
