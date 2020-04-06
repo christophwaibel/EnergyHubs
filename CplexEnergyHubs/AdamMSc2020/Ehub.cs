@@ -71,7 +71,6 @@ namespace AdamMSc2020
         // Coefficients CHP
         internal double c_chp_eff { get; private set; }
         internal double c_chp_htp { get; private set; }         // heat to power ratio (for 1 kW of heat, 1.73 kW of electricity is produced)
-        internal double c_chp_minload { get; private set; }     // min part load
         internal double c_chp_heatdump { get; private set; }    // heat dump allowed = 1
 
         // Coefficients AirCon
@@ -298,10 +297,6 @@ namespace AdamMSc2020
                 this.c_chp_htp = technologyParameters["c_chp_htp"];
             else
                 this.c_chp_htp = 1.73;
-            if (technologyParameters.ContainsKey("c_chp_minload"))
-                this.c_chp_minload = technologyParameters["c_chp_minload"];
-            else
-                this.c_chp_minload = 0.5;
             if (technologyParameters.ContainsKey("c_chp_heatdump"))
                 this.c_chp_heatdump = technologyParameters["c_chp_heatdump"];
             else
