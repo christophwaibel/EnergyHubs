@@ -25,11 +25,8 @@ namespace AdamMSc2020
         internal double[][] SolarLoads { get; private set; }
         internal double[] SolarAreas { get; private set; }
 
-        internal double[] CoolingWeights { get; private set; }
-        internal double[] HeatingWeights { get; private set; }
-        internal double[] ElectricityWeights { get; private set; }
-        internal double[][] SolarWeights { get; private set; }
-
+        internal int[] ClustersizePerTimestep { get; private set; }
+        
         internal int NumberOfSolarAreas { get; private set; }
 
         internal int Horizon { get; private set; }
@@ -188,10 +185,8 @@ namespace AdamMSc2020
         /// <param name="weightsOfLoads">If typical days are used, these weights are used to account for how many days a typical day represents</param>
         internal Ehub(double [] heatingDemand, double[] coolingDemand, double[] electricityDemand,
             double[][] irradiance, double [] solarTechSurfaceAreas,
-            double [] weightsOfHeatingLoads, double [] weightsOfCoolingLoads, double [] weightsOfElectricityLoads, 
-            double [][] weightsOfSolarLoads,
-            double [] ambientTemperature,
-            Dictionary<string, double> technologyParameters)
+            double [] ambientTemperature, Dictionary<string, double> technologyParameters,
+            int [] clustersizePerTimestep)
         {
             this.CoolingDemand = coolingDemand;
             this.HeatingDemand = heatingDemand;
@@ -199,12 +194,8 @@ namespace AdamMSc2020
             this.SolarLoads = irradiance;
             this.SolarAreas = solarTechSurfaceAreas;
 
-            this.CoolingWeights = weightsOfCoolingLoads;
-            this.HeatingWeights = weightsOfHeatingLoads;
-            this.ElectricityWeights = weightsOfElectricityLoads;
-            this.SolarWeights = weightsOfSolarLoads;
-
             this.NumberOfSolarAreas = solarTechSurfaceAreas.Length;
+            this.ClustersizePerTimestep = clustersizePerTimestep;
 
             this.Horizon = coolingDemand.Length;
 
@@ -220,7 +211,6 @@ namespace AdamMSc2020
         {
             double costTolerance = 1;
             double carbonTolerance = 0.01;
-            double[] carbonConstraints = new double[epsilonCuts];
             this.Outputs = new EhubOutputs[epsilonCuts + 2];
 
             // 1. solve for minCarbon, ignoring cost
@@ -576,8 +566,7 @@ namespace AdamMSc2020
 
             // PV
             INumVar[] x_PV = new INumVar[this.NumberOfSolarAreas];
-            ILinearNumExpr[] x_PV_production = new ILinearNumExpr[Horizon];  // dummy expression to store total PV electricity production
-            ILinearNumExpr[] x_PV_productionScaled = new ILinearNumExpr[this.Horizon];  // dummy expression to store total PV electricity production. scaled with individual weights
+            ILinearNumExpr[] x_PV_production = new ILinearNumExpr[Horizon];  
             double OM_PV = 0.0; // operation maintanence for PV
             for (int i = 0; i < this.NumberOfSolarAreas; i++)
                 x_PV[i] = cpl.NumVar(0, this.SolarAreas[i]);
@@ -619,7 +608,6 @@ namespace AdamMSc2020
                 x_Purchase[t] = cpl.NumVar(0, System.Double.MaxValue);
                 x_FeedIn[t] = cpl.NumVar(0, System.Double.MaxValue);
                 x_PV_production[t] = cpl.LinearNumExpr();
-                x_PV_productionScaled[t] = cpl.LinearNumExpr();
 
                 x_CHP_op_e[t] = cpl.NumVar(0.0, System.Double.MaxValue);
                 x_CHP_op_th[t] = cpl.NumVar(0.0, System.Double.MaxValue);
@@ -676,8 +664,7 @@ namespace AdamMSc2020
                 {
                     double pvElec = this.SolarLoads[i][t]  * 0.001 * this.a_PV_Efficiency[i][t];
                     elecGeneration.AddTerm(pvElec, x_PV[i]);
-                    x_PV_production[t].AddTerm(this.SolarLoads[i][t] * 0.001 * this.a_PV_Efficiency[i][t], x_PV[i]);
-                    x_PV_productionScaled[t].AddTerm(pvElec, x_PV[i]);
+                    x_PV_production[t].AddTerm(pvElec, x_PV[i]);
                     OM_PV += pvElec * this.c_PV_OM;
                 }
                 elecGeneration.AddTerm(1, x_Purchase[t]);
@@ -690,7 +677,7 @@ namespace AdamMSc2020
                 /// ////////////////////////////////////////////////////////////////////////
                 /// PV Technical Constraints
                 // pv production must be greater equal feedin
-                cpl.AddGe(x_PV_productionScaled[t], x_FeedIn[t]);
+                cpl.AddGe(x_PV_production[t], x_FeedIn[t]);
                 // donnot allow feedin and purchase at the same time. y = 1 means elec is produced
                 cpl.AddLe(x_Purchase[t], cpl.Prod(M, y_PV[t]));    
                 cpl.AddLe(x_FeedIn[t], cpl.Prod(M, cpl.Diff(1, y_PV[t])));
@@ -719,9 +706,9 @@ namespace AdamMSc2020
 
                 /// ////////////////////////////////////////////////////////////////////////
                 /// Emissions
-                carbonEmissions.AddTerm(this.lca_GridElectricity, x_Purchase[t]);     // data needs to be kgCO2eq./kWh
-                carbonEmissions.AddTerm(1/this.lca_NaturalGas, x_Boiler_op[t]);
-                carbonEmissions.AddTerm(1 / this.lca_NaturalGas, x_CHP_op_e[t]);
+                carbonEmissions.AddTerm(this.ClustersizePerTimestep[t] * this.lca_GridElectricity, x_Purchase[t]);     // data needs to be kgCO2eq./kWh
+                carbonEmissions.AddTerm(this.ClustersizePerTimestep[t] * this.lca_NaturalGas * 1 / this.a_boi_eff, x_Boiler_op[t]);
+                carbonEmissions.AddTerm(this.ClustersizePerTimestep[t] * this.lca_NaturalGas * 1 / this.c_chp_eff, x_CHP_op_e[t]);
 
 
                 /// ////////////////////////////////////////////////////////////////////////
@@ -818,17 +805,17 @@ namespace AdamMSc2020
 
             for (int t = 0; t < this.Horizon; t++)
             {
-                opex.AddTerm(this.c_NaturalGas / this.c_chp_eff, x_CHP_op_e[t]);
-                opex.AddTerm(this.c_NaturalGas / this.a_boi_eff, x_Boiler_op[t]);
-                opex.AddTerm(this.c_Grid[t], x_Purchase[t]);
-                opex.AddTerm(this.c_FeedIn[t], x_FeedIn[t]);
+                opex.AddTerm(this.ClustersizePerTimestep[t] * this.c_NaturalGas / this.c_chp_eff, x_CHP_op_e[t]);
+                opex.AddTerm(this.ClustersizePerTimestep[t] * this.c_NaturalGas / this.a_boi_eff, x_Boiler_op[t]);
+                opex.AddTerm(this.ClustersizePerTimestep[t] * this.c_Grid[t], x_Purchase[t]);
+                opex.AddTerm(this.ClustersizePerTimestep[t] * this.c_FeedIn[t], x_FeedIn[t]);
 
-                opex.AddTerm(this.c_Battery_OM, x_Battery_discharge[t]);    // assuming discharging is causing deterioration
-                opex.AddTerm(this.c_Boiler_OM, x_Boiler_op[t]);
-                opex.AddTerm(this.c_AirCon_OM, x_AirCon_op[t]);
-                opex.AddTerm(this.c_CHP_OM, x_CHP_op_e[t]);
-                opex.AddTerm(this.c_ASHP_OM, x_ASHP_op[t]);
-                opex.AddTerm(this.c_TES_OM, x_TES_discharge[t]);
+                opex.AddTerm(this.ClustersizePerTimestep[t] * this.c_Battery_OM, x_Battery_discharge[t]);    // assuming discharging is causing deterioration
+                opex.AddTerm(this.ClustersizePerTimestep[t] * this.c_Boiler_OM, x_Boiler_op[t]);
+                opex.AddTerm(this.ClustersizePerTimestep[t] * this.c_AirCon_OM, x_AirCon_op[t]);
+                opex.AddTerm(this.ClustersizePerTimestep[t] * this.c_CHP_OM, x_CHP_op_e[t]);
+                opex.AddTerm(this.ClustersizePerTimestep[t] * this.c_ASHP_OM, x_ASHP_op[t]);
+                opex.AddTerm(this.ClustersizePerTimestep[t] * this.c_TES_OM, x_TES_discharge[t]);
             }
 
 
@@ -877,7 +864,6 @@ namespace AdamMSc2020
                 solution.x_ac = cpl.GetValue(x_AirCon);
 
                 solution.b_pvprod = new double[this.Horizon];
-                solution.b_pvprodUnscaled = new double[this.Horizon];
                 solution.x_bat_charge = new double[this.Horizon];
                 solution.x_bat_discharge = new double[this.Horizon];
                 solution.x_bat_soc = new double[this.Horizon];
@@ -894,8 +880,7 @@ namespace AdamMSc2020
                 solution.x_tes_soc = new double[this.Horizon];
                 for (int t = 0; t < this.Horizon; t++)
                 {
-                    solution.b_pvprod[t] = cpl.GetValue(x_PV_productionScaled[t]);
-                    solution.b_pvprodUnscaled[t] = cpl.GetValue(x_PV_production[t]);
+                    solution.b_pvprod[t] = cpl.GetValue(x_PV_production[t]);
                     solution.x_bat_charge[t] = cpl.GetValue(x_Battery_charge[t]);
                     solution.x_bat_discharge[t] = cpl.GetValue(x_Battery_discharge[t]);
                     solution.x_bat_soc[t] = cpl.GetValue(x_Battery_soc[t]);
