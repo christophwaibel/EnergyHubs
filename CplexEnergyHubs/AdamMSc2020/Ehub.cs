@@ -596,6 +596,7 @@ namespace AdamMSc2020
             INumVar[] x_TES_charge = new INumVar[this.Horizon];         // kW
             INumVar[] x_TES_discharge = new INumVar[this.Horizon];      // kW
             INumVar[] x_TES_soc = new INumVar[this.Horizon];            // kWh
+            INumVar[] y_TES = new INumVar[this.Horizon];
 
             for (int t = 0; t < this.Horizon; t++)
             {
@@ -619,6 +620,7 @@ namespace AdamMSc2020
                 x_TES_charge[t] = cpl.NumVar(0.0, System.Double.MaxValue);
                 x_TES_discharge[t] = cpl.NumVar(0.0, System.Double.MaxValue);
                 x_TES_soc[t] = cpl.NumVar(0.0, System.Double.MaxValue);
+                y_TES[t] = cpl.BoolVar();
             }
 
 
@@ -753,6 +755,10 @@ namespace AdamMSc2020
                 cpl.AddLe(x_TES_charge[t], cpl.Prod(x_TES, this.tes_max_ch));
                 cpl.AddLe(x_TES_discharge[t], cpl.Prod(x_TES, this.tes_max_disch));
                 cpl.AddLe(x_TES_soc[t], x_TES);
+
+                // donnot allow charge and discharge at the same time. y = 1 means charging
+                cpl.AddLe(x_TES_charge[t], cpl.Prod(M, y_TES[t]));
+                cpl.AddLe(x_TES_discharge[t], cpl.Prod(M, cpl.Diff(1, y_TES[t])));
             }
 
 
