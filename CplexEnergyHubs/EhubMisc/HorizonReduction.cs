@@ -30,9 +30,17 @@ namespace EhubMisc
             /// </summary>
             public double[][] DayProfiles;
             /// <summary>
+            /// Same as DayProfiles, but uncorrected (see part 7 in algorithm)
+            /// </summary>
+            public double[][] UncorrectedDayProfiles;
+            /// <summary>
             /// Indicating, how many days one typical day represents. In other words, the cluster sizes. Note: The peak days will NOT necessarly be DaysPerTypicalDay[peakday] = 1, because it is sorted according to day of the year. Refer to ClusterID
             /// </summary>
             public int[] DaysPerTypicalDay;
+            /// <summary>
+            /// Number of days that each timestep represents, i.e. the clustersize of the cluster that this timestep belongs to. Peak days included, but they will have a value of 1
+            /// </summary>
+            public int[] NumberOfDaysPerTimestep;
             /// <summary>
             /// Sorted cluster IDs, sorted according to day of the year.
             /// </summary>
@@ -61,6 +69,7 @@ namespace EhubMisc
             /// Total loads per LoadType. The sum of the original 8760 timeseries should match the sum of DayProfiles x DaysPerTypicalDay.
             /// </summary>
             public double[] TotalLoads;
+            public int Horizon;
         }
 
 
@@ -68,6 +77,7 @@ namespace EhubMisc
         /// Generating typical demand profile days from an annual hourly time series.
         /// Loosely based on: Dominguez-Munoz, Cejudo-Lopez, Carrillo-Andres (2011). "Selection of typical demand days for CHP optimization"
         /// Energy and Buildings 43(11), pp. 3036-3043. doi: 10.1016/j.enbuild.2011.07.024
+        /// as well as Matlabscript 'Demand_parameterization_ECOS_NEW.m' by gmavroma@ethz.ch
         /// </summary>
         /// <param name="fullProfiles">Full annual hourly demand profiles. First index for demand types, second index for timesteps.</param>
         /// <param name="loadTypes">Description for each demand type, e.g. {"cooling", "heating", "electricity"}.</param>
@@ -75,19 +85,19 @@ namespace EhubMisc
         /// <param name="peakDays">Adding the peak day per demand type? One boolean per demand type. Days will be added to the regular typical days. E.g. 12 typical days + peak days.</param>
         /// <param name="useForClustering">Specifying which load type is used in the clustering. e.g. it might be wise to not include 20 solar profiles in the clustering ,because they get too much emphasize. instead, just use heating, cooling, electricity, and one profile for global horizontal irradiance. this array correspond to the loadTypes string array</param>
         /// <returns>Returns a TypicalDays structure</returns>
-        public static TypicalDays GenerateTypicalDays(double[][] fullProfiles, string[] loadTypes, int numberOfTypicalDays, bool[] peakDays, bool [] useForClustering, bool verbose = true)
+        public static TypicalDays GenerateTypicalDays(double[][] fullProfiles, string[] loadTypes, int numberOfTypicalDays, bool[] peakDays, bool[] useForClustering, bool verbose = true)
         {
             TypicalDays typicalDays = new TypicalDays();
 
             int[] seeds = new int[10] { 0, 1, 2, 3, 4, 5, 6, 7, 8, 9 };
-            //int[] seeds = new int[1] { 42 };
-            int days = 365;
-            int hoursPerDay = 24;
+            const int days = 365;
+            const int hoursPerDay = 24;
             int numberOfLoadTypes = loadTypes.Length;
             typicalDays.LoadTypes = loadTypes;
             typicalDays.NumOfPeakDays = peakDays.Count(c => c);
             typicalDays.NumOfTypicalDays = numberOfTypicalDays;
             typicalDays.NumOfDays = numberOfTypicalDays + typicalDays.NumOfPeakDays;
+            typicalDays.Horizon = typicalDays.NumOfDays * hoursPerDay;
             typicalDays.TotalLoads = new double[numberOfLoadTypes];
             for (int load = 0; load < numberOfLoadTypes; load++)
                 typicalDays.TotalLoads[load] = fullProfiles[load].Sum();
@@ -153,7 +163,7 @@ namespace EhubMisc
                         if (!typicalDays.DayOfTheYear.Contains(d + 1))
                         {
                             X[_dayCounter - 1][_hour] = _value;
-                            if(useForClustering[load])
+                            if (useForClustering[load])
                                 Xclustering[_dayCounter - 1][_hour] = _value;
                         }
                         Xcomplete[d][_hour] = _value;
@@ -259,24 +269,40 @@ namespace EhubMisc
             }
 
 
-            /// 6. Calculation of scaling factors
+            /// 6. NumberOfDaysPerTimestep
+            /// 
+            typicalDays.NumberOfDaysPerTimestep = new int[typicalDays.Horizon];
+            for (int t = 0; t < typicalDays.Horizon; t++)
+            {
+                int day = (int)Math.Floor((double)(t / hoursPerDay));
+                typicalDays.NumberOfDaysPerTimestep[t] = typicalDays.DaysPerTypicalDay[day];
+            }
+
+
+            /// 7. Correcting each medoid day to make it proportional to the total loads of all elements in its cluster
+            ///     necessary, because the medoid is not the perfect mean that can be multiplied with the number of days in this cluster
+            //eqt in Dominguez munoz paper. then, scale up loads by that correction factor
+            /// 8. (OPTIONAL) Calculation of scaling factors
             ///     for each load type
             ///         for each cluster
             ///             sum of loads of all days in that cluster must match the sum of loads of the medoid
             ///             this factor will be used in the energyhub to scale up the carbon emissions and operational cost, so all the days of that cluster are accounted for
             ///             NOTE! numOfDays approach as in the Matlab code is inprecise? Because the medoid is not the perfect mean. Also, the factor should differ for each load type
+            typicalDays.UncorrectedDayProfiles = new double[numberOfLoadTypes][];
+            typicalDays.DayProfiles.CopyTo(typicalDays.UncorrectedDayProfiles, 0);
             typicalDays.ScalingFactorPerTimestep = new double[numberOfLoadTypes][];
 
             for (int load = 0; load < numberOfLoadTypes; load++)
             {
                 double[] sumOfAllClusterDays = new double[typicalDays.NumOfDays];
                 double[] sumOfMedoids = new double[typicalDays.NumOfDays];
-                double[] factor = new double[typicalDays.NumOfDays];
+                double[] scalingFactor = new double[typicalDays.NumOfDays];
+                double[] correctionFactor = new double[typicalDays.NumOfDays];
 
                 typicalDays.ScalingFactorPerTimestep[load] = new double[typicalDays.NumOfDays * hoursPerDay];
                 for (int d = 0; d < typicalDays.NumOfDays; d++)
                 {
-                    double _factor= 0.0;
+                    double _scalingFactor = 0.0;
                     double _sumOfAllClusterDays = 0.0;
                     double _sumOfMedoid = 0.0;
                     for (int h = 0; h < hoursPerDay; h++)
@@ -302,12 +328,22 @@ namespace EhubMisc
                     sumOfMedoids[d] = _sumOfMedoid;
                     sumOfAllClusterDays[d] = _sumOfAllClusterDays;
 
-                    _factor = _sumOfAllClusterDays / _sumOfMedoid;
-                    if (double.IsInfinity(_factor) || double.IsNaN(_factor)) _factor = 1.0;
+                    _scalingFactor = _sumOfAllClusterDays / _sumOfMedoid;
+                    double _correctionFactor = _sumOfAllClusterDays / (_sumOfMedoid * typicalDays.DaysPerTypicalDay[d]);
+                    if (double.IsInfinity(_scalingFactor) || double.IsNaN(_scalingFactor)) _scalingFactor = 1.0;
+                    if (double.IsInfinity(_correctionFactor) || double.IsNaN(_correctionFactor)) _correctionFactor = 1.0;
 
-                    factor[d] = _factor;
+                    scalingFactor[d] = _scalingFactor;
+                    correctionFactor[d] = _correctionFactor;
+                }
+                for (int t = 0; t < typicalDays.Horizon; t++)
+                {
+                    int day = (int)Math.Floor((double)(t / hoursPerDay));
+                    typicalDays.DayProfiles[load][t] *= correctionFactor[day];
                 }
 
+
+                // (OPTIONAL) ALSO, can't apply to DayProfiles anymore, because they have been corrected. Use UncorrectedDayProfiles for it
                 // store all the lost data of _sumOfAllClusterDays
                 //    distributing equally amongst all days that have medoid != 0
                 if (sumOfMedoids.Contains(0))
@@ -325,7 +361,7 @@ namespace EhubMisc
                     bool[] distributeHere = new bool[typicalDays.NumOfDays];
                     for (int d = 0; d < typicalDays.NumOfDays; d++)
                     {
-                        if (sumOfMedoids[d] != 0) 
+                        if (sumOfMedoids[d] != 0)
                         {
                             countDaysToDistribute++;
                             distributeHere[d] = true;
@@ -335,7 +371,7 @@ namespace EhubMisc
                     for (int d = 0; d < typicalDays.NumOfDays; d++)
                     {
                         if (distributeHere[d])
-                            factor[d] = (sumOfAllClusterDays[d] + distributePerTypicalDay) / sumOfMedoids[d];
+                            scalingFactor[d] = (sumOfAllClusterDays[d] + distributePerTypicalDay) / sumOfMedoids[d];
                     }
 
                 }
@@ -344,7 +380,7 @@ namespace EhubMisc
                 {
                     for (int h = 0; h < hoursPerDay; h++)
                     {
-                        typicalDays.ScalingFactorPerTimestep[load][h + d * hoursPerDay] = factor[d];
+                        typicalDays.ScalingFactorPerTimestep[load][h + d * hoursPerDay] = scalingFactor[d];
                     }
                 }
             }

@@ -217,7 +217,7 @@ namespace AdamMSc2020
             double[][] typicalSolarLoads = new double[solarArea.Count][];
             for (int i = 0; i < numLoads - indexSolar; i++) 
                 typicalSolarLoads[i] = typicalDays.DayProfiles[indexSolar + i];
-            int[] clustersizePerTimestep = new int[1];
+            int[] clustersizePerTimestep = typicalDays.NumberOfDaysPerTimestep;
             Ehub ehub = new Ehub(typicalDays.DayProfiles[0], typicalDays.DayProfiles[1], typicalDays.DayProfiles[2],
                 typicalSolarLoads, solarArea.ToArray(),
                 typicalDays.DayProfiles[4], technologyParameters,
