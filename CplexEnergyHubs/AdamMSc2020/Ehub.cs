@@ -900,8 +900,10 @@ namespace AdamMSc2020
 
                 return solution;
             }
-            catch
+            catch(ILOG.Concert.Exception ex)
             {
+                Console.WriteLine(ex);
+                Console.ReadKey();
                 return solution;
             }
         }
