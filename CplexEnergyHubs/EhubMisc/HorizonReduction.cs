@@ -84,8 +84,10 @@ namespace EhubMisc
         /// <param name="numberOfTypicalDays">Number of typical days.</param>
         /// <param name="peakDays">Adding the peak day per demand type? One boolean per demand type. Days will be added to the regular typical days. E.g. 12 typical days + peak days.</param>
         /// <param name="useForClustering">Specifying which load type is used in the clustering. e.g. it might be wise to not include 20 solar profiles in the clustering ,because they get too much emphasize. instead, just use heating, cooling, electricity, and one profile for global horizontal irradiance. this array correspond to the loadTypes string array</param>
+        ///<param name="verbose"></param>
+        ///<param name="dataScaling">data scaling mode: "standardization" (default), "normalization"</param>
         /// <returns>Returns a TypicalDays structure</returns>
-        public static TypicalDays GenerateTypicalDays(double[][] fullProfiles, string[] loadTypes, int numberOfTypicalDays, bool[] peakDays, bool[] useForClustering, bool verbose = true)
+        public static TypicalDays GenerateTypicalDays(double[][] fullProfiles, string[] loadTypes, int numberOfTypicalDays, bool[] peakDays, bool[] useForClustering, bool verbose = true, string dataScaling = "standardization")
         {
             TypicalDays typicalDays = new TypicalDays();
 
@@ -135,10 +137,20 @@ namespace EhubMisc
             /// 
             double[] lowerBounds = new double[numberOfLoadTypes];
             double[] upperBounds = new double[numberOfLoadTypes];
-            for (int d = 0; d < numberOfLoadTypes; d++)
+            double[] mean = new double[numberOfLoadTypes];
+            double[] sigma = new double[numberOfLoadTypes];
+            for (int load = 0; load < numberOfLoadTypes; load++)
             {
-                lowerBounds[d] = fullProfiles[d].Min();
-                upperBounds[d] = fullProfiles[d].Max();
+                lowerBounds[load] = fullProfiles[load].Min();
+                upperBounds[load] = fullProfiles[load].Max();
+
+                mean[load] = fullProfiles[load].Sum() / fullProfiles[load].Length;
+                sigma[load] = 0.0;
+                int N = fullProfiles[load].Length;
+                for(int i=0; i<N; i++)
+                    sigma[load] += Math.Pow(fullProfiles[load][i] - mean[load], 2);
+                sigma[load] /= N;
+                sigma[load] = Math.Sqrt(sigma[load]);
             }
 
             double[][] Xcomplete = new double[days][];
@@ -158,7 +170,9 @@ namespace EhubMisc
                 {
                     for (int load = 0; load < numberOfLoadTypes; load++)
                     {
-                        double _value = (fullProfiles[load][h + (d * hoursPerDay)] - lowerBounds[load]) / (upperBounds[load] - lowerBounds[load]);
+                        double _value;
+                        if (string.Equals(dataScaling, "normalization")) _value = (fullProfiles[load][h + (d * hoursPerDay)] - lowerBounds[load]) / (upperBounds[load] - lowerBounds[load]);
+                        else _value = (fullProfiles[load][h + (d * hoursPerDay)] - mean[load]) / sigma[load];
                         int _hour = h + (load * hoursPerDay);
                         if (!typicalDays.DayOfTheYear.Contains(d + 1))
                         {
@@ -260,10 +274,20 @@ namespace EhubMisc
                     {
                         int _hourA = h + d * hoursPerDay;
                         int _hourB = h + load * hoursPerDay;
-                        if (typicalDays.IsPeakDay[d]) // get it from original data, where peak days have not been culled from 
-                            typicalDays.DayProfiles[load][_hourA] = Xcomplete[typicalDays.DayOfTheYear[d] - 1][_hourB] * (upperBounds[load] - lowerBounds[load]) + lowerBounds[load];
-                        else // get it from X
-                            typicalDays.DayProfiles[load][_hourA] = X[typicalDays.DayOfTheYear[d] - 1][_hourB] * (upperBounds[load] - lowerBounds[load]) + lowerBounds[load];
+                        if (string.Equals(dataScaling, "normalization"))
+                        {
+                            if (typicalDays.IsPeakDay[d]) // get it from original data, where peak days have not been culled from 
+                                typicalDays.DayProfiles[load][_hourA] = Xcomplete[typicalDays.DayOfTheYear[d] - 1][_hourB] * (upperBounds[load] - lowerBounds[load]) + lowerBounds[load];
+                            else // get it from X
+                                typicalDays.DayProfiles[load][_hourA] = X[typicalDays.DayOfTheYear[d] - 1][_hourB] * (upperBounds[load] - lowerBounds[load]) + lowerBounds[load];
+                        }
+                        else
+                        {
+                            if (typicalDays.IsPeakDay[d]) // get it from original data, where peak days have not been culled from 
+                                typicalDays.DayProfiles[load][_hourA] = Xcomplete[typicalDays.DayOfTheYear[d] - 1][_hourB] * sigma[load] + mean[load];
+                            else // get it from X
+                                typicalDays.DayProfiles[load][_hourA] = X[typicalDays.DayOfTheYear[d] - 1][_hourB] * sigma[load] + mean[load];
+                        }
                     }
                 }
             }
@@ -289,7 +313,11 @@ namespace EhubMisc
             ///             this factor will be used in the energyhub to scale up the carbon emissions and operational cost, so all the days of that cluster are accounted for
             ///             NOTE! numOfDays approach as in the Matlab code is inprecise? Because the medoid is not the perfect mean. Also, the factor should differ for each load type
             typicalDays.UncorrectedDayProfiles = new double[numberOfLoadTypes][];
-            typicalDays.DayProfiles.CopyTo(typicalDays.UncorrectedDayProfiles, 0);
+            for(int load = 0; load<numberOfLoadTypes; load++)
+            {
+                typicalDays.UncorrectedDayProfiles[load] = new double[typicalDays.Horizon];
+                typicalDays.DayProfiles[load].CopyTo(typicalDays.UncorrectedDayProfiles[load], 0);
+            }
             typicalDays.ScalingFactorPerTimestep = new double[numberOfLoadTypes][];
 
             for (int load = 0; load < numberOfLoadTypes; load++)
@@ -309,19 +337,33 @@ namespace EhubMisc
                     {
                         if (!typicalDays.IsPeakDay[d])
                         {
-                            _sumOfMedoid += X[typicalDays.DayOfTheYear[d] - 1][h + load * hoursPerDay];
+                            if (string.Equals(dataScaling, "normalization"))
+                                _sumOfMedoid +=( X[typicalDays.DayOfTheYear[d] - 1][h + load * hoursPerDay] * (upperBounds[load] - lowerBounds[load]) + lowerBounds[load]);
+                            else
+                                _sumOfMedoid += (X[typicalDays.DayOfTheYear[d] - 1][h + load * hoursPerDay] * sigma[load] + mean[load]);
                             for (int i = 0; i < typicalDays.ClusterIdPerDay.Length; i++)
                             {
                                 if (typicalDays.ClusterIdPerDay[i] == typicalDays.ClusterID[d])
                                 {
-                                    _sumOfAllClusterDays += X[i][h + load * hoursPerDay];
+                                    if (string.Equals(dataScaling, "normalization"))
+                                        _sumOfAllClusterDays += (X[i][h + load * hoursPerDay] * (upperBounds[load] - lowerBounds[load]) + lowerBounds[load]);
+                                    else
+                                        _sumOfAllClusterDays += (X[i][h + load * hoursPerDay] * sigma[load] + mean[load]);
                                 }
                             }
                         }
                         else
                         {
-                            _sumOfMedoid += Xcomplete[typicalDays.DayOfTheYear[d] - 1][h + load * hoursPerDay];
-                            _sumOfAllClusterDays += Xcomplete[typicalDays.DayOfTheYear[d] - 1][h + load * hoursPerDay];
+                            if(string.Equals(dataScaling, "normalization"))
+                            {
+                                _sumOfMedoid += (Xcomplete[typicalDays.DayOfTheYear[d] - 1][h + load * hoursPerDay] * (upperBounds[load] - lowerBounds[load]) + lowerBounds[load]);
+                                _sumOfAllClusterDays += (Xcomplete[typicalDays.DayOfTheYear[d] - 1][h + load * hoursPerDay] * (upperBounds[load] - lowerBounds[load]) + lowerBounds[load]);
+                            }
+                            else
+                            {
+                                _sumOfMedoid += (Xcomplete[typicalDays.DayOfTheYear[d] - 1][h + load * hoursPerDay] * sigma[load] + mean[load]);
+                                _sumOfAllClusterDays += (Xcomplete[typicalDays.DayOfTheYear[d] - 1][h + load * hoursPerDay] * sigma[load] + mean[load]);
+                            }
                         }
                     }
 
