@@ -151,11 +151,11 @@ namespace AdamMSc2020
                 {
                     string[] split = lines[li].Split(new char[2] { ';', ',' });
                     split = split.Where(x => !string.IsNullOrEmpty(x)).ToArray();
-                    if (split.Length != 2)
+                    if (split.Length != 3)
                     {
                         WriteError();
                         Console.WriteLine("Reading line {0}:..... '{1}'", li+1, lines[li]);
-                        Console.Write("'{0}' contains {1} cells in line {2}, but it should only contain 2 - the first being a string and the second a number... Hit any key to abort the program: ",
+                        Console.Write("'{0}' contains {1} cells in line {2}, but it should contain 3 - the first two being strings and the third a number... Hit any key to abort the program: ",
                             path + technologyParametersFile, split.Length, li+1); 
                         Console.ReadKey();
                         return;
@@ -163,7 +163,7 @@ namespace AdamMSc2020
                     else
                     {
                         if (technologyParameters.ContainsKey(split[0])) continue;
-                        technologyParameters.Add(split[0], Convert.ToDouble(split[1]));
+                        technologyParameters.Add(split[0], Convert.ToDouble(split[2]));
                     }
                 }
             }
