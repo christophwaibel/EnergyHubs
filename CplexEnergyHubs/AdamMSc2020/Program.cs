@@ -183,6 +183,7 @@ namespace AdamMSc2020
             double[][] fullProfiles = new double[numLoads][];
             string[] loadTypes = new string[numLoads];
             bool[] peakDays = new bool[numLoads];
+            bool[] correctionLoad = new bool[numLoads];
             for (int i = 0; i < numLoads; i++)
                 fullProfiles[i] = new double[hoursPerYear];
             loadTypes[0] = "heating";
@@ -195,6 +196,11 @@ namespace AdamMSc2020
             peakDays[2] = true;
             peakDays[3] = false;
             peakDays[4] = false;
+            correctionLoad[0] = true;
+            correctionLoad[1] = true;
+            correctionLoad[2] = true;
+            correctionLoad[3] = false;
+            correctionLoad[4] = false;
 
             bool[] useForClustering = new bool[fullProfiles.Length]; // specificy here, which load is used for clustering. the others are just reshaped
             for (int t = 0; t < hoursPerYear; t++) 
@@ -215,13 +221,14 @@ namespace AdamMSc2020
             {
                 useForClustering[i] = false;
                 peakDays[i] = false;
+                correctionLoad[i] = true;
                 loadTypes[i] = "solar";
                 for(int t=0; t<hoursPerYear; t++)
                     fullProfiles[i][t] = solar[t][i-indexSolar];
             }
 
             // TO DO: load in GHI time series, add it to full profiles (right after heating, cooling, elec), and use it for clustering. exclude other solar profiles from clustering, but they need to be reshaped too
-            EhubMisc.HorizonReduction.TypicalDays typicalDays = EhubMisc.HorizonReduction.GenerateTypicalDays(fullProfiles, loadTypes, numberOfTypicalDays, peakDays, useForClustering);
+            EhubMisc.HorizonReduction.TypicalDays typicalDays = EhubMisc.HorizonReduction.GenerateTypicalDays(fullProfiles, loadTypes, numberOfTypicalDays, peakDays, useForClustering, correctionLoad);
 
 
             /// Running Energy Hub
@@ -248,43 +255,79 @@ namespace AdamMSc2020
 
             // write a csv for each epsilon cut, name it "_e1", "_e2", .. etc
             List<string> header = new List<string>();
+            // write units to 2nd row
+            List<string> header_units = new List<string>();
             header.Add("Lev.Emissions");
+            header_units.Add("kgCO2eq/a");
             header.Add("Lev.Cost");
+            header_units.Add("CHF/a");
             header.Add("OPEX");
+            header_units.Add("CHF/a");
             header.Add("CAPEX");
+            header_units.Add("CHF/a");
             header.Add("x_Battery");
+            header_units.Add("kWh");
             header.Add("x_TES");
+            header_units.Add("kWh");
             header.Add("x_CHP");
+            header_units.Add("kW");
             header.Add("x_Boiler");
+            header_units.Add("kW");
             header.Add("x_ASHP");
+            header_units.Add("kW");
             header.Add("x_AirCon");
+            header_units.Add("kW");
             header.Add("x_Battery_charge");
+            header_units.Add("kWh");
             header.Add("x_Battery_discharge");
+            header_units.Add("kWh");
             header.Add("x_Battery_soc");
+            header_units.Add("kWh");
             header.Add("x_TES_charge");
+            header_units.Add("kWh");
             header.Add("x_TES_discharge");
+            header_units.Add("kWh");
             header.Add("x_TES_soc");
+            header_units.Add("kWh");
             header.Add("x_CHP_op_e");
+            header_units.Add("kWh");
             header.Add("x_CHP_op_h");
+            header_units.Add("kWh");
             header.Add("x_CHP_dump");
+            header_units.Add("kWh");
             header.Add("x_Boiler_op");
+            header_units.Add("kWh");
             header.Add("x_ASHP_op");
+            header_units.Add("kWh");
             header.Add("x_AirCon_op");
+            header_units.Add("kWh");
             header.Add("x_GridPurchase");
+            header_units.Add("kWh");
             header.Add("x_FeedIn");
+            header_units.Add("kWh");
             for (int i = 0; i < numberOfSolarAreas; i++)
+            {
                 header.Add("x_PV_" + i);
+                header_units.Add("sqm");
+            }
             header.Add("b_PV_totalProduction");
+            header_units.Add("kWh");
             header.Add("TypicalHeating");
+            header_units.Add("kWh");
             header.Add("TypicalCooling");
+            header_units.Add("kWh");
             header.Add("TypicalElectricity");
+            header_units.Add("kWh");
             header.Add("TypicalGHI");
+            header_units.Add(@"W/sqm");
             header.Add("TypicalAmbientTemp");
+            header_units.Add("deg C");
 
             for (int e = 0; e < ehub.Outputs.Length; e++) 
             {
                 List<List<string>> outputString = new List<List<string>>();
                 outputString.Add(header);
+                outputString.Add(header_units);
 
                 List<string> firstLine = new List<string>();
                 firstLine.Add(Convert.ToString(ehub.Outputs[e].carbon));
@@ -355,7 +398,7 @@ namespace AdamMSc2020
                     outputString.Add(newLine);
                 }
 
-                using var sw = new StreamWriter(outputPath + "results_epsilon_" + e + ".csv");
+                using var sw = new StreamWriter(outputPath + "inputfilename" + "_out" + "_e" + e + ".csv");
                 foreach (List<string> line in outputString)
                 {
                     foreach (string cell in line)

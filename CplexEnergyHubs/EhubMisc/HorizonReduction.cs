@@ -84,10 +84,11 @@ namespace EhubMisc
         /// <param name="numberOfTypicalDays">Number of typical days.</param>
         /// <param name="peakDays">Adding the peak day per demand type? One boolean per demand type. Days will be added to the regular typical days. E.g. 12 typical days + peak days.</param>
         /// <param name="useForClustering">Specifying which load type is used in the clustering. e.g. it might be wise to not include 20 solar profiles in the clustering ,because they get too much emphasize. instead, just use heating, cooling, electricity, and one profile for global horizontal irradiance. this array correspond to the loadTypes string array</param>
+        ///<param name="correctingLoad">Scaling a load type with correction factor to match the cluster sum. shouldnt be applied to ambient temperature</param>
         ///<param name="verbose"></param>
         ///<param name="dataScaling">data scaling mode: "standardization" (default), "normalization"</param>
         /// <returns>Returns a TypicalDays structure</returns>
-        public static TypicalDays GenerateTypicalDays(double[][] fullProfiles, string[] loadTypes, int numberOfTypicalDays, bool[] peakDays, bool[] useForClustering, bool verbose = true, string dataScaling = "standardization")
+        public static TypicalDays GenerateTypicalDays(double[][] fullProfiles, string[] loadTypes, int numberOfTypicalDays, bool[] peakDays, bool[] useForClustering, bool [] correctingLoad, bool verbose = true, string dataScaling = "standardization")
         {
             TypicalDays typicalDays = new TypicalDays();
 
@@ -378,12 +379,14 @@ namespace EhubMisc
                     scalingFactor[d] = _scalingFactor;
                     correctionFactor[d] = _correctionFactor;
                 }
-                for (int t = 0; t < typicalDays.Horizon; t++)
+                if (correctingLoad[load])
                 {
-                    int day = (int)Math.Floor((double)(t / hoursPerDay));
-                    typicalDays.DayProfiles[load][t] *= correctionFactor[day];
+                    for (int t = 0; t < typicalDays.Horizon; t++)
+                    {
+                        int day = (int)Math.Floor((double)(t / hoursPerDay));
+                        typicalDays.DayProfiles[load][t] *= correctionFactor[day];
+                    }
                 }
-
 
                 // (OPTIONAL) ALSO, can't apply to DayProfiles anymore, because they have been corrected. Use UncorrectedDayProfiles for it
                 // store all the lost data of _sumOfAllClusterDays
