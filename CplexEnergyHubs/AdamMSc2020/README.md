@@ -13,4 +13,4 @@ Per sample, the program needs a csv file pair:
 1. `building_input_<index>.csv`
 2. `technology_input_<index>.csv`
 
-<img src="https://latex.codecogs.com/svg.latex?\Large&space;x=\frac{-b\pm\sqrt{b^2-4ac}}{2a}" title="\Large x=\frac{-b\pm\sqrt{b^2-4ac}}{2a}" />
+https://latex.codecogs.com/
