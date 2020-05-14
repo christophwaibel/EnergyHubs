@@ -269,6 +269,14 @@ namespace AdamMSc2020
             /// Technical Parameters
             /// ////////////////////////////////////////////////////////////////////////
 
+            // floor area
+            double _floorarea;
+            if (technologyParameters.ContainsKey("TotalFloorArea"))
+                _floorarea = technologyParameters["TotalFloorArea"];
+            else
+                _floorarea = 1000.0;
+
+
             // PV
             if (technologyParameters.ContainsKey("pv_NOCT"))
                 this.pv_NOCT = technologyParameters["pv_NOCT"];
@@ -335,7 +343,7 @@ namespace AdamMSc2020
 
             // Battery
             if (technologyParameters.ContainsKey("b_MaxBattery"))
-                this.b_MaxBattery = technologyParameters["b_MaxBattery"];
+                this.b_MaxBattery = technologyParameters["b_MaxBattery"] * _floorarea;
             else
                 this.b_MaxBattery = 800.0; // Tesla car has 80 kWh
             if (technologyParameters.ContainsKey("bat_ch_eff"))
@@ -365,7 +373,7 @@ namespace AdamMSc2020
 
             // TES
             if (technologyParameters.ContainsKey("b_MaxTES"))
-                this.b_MaxTES = technologyParameters["b_MaxTES"];
+                this.b_MaxTES = technologyParameters["b_MaxTES"] * _floorarea;
             else
                 this.b_MaxTES = 1400.0;
             if (technologyParameters.ContainsKey("tes_ch_eff"))
