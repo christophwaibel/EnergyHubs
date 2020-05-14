@@ -1,2 +1,15 @@
+# MILP optimization model description
+This program runs energyhubs for 1 or more samples (building or district). If a sample represents a district, loads need to be aggregated and a simplified district heating network with heat exchanger per building is added (no losses, no flowrate, nothing, just network length cost and heat exchanger costs).
+
+This energyhub uses Typical Days for dimension reduction. Model equations are given below.
+
+## Objective Function
+<img src="https://latex.codecogs.com/svg.latex?\Large&space;min_x{2a}" title="\Large x=\frac{-b\pm\sqrt{b^2-4ac}}{2a}" />
+## Constraints
+
+## Inputs
+Per sample, the program needs a csv file pair:
+1. `building_input_<index>.csv`
+2. `technology_input_<index>.csv`
+
 <img src="https://latex.codecogs.com/svg.latex?\Large&space;x=\frac{-b\pm\sqrt{b^2-4ac}}{2a}" title="\Large x=\frac{-b\pm\sqrt{b^2-4ac}}{2a}" />
-![\Large x=\frac{-b\pm\sqrt{b^2-4ac}}{2a}](https://latex.codecogs.com/svg.latex?x%3D%5Cfrac%7B-b%5Cpm%5Csqrt%7Bb%5E2-4ac%7D%7D%7B2a%7D)
