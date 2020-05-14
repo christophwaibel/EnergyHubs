@@ -129,6 +129,8 @@ namespace AdamMSc2020
         internal double LcaTotal_DistrictHeating { get; private set; }
         internal double LcaTotal_HeatExchanger { get; private set; }
 
+        // levelized LCA of building construction
+        internal double lca_Building { get; private set; }
 
 
         #region inputs cost parameters
@@ -439,6 +441,12 @@ namespace AdamMSc2020
             else
                 this.LcaTotal_HeatExchanger = 0.0;
 
+            // levelized lca of building construction
+            if (technologyParameters.ContainsKey("lca_Building"))
+                this.lca_Building = technologyParameters["lca_Building"];
+            else
+                this.lca_Building = 0.0;
+
 
             /// ////////////////////////////////////////////////////////////////////////
             /// Cost
@@ -698,6 +706,10 @@ namespace AdamMSc2020
             INumVar dh_dummy = cpl.BoolVar();
             cpl.AddEq(1, dh_dummy);
 
+            // building lca dummy
+            INumVar lcabuilding_dummy = cpl.BoolVar();
+            cpl.AddEq(1, lcabuilding_dummy);
+
             // grid
             INumVar[] x_Purchase = new INumVar[this.Horizon];
             INumVar[] x_FeedIn = new INumVar[this.Horizon];
@@ -919,6 +931,7 @@ namespace AdamMSc2020
             carbonEmissions.AddTerm(this.lca_TES, x_TES);
             carbonEmissions.AddTerm(this.lca_HeatExchanger * TotHXsizing, dh_dummy);
             carbonEmissions.AddTerm(this.lca_DistrictHeating * this.NetworkLengthTotal, dh_dummy);
+            carbonEmissions.AddTerm(this.lca_Building, lcabuilding_dummy);
 
             /// checking for objectives and cost/carbon constraints
             /// 
