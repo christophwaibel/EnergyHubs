@@ -435,9 +435,15 @@ namespace AdamMSc2020
             // ask for folder with input files (pairs of demand_input and tech_params)
             Console.WriteLine();
             Console.WriteLine(@"*************************************************************************************");
+            Console.WriteLine(@"****************************** E N E R G Y H U B S **********************************");
+            Console.WriteLine(@"*************************************************************************************");
+            Console.WriteLine(@"************************************* F O R *****************************************");
+            Console.WriteLine(@"*************************************************************************************");
+            Console.WriteLine(@"********************** M U L T I P L E    B U I L D I N G S *************************");
             Console.WriteLine(@"*************************************************************************************");
             Console.WriteLine(@"Please enter the path of your inputs folder in the following format: 'c:\inputs\'");
             Console.WriteLine("The folder should contain one or more pairs of csv-files in the naming convention: 'building_input_0.csv', 'technology_input_0.csv'. '0' is the integer that makes the program recognize that these two csv belong together.");
+            Console.WriteLine();
             Console.Write("Enter your path now and confirm by hitting the Enter-key: ");
             string path = Console.ReadLine();
             if (!path.EndsWith(@"\"))
@@ -473,21 +479,21 @@ namespace AdamMSc2020
             }
 
             // ask, how many runs to do
-            Console.WriteLine("Enter how many runs you wanna do. There exist {0} File Pairs, so pick a number smaller equal of that", filePairs);
+            Console.WriteLine("Enter the number of Building-cases to generate Energyhubs for. There exist {0} file-pairs, hence you can select any integer number smaller equal of that:", filePairs);
             Int32.TryParse(Console.ReadLine(), out int nRuns);
             int nRunsActually = filePairs < nRuns ? filePairs : nRuns;    // if there are less file pairs in the folder than the number of runs, we actually want, only run the existing pairs in the folder
 
             for (int i=0; i< nRunsActually; i++)
             {
+                Console.WriteLine(@"*************************************************************************************");
+                Console.WriteLine("Loading data...");
                 LoadBuildingInput(path + inputBuildingFiles[i],
                     out List<double> heating, out List<double> cooling, out List<double> electricity, out List<double> ghi, out List<double> dhw, out List<double> Tamb, out List<double[]> solar, out List<double> solarArea);
                 LoadTechParameters(path + inputTechnologyFiles[i], out Dictionary<string, double> technologyParameters);
-                Console.WriteLine("Data read successfully...");
-                Console.WriteLine();
 
 
                 /// data preparation, clustering and typical days
-                Console.WriteLine(@"*************************************************************************************");
+                Console.WriteLine(@"......");
                 Console.WriteLine("Clustering and Generating typical days...");
                 int numberOfSolarAreas = solar[0].Length;
                 int numBaseLoads = 5;                               // heating, cooling, electricity, ghi, tamb
@@ -540,11 +546,11 @@ namespace AdamMSc2020
                 }
 
                 // TO DO: load in GHI time series, add it to full profiles (right after heating, cooling, elec), and use it for clustering. exclude other solar profiles from clustering, but they need to be reshaped too
-                EhubMisc.HorizonReduction.TypicalDays typicalDays = EhubMisc.HorizonReduction.GenerateTypicalDays(fullProfiles, loadTypes, numberOfTypicalDays, peakDays, useForClustering, correctionLoad);
+                EhubMisc.HorizonReduction.TypicalDays typicalDays = EhubMisc.HorizonReduction.GenerateTypicalDays(fullProfiles, loadTypes, numberOfTypicalDays, peakDays, useForClustering, correctionLoad, false);
 
 
                 /// Running Energy Hub
-                Console.WriteLine(@"*************************************************************************************");
+                Console.WriteLine(@"......");
                 Console.WriteLine("Running MILP now...");
                 double[][] typicalSolarLoads = new double[numberOfSolarAreas][];
                 for (int u = 0; u < numberOfSolarAreas; u++)
@@ -554,17 +560,22 @@ namespace AdamMSc2020
                     typicalSolarLoads, solarArea.ToArray(),
                     typicalDays.DayProfiles[4], technologyParameters,
                     clustersizePerTimestep);
-                ehub.Solve(5, true);
+                ehub.Solve(5);
 
                 /// Storing Results
-                Console.WriteLine(@"*************************************************************************************");
+                Console.WriteLine(@"......");
                 Console.WriteLine("Saving results into {0}...", path + @"results\");
                 WriteOutput(inputIndices[i], path, numberOfSolarAreas, ehub, typicalDays);
+
+                Console.WriteLine(@"......");
+                Console.WriteLine("Energyhubs {0} of {1} completed...", i + 1, nRunsActually);
             }
 
             /// Waiting for user to close window
             Console.WriteLine(@"*************************************************************************************");
-            Console.WriteLine("Hit any key to close program...: ");
+            Console.WriteLine(@"*************************************************************************************");
+            Console.WriteLine(@"*************************************************************************************");
+            Console.WriteLine("Program finished. Hit any key to close program...: ");
         }
 
 

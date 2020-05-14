@@ -414,15 +414,35 @@ namespace AdamMSc2020
             else
                 this.c_NaturalGas = 0.09;
 
+            double _gridOffPeak, _gridPeak, _feedIn;
+            if (technologyParameters.ContainsKey("c_Grid_OffPeak"))
+                _gridOffPeak = technologyParameters["c_Grid_OffPeak"];
+            else
+                _gridOffPeak = 0.1;
+            if (technologyParameters.ContainsKey("c_Grid"))
+                _gridPeak = technologyParameters["c_Grid"];
+            else
+                _gridPeak = 0.2;
+            if (technologyParameters.ContainsKey("c_FeedIn"))
+                _feedIn = technologyParameters["c_FeedIn"];
+            else
+                _feedIn = -0.15;
 
             this.c_FeedIn = new double[this.Horizon];
             this.c_Grid = new double[this.Horizon];
-
-            for (int t = 0; t < this.Horizon; t++)  // Wu et al 2017
+            for (int t = 0; t < this.Horizon; t+=24)  // default values from Wu et al 2017. he didn't have off-peak grid 
             {
-                this.c_FeedIn[t] = -0.15;
-                this.c_Grid[t] = 0.2;            
+                for(int u=t; u<t+24; u++)
+                {
+                    this.c_FeedIn[u] = _feedIn;
+                    if (u>t+7 && u < t + 18)
+                        this.c_Grid[u] = _gridPeak;
+                    else
+                        this.c_Grid[u] = _gridOffPeak;
+                }
             }
+
+
 
             // Investment Cost
             if (technologyParameters.ContainsKey("CostPV"))
