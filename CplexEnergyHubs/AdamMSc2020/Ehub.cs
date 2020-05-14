@@ -838,6 +838,14 @@ namespace AdamMSc2020
             /// ////////////////////////////////////////////////////////////////////////
             /// 
 
+            // yearly demands
+            double yearlyHeating = 0.0;
+            //double yearlyCooling = 0.0;
+            double yearlyElectricity = 0.0;
+            ILinearNumExpr yearlyHeatingProd = cpl.LinearNumExpr();
+            //ILinearNumExpr yearlyCoolingProd = cpl.LinearNumExpr();
+            ILinearNumExpr yearlyElecProd = cpl.LinearNumExpr();
+
             // meeting demands
             ILinearNumExpr carbonEmissions = cpl.LinearNumExpr();
             ILinearNumExpr biomassConsumptionTotal = cpl.LinearNumExpr();
@@ -852,7 +860,6 @@ namespace AdamMSc2020
                 /// Cooling
                 elecAdditionalDemand.AddTerm(1 / this.a_AirCon_Efficiency[t], x_AirCon_op[t]);
 
-
                 /// ////////////////////////////////////////////////////////////////////////
                 /// Heating
                 thermalGeneration.AddTerm(1, x_Boiler_op[t]);
@@ -864,7 +871,6 @@ namespace AdamMSc2020
                 thermalAdditionalDemand.AddTerm(1, x_TES_charge[t]);
                 thermalAdditionalDemand.AddTerm(1, x_CHP_op_dump[t]);
 
-
                 /// ////////////////////////////////////////////////////////////////////////
                 /// Electricity
                 // elec demand must be met by PV production, battery and grid, minus feed in
@@ -872,6 +878,7 @@ namespace AdamMSc2020
                 {
                     double pvElec = this.SolarLoads[i][t]  * 0.001 * this.a_PV_Efficiency[i][t];
                     elecGeneration.AddTerm(pvElec, x_PV[i]);
+                    yearlyElecProd.AddTerm(this.ClustersizePerTimestep[t] * pvElec, x_PV[i]);
                     x_PV_production[t].AddTerm(pvElec, x_PV[i]);
                     OM_PV += pvElec * this.c_PV_OM;
                 }
@@ -880,7 +887,7 @@ namespace AdamMSc2020
                 elecGeneration.AddTerm(this.c_chp_htp, x_CHP_op_e[t]);
                 elecAdditionalDemand.AddTerm(1, x_FeedIn[t]);
                 elecAdditionalDemand.AddTerm(1, x_Battery_charge[t]);
-
+                yearlyElectricity += (this.ClustersizePerTimestep[t] * this.ElectricityDemand[t]);
 
                 /// ////////////////////////////////////////////////////////////////////////
                 /// PV Technical Constraints
@@ -931,10 +938,43 @@ namespace AdamMSc2020
                 cpl.AddEq(x_AirCon_op[t], this.CoolingDemand[t] );
                 cpl.AddEq(cpl.Diff(thermalGeneration, thermalAdditionalDemand), this.HeatingDemand[t] );
                 cpl.AddGe(cpl.Diff(elecGeneration, elecAdditionalDemand), this.ElectricityDemand[t] );
+
+
+                /// ////////////////////////////////////////////////////////////////////////
+                /// Yearly Energy Balance
+                //yearlyCoolingProd.AddTerm(this.ClustersizePerTimestep[t] * 1 / this.a_AirCon_Efficiency[t], x_AirCon_op[t]);
+
+                yearlyHeatingProd.AddTerm(this.ClustersizePerTimestep[t], x_Boiler_op[t]);
+                yearlyHeatingProd.AddTerm(this.ClustersizePerTimestep[t], x_BiomassBoiler_op[t]);
+                yearlyHeatingProd.AddTerm(this.ClustersizePerTimestep[t], x_CHP_op_th[t]);
+                yearlyHeatingProd.AddTerm(this.ClustersizePerTimestep[t], x_ASHP_op[t]);
+                yearlyHeatingProd.AddTerm(this.ClustersizePerTimestep[t], x_TES_discharge[t]);
+                yearlyHeatingProd.AddTerm(-this.ClustersizePerTimestep[t], x_TES_charge[t]);
+                yearlyHeatingProd.AddTerm(-this.ClustersizePerTimestep[t], x_CHP_op_dump[t]);
+
+                yearlyElecProd.AddTerm(this.ClustersizePerTimestep[t], x_Purchase[t]);
+                yearlyElecProd.AddTerm(this.ClustersizePerTimestep[t], x_Battery_discharge[t]);
+                yearlyElecProd.AddTerm(this.ClustersizePerTimestep[t]*this.c_chp_htp, x_CHP_op_e[t]);
+                yearlyElecProd.AddTerm(-this.ClustersizePerTimestep[t] / this.a_AirCon_Efficiency[t], x_AirCon_op[t]);
+                yearlyElecProd.AddTerm(-this.ClustersizePerTimestep[t] / this.a_ASHP_Efficiency[t], x_ASHP_op[t]);
+                yearlyElecProd.AddTerm(-this.ClustersizePerTimestep[t], x_FeedIn[t]);
+                yearlyElecProd.AddTerm(-this.ClustersizePerTimestep[t], x_Battery_charge[t]);
+
+                //yearlyCooling += (this.ClustersizePerTimestep[t] * this.CoolingDemand[t]);
+                yearlyHeating += (this.ClustersizePerTimestep[t] * this.HeatingDemand[t]);
+                yearlyElectricity += (this.ClustersizePerTimestep[t] * this.ElectricityDemand[t]);
+
             }
             /// ////////////////////////////////////////////////////////////////////////
             /// Total Biomass consumption per year
             cpl.AddLe(biomassConsumptionTotal, this.b_maxbiomassperyear);
+
+
+            /// ////////////////////////////////////////////////////////////////////////
+            /// Making sure total yearly demand is met (because of scaling with clustersize, using storages could mean some days are cheaper and the storage is used to discharge/charge)
+            //cpl.AddGe(yearlyCoolingProd, yearlyCooling);
+            cpl.AddGe(yearlyHeatingProd, yearlyHeating);
+            cpl.AddGe(yearlyElecProd, yearlyElectricity);
 
 
             /// ////////////////////////////////////////////////////////////////////////

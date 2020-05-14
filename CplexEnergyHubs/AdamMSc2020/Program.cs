@@ -493,8 +493,7 @@ namespace AdamMSc2020
 
 
                 /// data preparation, clustering and typical days
-                Console.WriteLine(@"......");
-                Console.WriteLine("Clustering and Generating typical days...");
+                Console.WriteLine("Clustering and generating typical days...");
                 int numberOfSolarAreas = solar[0].Length;
                 int numBaseLoads = 5;                               // heating, cooling, electricity, ghi, tamb
                 int numLoads = numBaseLoads + numberOfSolarAreas;   // heating, cooling, electricity, ghi, tamb, solar. however, solar will include several profiles.
@@ -550,8 +549,7 @@ namespace AdamMSc2020
 
 
                 /// Running Energy Hub
-                Console.WriteLine(@"......");
-                Console.WriteLine("Running MILP now...");
+                Console.WriteLine("Solving MILP optimization model...");
                 double[][] typicalSolarLoads = new double[numberOfSolarAreas][];
                 for (int u = 0; u < numberOfSolarAreas; u++)
                     typicalSolarLoads[u] = typicalDays.DayProfiles[numBaseLoads + u];
@@ -563,12 +561,11 @@ namespace AdamMSc2020
                 ehub.Solve(5);
 
                 /// Storing Results
-                Console.WriteLine(@"......");
                 Console.WriteLine("Saving results into {0}...", path + @"results\");
                 WriteOutput(inputIndices[i], path, numberOfSolarAreas, ehub, typicalDays);
 
-                Console.WriteLine(@"......");
                 Console.WriteLine("Energyhubs {0} of {1} completed...", i + 1, nRunsActually);
+                Console.WriteLine(@"......");
             }
 
             /// Waiting for user to close window
