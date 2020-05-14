@@ -105,6 +105,8 @@ namespace AdamMSc2020
         /// ////////////////////////////////////////////////////////////////////////
         internal double lca_GridElectricity { get; private set; }
         internal double lca_NaturalGas { get; private set; }
+
+        // levelized LCA of technologies
         internal double lca_PV { get; private set; }
         internal double lca_Battery { get; private set; }
         internal double lca_TES { get; private set; }
@@ -115,6 +117,17 @@ namespace AdamMSc2020
         internal double lca_DistrictHeating { get; private set; }
         internal double lca_HeatExchanger { get; private set; }
         #endregion
+
+        // total (non-levelized) LCA of technologies 
+        internal double LcaTotal_PV { get; private set; }
+        internal double LcaTotal_Battery { get; private set; }
+        internal double LcaTotal_TES { get; private set; }
+        internal double LcaTotal_ASHP { get; private set; }
+        internal double LcaTotal_CHP { get; private set; }
+        internal double LcaTotal_Boiler { get; private set; }
+        internal double LcaTotal_AirCon { get; private set; }
+        internal double LcaTotal_DistrictHeating { get; private set; }
+        internal double LcaTotal_HeatExchanger { get; private set; }
 
 
 
@@ -387,42 +400,45 @@ namespace AdamMSc2020
                 this.lca_NaturalGas = technologyParameters["lca_NaturalGas"];
             else
                 this.lca_NaturalGas = 0.237;        // from Waibel 2019 co-simu paper
+            
+            // Total LCA of technologies
             if (technologyParameters.ContainsKey("lca_PV"))
-                this.lca_PV = technologyParameters["lca_PV"];
+                this.LcaTotal_PV = technologyParameters["lca_PV"];
             else
-                this.lca_PV = 0.0;
+                this.LcaTotal_PV = 0.0;
             if (technologyParameters.ContainsKey("lca_Battery"))
-                this.lca_Battery = technologyParameters["lca_Battery"];
+                this.LcaTotal_Battery = technologyParameters["lca_Battery"];
             else
-                this.lca_Battery = 0.0;
+                this.LcaTotal_Battery = 0.0;
             if (technologyParameters.ContainsKey("lca_TES"))
-                this.lca_TES = technologyParameters["lca_TES"];
+                this.LcaTotal_TES = technologyParameters["lca_TES"];
             else
-                this.lca_TES = 0.0;
+                this.LcaTotal_TES = 0.0;
             if (technologyParameters.ContainsKey("lca_ASHP"))
-                this.lca_ASHP = technologyParameters["lca_ASHP"];
+                this.LcaTotal_ASHP = technologyParameters["lca_ASHP"];
             else
-                this.lca_ASHP = 0.0;
+                this.LcaTotal_ASHP = 0.0;
             if (technologyParameters.ContainsKey("lca_CHP"))
-                this.lca_CHP = technologyParameters["lca_CHP"];
+                this.LcaTotal_CHP = technologyParameters["lca_CHP"];
             else
-                this.lca_CHP = 0.0;
+                this.LcaTotal_CHP = 0.0;
             if (technologyParameters.ContainsKey("lca_Boiler"))
-                this.lca_Boiler = technologyParameters["lca_Boiler"];
+                this.LcaTotal_Boiler = technologyParameters["lca_Boiler"];
             else
-                this.lca_Boiler = 0.0;
+                this.LcaTotal_Boiler = 0.0;
             if (technologyParameters.ContainsKey("lca_AirCon"))
-                this.lca_AirCon = technologyParameters["lca_AirCon"];
+                this.LcaTotal_AirCon = technologyParameters["lca_AirCon"];
             else
-                this.lca_AirCon = 0.0;
+                this.LcaTotal_AirCon = 0.0;
             if (technologyParameters.ContainsKey("lca_DistrictHeating"))
-                this.lca_DistrictHeating = technologyParameters["lca_DistrictHeating"];
+                this.LcaTotal_DistrictHeating = technologyParameters["lca_DistrictHeating"];
             else
-                this.lca_DistrictHeating = 0.0;
+                this.LcaTotal_DistrictHeating = 0.0;
             if (technologyParameters.ContainsKey("lca_HeatExchanger"))
-                this.lca_HeatExchanger = technologyParameters["lca_HeatExchanger"];
+                this.LcaTotal_HeatExchanger = technologyParameters["lca_HeatExchanger"];
             else
-                this.lca_HeatExchanger = 0.0;
+                this.LcaTotal_HeatExchanger = 0.0;
+
 
             /// ////////////////////////////////////////////////////////////////////////
             /// Cost
@@ -639,6 +655,18 @@ namespace AdamMSc2020
                 this.c_HeatExchanger = 0.0;
                 this.c_DistrictHeating = 0.0;
             }
+
+
+            // levelized LCA of technologies
+            this.lca_AirCon = this.LcaTotal_AirCon / this.LifetimeAirCon;
+            this.lca_ASHP = this.LcaTotal_ASHP / this.LifetimeASHP;
+            this.lca_Battery = this.LcaTotal_Battery / this.LifetimeBattery;
+            this.lca_Boiler = this.LcaTotal_Boiler / this.LifetimeBoiler;
+            this.lca_CHP = this.LcaTotal_CHP / this.LifetimeCHP;
+            this.lca_DistrictHeating = this.LcaTotal_DistrictHeating / this.LifetimeDistrictHeating;
+            this.lca_HeatExchanger = this.LcaTotal_HeatExchanger / this.LifetimeHeatExchanger;
+            this.lca_PV = this.LcaTotal_PV / this.LifetimePV;
+            this.lca_TES = this.LcaTotal_TES / this.LifetimeTES;
         }
 
 
@@ -652,8 +680,10 @@ namespace AdamMSc2020
             double LevCostDH = this.NetworkLengthTotal * this.c_DistrictHeating;
             double [] LevCostHX = new double[this.NumberOfBuildingsInDistrict];
             double TotLevCostDH = 0.0;
+            double TotHXsizing = 0.0;
             for (int i = 0; i < this.NumberOfBuildingsInDistrict; i++) 
             {
+                TotHXsizing += this.PeakHeatingLoadsPerBuilding[i];
                 LevCostHX[i] = this.c_HeatExchanger * this.PeakHeatingLoadsPerBuilding[i];
                 TotLevCostDH += LevCostHX[i];
             }
@@ -887,6 +917,8 @@ namespace AdamMSc2020
             carbonEmissions.AddTerm(this.lca_Boiler, x_Boiler);
             carbonEmissions.AddTerm(this.lca_CHP, x_CHP);
             carbonEmissions.AddTerm(this.lca_TES, x_TES);
+            carbonEmissions.AddTerm(this.lca_HeatExchanger * TotHXsizing, dh_dummy);
+            carbonEmissions.AddTerm(this.lca_DistrictHeating * this.NetworkLengthTotal, dh_dummy);
 
             /// checking for objectives and cost/carbon constraints
             /// 
