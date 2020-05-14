@@ -673,6 +673,8 @@ namespace AdamMSc2020
             header_units.Add("kW");
             header.Add("x_Boiler");
             header_units.Add("kW");
+            header.Add("x_BiomassBoiler");
+            header_units.Add("kW");
             header.Add("x_ASHP");
             header_units.Add("kW");
             header.Add("x_AirCon");
@@ -696,6 +698,8 @@ namespace AdamMSc2020
             header.Add("x_CHP_dump");
             header_units.Add("kWh");
             header.Add("x_Boiler_op");
+            header_units.Add("kWh");
+            header.Add("x_BiomassBoiler_op");
             header_units.Add("kWh");
             header.Add("x_ASHP_op");
             header_units.Add("kWh");
@@ -744,6 +748,7 @@ namespace AdamMSc2020
                 firstLine.Add(Convert.ToString(ehub.Outputs[e].x_tes));
                 firstLine.Add(Convert.ToString(ehub.Outputs[e].x_chp));
                 firstLine.Add(Convert.ToString(ehub.Outputs[e].x_boi));
+                firstLine.Add(Convert.ToString(ehub.Outputs[e].x_bmboi));
                 firstLine.Add(Convert.ToString(ehub.Outputs[e].x_hp));
                 firstLine.Add(Convert.ToString(ehub.Outputs[e].x_ac));
                 firstLine.Add(Convert.ToString(ehub.Outputs[e].x_bat_charge[0]));
@@ -756,6 +761,7 @@ namespace AdamMSc2020
                 firstLine.Add(Convert.ToString(ehub.Outputs[e].x_chp_op_h[0]));
                 firstLine.Add(Convert.ToString(ehub.Outputs[e].x_chp_dump[0]));
                 firstLine.Add(Convert.ToString(ehub.Outputs[e].x_boi_op[0]));
+                firstLine.Add(Convert.ToString(ehub.Outputs[e].x_bmboi_op[0]));
                 firstLine.Add(Convert.ToString(ehub.Outputs[e].x_hp_op[0]));
                 firstLine.Add(Convert.ToString(ehub.Outputs[e].x_ac_op[0]));
                 firstLine.Add(Convert.ToString(ehub.Outputs[e].x_elecpur[0]));
@@ -777,7 +783,7 @@ namespace AdamMSc2020
                 for (int t = 1; t < ehub.Outputs[e].x_elecpur.Length; t++)
                 {
                     List<string> newLine = new List<string>();
-                    for (int skip = 0; skip < 11; skip++)
+                    for (int skip = 0; skip < 12; skip++)
                         newLine.Add("");
                     newLine.Add(Convert.ToString(ehub.Outputs[e].x_bat_charge[t]));
                     newLine.Add(Convert.ToString(ehub.Outputs[e].x_bat_discharge[t]));
@@ -789,6 +795,7 @@ namespace AdamMSc2020
                     newLine.Add(Convert.ToString(ehub.Outputs[e].x_chp_op_h[t]));
                     newLine.Add(Convert.ToString(ehub.Outputs[e].x_chp_dump[t]));
                     newLine.Add(Convert.ToString(ehub.Outputs[e].x_boi_op[t]));
+                    newLine.Add(Convert.ToString(ehub.Outputs[e].x_bmboi_op[t]));
                     newLine.Add(Convert.ToString(ehub.Outputs[e].x_hp_op[t]));
                     newLine.Add(Convert.ToString(ehub.Outputs[e].x_ac_op[t]));
                     newLine.Add(Convert.ToString(ehub.Outputs[e].x_elecpur[t]));

@@ -14,7 +14,6 @@ namespace AdamMSc2020
         internal EhubOutputs[] Outputs;
 
 
-
         #region inputs demand and typical days
         /// ////////////////////////////////////////////////////////////////////////
         /// Demand (might be typical days) and scaling factors (a.k.a. weights)
@@ -33,7 +32,6 @@ namespace AdamMSc2020
         #endregion
 
 
-
         #region inputs technical parameters
         /// ////////////////////////////////////////////////////////////////////////
         /// Technical Parameters
@@ -47,6 +45,7 @@ namespace AdamMSc2020
         internal double LifetimeASHP { get; private set; }
         internal double LifetimeCHP { get; private set; }
         internal double LifetimeBoiler { get; private set; }
+        internal double LifetimeBiomassBoiler { get; private set; }
         internal double LifetimeAirCon { get; private set; }
         internal double LifetimeDistrictHeating { get; private set; }
         internal double LifetimeHeatExchanger { get; private set; }
@@ -67,8 +66,9 @@ namespace AdamMSc2020
         internal double hp_supplyTemp { get; private set; }
         internal double[] a_ASHP_Efficiency { get; private set; }
 
-        // Coefficients natural gas boiler
+        // Coefficients natural gas and biomass boilers
         internal double a_boi_eff { get; private set; }
+        internal double a_bmboi_eff { get; private set; }
 
         // Coefficients CHP
         internal double c_chp_eff { get; private set; }
@@ -98,13 +98,13 @@ namespace AdamMSc2020
         #endregion
 
 
-
         #region inputs LCA parameters
         /// ////////////////////////////////////////////////////////////////////////
         /// LCA
         /// ////////////////////////////////////////////////////////////////////////
         internal double lca_GridElectricity { get; private set; }
         internal double lca_NaturalGas { get; private set; }
+        internal double lca_Biomass { get; private set; }
 
         // levelized LCA of technologies
         internal double lca_PV { get; private set; }
@@ -113,10 +113,11 @@ namespace AdamMSc2020
         internal double lca_ASHP { get; private set; }
         internal double lca_CHP { get; private set; }
         internal double lca_Boiler { get; private set; }
+        internal double lca_BiomassBoiler { get; private set; }
         internal double lca_AirCon { get; private set; }
         internal double lca_DistrictHeating { get; private set; }
         internal double lca_HeatExchanger { get; private set; }
-        #endregion
+
 
         // total (non-levelized) LCA of technologies 
         internal double LcaTotal_PV { get; private set; }
@@ -125,12 +126,14 @@ namespace AdamMSc2020
         internal double LcaTotal_ASHP { get; private set; }
         internal double LcaTotal_CHP { get; private set; }
         internal double LcaTotal_Boiler { get; private set; }
+        internal double LcaTotal_BiomassBoiler { get; private set; }
         internal double LcaTotal_AirCon { get; private set; }
         internal double LcaTotal_DistrictHeating { get; private set; }
         internal double LcaTotal_HeatExchanger { get; private set; }
 
         // levelized LCA of building construction
         internal double lca_Building { get; private set; }
+        #endregion
 
 
         #region inputs cost parameters
@@ -139,12 +142,14 @@ namespace AdamMSc2020
         /// ////////////////////////////////////////////////////////////////////////
         internal double InterestRate { get; private set; }
         internal double c_NaturalGas { get; private set; }
+        internal double c_Biomass { get; private set; }
 
         // Investment Cost
         internal double CostPV { get; private set; }
         internal double CostBattery { get; private set; }
         internal double CostTES { get; private set; }
         internal double CostBoiler { get; private set; }
+        internal double CostBiomassBoiler { get; private set; }
         internal double CostCHP { get; private set; }
         internal double CostAirCon { get; private set; }
         internal double CostASHP { get; private set; }
@@ -156,6 +161,7 @@ namespace AdamMSc2020
         internal double AnnuityBattery { get; private set; }
         internal double AnnuityTES { get; private set; }
         internal double AnnuityBoiler { get; private set; }
+        internal double AnnuityBiomassBoiler { get; private set; }
         internal double AnnuityCHP { get; private set; }
         internal double AnnuityAirCon { get; private set; }
         internal double AnnuityASHP { get; private set; }
@@ -167,6 +173,7 @@ namespace AdamMSc2020
         internal double c_Battery { get; private set; }
         internal double c_TES { get; private set; }
         internal double c_Boiler { get; private set; }
+        internal double c_BiomassBoiler { get; private set; }
         internal double c_CHP { get; private set; }
         internal double c_AirCon { get; private set; }
         internal double c_ASHP { get; private set; }
@@ -178,6 +185,7 @@ namespace AdamMSc2020
         internal double c_Battery_OM { get; private set; }
         internal double c_TES_OM { get; private set; }
         internal double c_Boiler_OM { get; private set; }
+        internal double c_BiomassBoiler_OM { get; private set; }
         internal double c_CHP_OM { get; private set; }
         internal double c_AirCon_OM { get; private set; }
         internal double c_ASHP_OM { get; private set; }
@@ -201,7 +209,6 @@ namespace AdamMSc2020
         /// ////////////////////////////////////////////////////////////////////////
         private const double M = 9999999;   // Big M method
         #endregion
-
 
 
         /// <summary>
@@ -327,6 +334,12 @@ namespace AdamMSc2020
             else
                 this.a_boi_eff = 0.94;
 
+            // Biomass Boiler
+            if (technologyParameters.ContainsKey("a_bmboi_eff"))
+                this.a_bmboi_eff = technologyParameters["a_bmboi_eff"];
+            else
+                this.a_bmboi_eff = 0.9;
+
             // CHP
             if (technologyParameters.ContainsKey("c_chp_eff"))
                 this.c_chp_eff = technologyParameters["c_chp_eff"];
@@ -436,6 +449,10 @@ namespace AdamMSc2020
                 this.LcaTotal_Boiler = technologyParameters["lca_Boiler"];
             else
                 this.LcaTotal_Boiler = 0.0;
+            if (technologyParameters.ContainsKey("lca_BiomassBoiler"))
+                this.LcaTotal_BiomassBoiler = technologyParameters["lca_BiomassBoiler"];
+            else
+                this.LcaTotal_BiomassBoiler = 0.0;
             if (technologyParameters.ContainsKey("lca_AirCon"))
                 this.LcaTotal_AirCon = technologyParameters["lca_AirCon"];
             else
@@ -467,6 +484,10 @@ namespace AdamMSc2020
                 this.c_NaturalGas = technologyParameters["c_NaturalGas"];
             else
                 this.c_NaturalGas = 0.09;
+            if (technologyParameters.ContainsKey("c_Biomass"))
+                this.c_Biomass = technologyParameters["c_Biomass"];
+            else
+                this.c_Biomass = 0.2;
 
             double _gridOffPeak, _gridPeak, _feedIn;
             if (technologyParameters.ContainsKey("c_Grid_OffPeak"))
@@ -515,6 +536,10 @@ namespace AdamMSc2020
                 this.CostBoiler = technologyParameters["CostBoiler"];
             else
                 this.CostBoiler = 200.0;
+            if (technologyParameters.ContainsKey("CostBiomassBoiler"))
+                this.CostBiomassBoiler = technologyParameters["CostBiomassBoiler"];
+            else
+                this.CostBiomassBoiler = 300.0;
             if (technologyParameters.ContainsKey("CostCHP"))
                 this.CostCHP = technologyParameters["CostCHP"];
             else
@@ -553,6 +578,10 @@ namespace AdamMSc2020
                 this.c_Boiler_OM = technologyParameters["c_Boiler_OM"];
             else
                 this.c_Boiler_OM = 0.01;    // Waibel et al 2017
+            if (technologyParameters.ContainsKey("c_BiomassBoiler_OM"))
+                this.c_BiomassBoiler_OM = technologyParameters["c_BiomassBoiler_OM"];
+            else
+                this.c_BiomassBoiler_OM = 0.01;    
             if (technologyParameters.ContainsKey("c_CHP_OM"))
                 this.c_CHP_OM = technologyParameters["c_CHP_OM"];
             else
@@ -591,6 +620,10 @@ namespace AdamMSc2020
                 this.LifetimeBoiler = technologyParameters["LifetimeBoiler"];
             else
                 this.LifetimeBoiler = 30.0;
+            if (technologyParameters.ContainsKey("LifetimeBiomassBoiler"))
+                this.LifetimeBiomassBoiler = technologyParameters["LifetimeBiomassBoiler"];
+            else
+                this.LifetimeBiomassBoiler = 30.0;
             if (technologyParameters.ContainsKey("LifetimeAirCon"))
                 this.LifetimeAirCon = technologyParameters["LifetimeAirCon"];
             else
@@ -611,6 +644,7 @@ namespace AdamMSc2020
             this.AnnuityASHP = this.InterestRate / (1 - (1 / (Math.Pow((1 + this.InterestRate), (this.LifetimeASHP)))));
             this.AnnuityCHP = this.InterestRate / (1 - (1 / (Math.Pow((1 + this.InterestRate), (this.LifetimeCHP)))));
             this.AnnuityBoiler = this.InterestRate / (1 - (1 / (Math.Pow((1 + this.InterestRate), (this.LifetimeBoiler)))));
+            this.AnnuityBiomassBoiler = this.InterestRate / (1 - (1 / (Math.Pow((1 + this.InterestRate), (this.LifetimeBiomassBoiler)))));
             this.AnnuityAirCon = this.InterestRate / (1 - (1 / (Math.Pow((1 + this.InterestRate), (this.LifetimeAirCon)))));
             this.AnnuityDistrictHeating = this.InterestRate / (1 - (1 / (Math.Pow((1 + this.InterestRate), (this.LifetimeDistrictHeating)))));
             this.AnnuityHeatExchanger = this.InterestRate / (1 - (1 / (Math.Pow((1 + this.InterestRate), (this.LifetimeHeatExchanger)))));
@@ -622,6 +656,7 @@ namespace AdamMSc2020
             this.c_ASHP = this.CostASHP * this.AnnuityASHP;
             this.c_CHP = this.CostCHP * this.AnnuityCHP;
             this.c_Boiler = this.CostBoiler * this.AnnuityBoiler;
+            this.c_BiomassBoiler = this.CostBiomassBoiler * this.AnnuityBiomassBoiler;
             this.c_AirCon = this.CostAirCon * this.AnnuityAirCon;
             this.c_DistrictHeating = this.CostDistrictHeating * this.AnnuityDistrictHeating;
             this.c_HeatExchanger = this.CostHeatExchanger * this.AnnuityHeatExchanger;
@@ -678,6 +713,7 @@ namespace AdamMSc2020
             this.lca_ASHP = this.LcaTotal_ASHP / this.LifetimeASHP;
             this.lca_Battery = this.LcaTotal_Battery / this.LifetimeBattery;
             this.lca_Boiler = this.LcaTotal_Boiler / this.LifetimeBoiler;
+            this.lca_BiomassBoiler = this.LcaTotal_BiomassBoiler / this.LifetimeBiomassBoiler;
             this.lca_CHP = this.LcaTotal_CHP / this.LifetimeCHP;
             this.lca_DistrictHeating = this.LcaTotal_DistrictHeating / this.LifetimeDistrictHeating;
             this.lca_HeatExchanger = this.LcaTotal_HeatExchanger / this.LifetimeHeatExchanger;
@@ -738,6 +774,10 @@ namespace AdamMSc2020
             INumVar x_Boiler = cpl.NumVar(0.0, System.Double.MaxValue);
             INumVar[] x_Boiler_op = new INumVar[this.Horizon];
 
+            // Biomass Boiler
+            INumVar x_BiomassBoiler = cpl.NumVar(0.0, System.Double.MaxValue);
+            INumVar[] x_BiomassBoiler_op = new INumVar[this.Horizon];
+
             // CHP
             INumVar x_CHP = cpl.NumVar(0.0, System.Double.MaxValue);
             INumVar[] x_CHP_op_e = new INumVar[this.Horizon];
@@ -774,6 +814,7 @@ namespace AdamMSc2020
 
                 x_AirCon_op[t] = cpl.NumVar(0.0, System.Double.MaxValue);
                 x_Boiler_op[t] = cpl.NumVar(0.0, System.Double.MaxValue);
+                x_BiomassBoiler_op[t] = cpl.NumVar(0.0, System.Double.MaxValue);
                 x_ASHP_op[t] = cpl.NumVar(0.0, System.Double.MaxValue);
 
                 x_Battery_charge[t] = cpl.NumVar(0.0, System.Double.MaxValue);
@@ -809,6 +850,7 @@ namespace AdamMSc2020
                 /// ////////////////////////////////////////////////////////////////////////
                 /// Heating
                 thermalGeneration.AddTerm(1, x_Boiler_op[t]);
+                thermalGeneration.AddTerm(1, x_BiomassBoiler_op[t]);
                 thermalGeneration.AddTerm(1, x_CHP_op_th[t]);
                 thermalGeneration.AddTerm(1, x_ASHP_op[t]);
                 thermalGeneration.AddTerm(1, x_TES_discharge[t]);
@@ -861,6 +903,7 @@ namespace AdamMSc2020
                 cpl.AddLe(x_AirCon_op[t], x_AirCon);
                 cpl.AddLe(x_CHP_op_e[t], x_CHP);
                 cpl.AddLe(x_Boiler_op[t], x_Boiler);
+                cpl.AddLe(x_BiomassBoiler_op[t], x_BiomassBoiler);
                 cpl.AddLe(x_ASHP_op[t], x_ASHP);
 
 
@@ -869,6 +912,7 @@ namespace AdamMSc2020
                 carbonEmissions.AddTerm(this.ClustersizePerTimestep[t] * this.lca_GridElectricity, x_Purchase[t]);     // data needs to be kgCO2eq./kWh
                 carbonEmissions.AddTerm(this.ClustersizePerTimestep[t] * this.lca_NaturalGas * 1 / this.a_boi_eff, x_Boiler_op[t]);
                 carbonEmissions.AddTerm(this.ClustersizePerTimestep[t] * this.lca_NaturalGas * 1 / this.c_chp_eff, x_CHP_op_e[t]);
+                carbonEmissions.AddTerm(this.ClustersizePerTimestep[t] * this.lca_Biomass * 1 / this.a_bmboi_eff, x_BiomassBoiler_op[t]);
 
 
                 /// ////////////////////////////////////////////////////////////////////////
@@ -935,6 +979,7 @@ namespace AdamMSc2020
             carbonEmissions.AddTerm(this.lca_AirCon, x_AirCon);
             carbonEmissions.AddTerm(this.lca_ASHP, x_ASHP);
             carbonEmissions.AddTerm(this.lca_Boiler, x_Boiler);
+            carbonEmissions.AddTerm(this.lca_BiomassBoiler, x_BiomassBoiler);
             carbonEmissions.AddTerm(this.lca_CHP, x_CHP);
             carbonEmissions.AddTerm(this.lca_TES, x_TES);
             carbonEmissions.AddTerm(this.lca_HeatExchanger * TotHXsizing, dh_dummy);
@@ -967,6 +1012,7 @@ namespace AdamMSc2020
             capex.AddTerm(this.c_AirCon, x_AirCon);
             capex.AddTerm(this.c_ASHP, x_ASHP);
             capex.AddTerm(this.c_Boiler, x_Boiler);
+            capex.AddTerm(this.c_BiomassBoiler, x_BiomassBoiler);
             capex.AddTerm(this.c_CHP, x_CHP);
             capex.AddTerm(this.c_TES, x_TES);
             capex.AddTerm(TotLevCostDH, dh_dummy);
@@ -975,11 +1021,14 @@ namespace AdamMSc2020
             {
                 opex.AddTerm(this.ClustersizePerTimestep[t] * this.c_NaturalGas / this.c_chp_eff, x_CHP_op_e[t]);
                 opex.AddTerm(this.ClustersizePerTimestep[t] * this.c_NaturalGas / this.a_boi_eff, x_Boiler_op[t]);
+                opex.AddTerm(this.ClustersizePerTimestep[t] * this.c_Biomass / this.a_bmboi_eff, x_BiomassBoiler_op[t]);
+
                 opex.AddTerm(this.ClustersizePerTimestep[t] * this.c_Grid[t], x_Purchase[t]);
                 opex.AddTerm(this.ClustersizePerTimestep[t] * this.c_FeedIn[t], x_FeedIn[t]);
 
                 opex.AddTerm(this.ClustersizePerTimestep[t] * this.c_Battery_OM, x_Battery_discharge[t]);    // assuming discharging is causing deterioration
                 opex.AddTerm(this.ClustersizePerTimestep[t] * this.c_Boiler_OM, x_Boiler_op[t]);
+                opex.AddTerm(this.ClustersizePerTimestep[t] * this.c_BiomassBoiler_OM, x_BiomassBoiler_op[t]);
                 opex.AddTerm(this.ClustersizePerTimestep[t] * this.c_AirCon_OM, x_AirCon_op[t]);
                 opex.AddTerm(this.ClustersizePerTimestep[t] * this.c_CHP_OM, x_CHP_op_e[t]);
                 opex.AddTerm(this.ClustersizePerTimestep[t] * this.c_ASHP_OM, x_ASHP_op[t]);
@@ -1028,6 +1077,7 @@ namespace AdamMSc2020
                 solution.x_tes = cpl.GetValue(x_TES);
                 solution.x_chp = cpl.GetValue(x_CHP);
                 solution.x_boi = cpl.GetValue(x_Boiler);
+                solution.x_bmboi = cpl.GetValue(x_BiomassBoiler);
                 solution.x_hp = cpl.GetValue(x_ASHP);
                 solution.x_ac = cpl.GetValue(x_AirCon);
 
@@ -1038,6 +1088,7 @@ namespace AdamMSc2020
                 solution.x_elecpur = new double[this.Horizon];
                 solution.x_feedin = new double[this.Horizon];
                 solution.x_boi_op = new double[this.Horizon];
+                solution.x_bmboi_op = new double[this.Horizon];
                 solution.x_ac_op = new double[this.Horizon];
                 solution.x_hp_op = new double[this.Horizon];
                 solution.x_chp_op_e = new double[this.Horizon];
@@ -1055,6 +1106,7 @@ namespace AdamMSc2020
                     solution.x_elecpur[t] = cpl.GetValue(x_Purchase[t]);
                     solution.x_feedin[t] = cpl.GetValue(x_FeedIn[t]);
                     solution.x_boi_op[t] = cpl.GetValue(x_Boiler_op[t]);
+                    solution.x_bmboi_op[t] = cpl.GetValue(x_BiomassBoiler_op[t]);
                     solution.x_ac_op[t] = cpl.GetValue(x_AirCon_op[t]);
                     solution.x_hp_op[t] = cpl.GetValue(x_ASHP_op[t]);
                     solution.x_chp_op_e[t] = cpl.GetValue(x_CHP_op_e[t]);

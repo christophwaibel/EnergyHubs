@@ -19,6 +19,7 @@
         internal double x_chp;              // combined heat and power
         internal double x_ac;               // air condition
         internal double x_boi;              // gas boiler
+        internal double x_bmboi;            // biomass boiler
         internal double[] x_hx_dh;          // district heating heat exchanger. per building that is connected to grid [kW]
         internal double x_dh;               // district heating network length [m]
 
@@ -33,6 +34,7 @@
         internal double[] x_tes_soc;         // tes state of charge
         internal double[] x_hp_op;          // heat pump operation
         internal double[] x_boi_op;         // boiler operation
+        internal double[] x_bmboi_op;       // biomass boiler operation
         internal double[] x_chp_op_e;       // chp operation electricity
         internal double[] x_chp_op_h;       // chp operation heat
         internal double[] x_chp_dump;       // chp heat dumped
