@@ -48,6 +48,8 @@ namespace AdamMSc2020
         internal double LifetimeCHP { get; private set; }
         internal double LifetimeBoiler { get; private set; }
         internal double LifetimeAirCon { get; private set; }
+        internal double LifetimeDistrictHeating { get; private set; }
+        internal double LifetimeHeatExchanger { get; private set; }
         
         // Coefficients PV
         internal double pv_NOCT { get; private set; }
@@ -110,6 +112,8 @@ namespace AdamMSc2020
         internal double lca_CHP { get; private set; }
         internal double lca_Boiler { get; private set; }
         internal double lca_AirCon { get; private set; }
+        internal double lca_DistrictHeating { get; private set; }
+        internal double lca_HeatExchanger { get; private set; }
         #endregion
 
 
@@ -129,6 +133,8 @@ namespace AdamMSc2020
         internal double CostCHP { get; private set; }
         internal double CostAirCon { get; private set; }
         internal double CostASHP { get; private set; }
+        internal double CostDistrictHeating { get; private set; }
+        internal double CostHeatExchanger { get; private set; }
 
         // Annuity
         internal double AnnuityPV { get; private set; }
@@ -138,6 +144,8 @@ namespace AdamMSc2020
         internal double AnnuityCHP { get; private set; }
         internal double AnnuityAirCon { get; private set; }
         internal double AnnuityASHP { get; private set; }
+        internal double AnnuityDistrictHeating { get; private set; }
+        internal double AnnuityHeatExchanger { get; private set; }
 
         // levelized investment cost
         internal double c_PV { get; private set; }
@@ -147,6 +155,8 @@ namespace AdamMSc2020
         internal double c_CHP { get; private set; }
         internal double c_AirCon { get; private set; }
         internal double c_ASHP { get; private set; }
+        internal double c_DistrictHeating { get; private set; }   
+        internal double c_HeatExchanger { get; private set; }
 
         // operation and maintenance cost
         internal double c_PV_OM { get; private set; }
@@ -162,6 +172,12 @@ namespace AdamMSc2020
         internal double[] c_FeedIn { get; private set; }
         #endregion
 
+
+        #region District Heating
+        internal int NumberOfBuildingsInDistrict { get; private set; } // loads are aggregated. but if this number >1, then dh costs apply (HX and DH pipes)
+        internal double[] PeakHeatingLoadsPerBuilding { get; private set; } // in kW. length of this array corresponds to number of buildings in the district
+        internal double NetworkLengthTotal { get; private set; } // in m
+        #endregion
 
 
         #region MILP stuff
@@ -399,8 +415,14 @@ namespace AdamMSc2020
                 this.lca_AirCon = technologyParameters["lca_AirCon"];
             else
                 this.lca_AirCon = 0.0;
-
-
+            if (technologyParameters.ContainsKey("lca_DistrictHeating"))
+                this.lca_DistrictHeating = technologyParameters["lca_DistrictHeating"];
+            else
+                this.lca_DistrictHeating = 0.0;
+            if (technologyParameters.ContainsKey("lca_HeatExchanger"))
+                this.lca_HeatExchanger = technologyParameters["lca_HeatExchanger"];
+            else
+                this.lca_HeatExchanger = 0.0;
 
             /// ////////////////////////////////////////////////////////////////////////
             /// Cost
@@ -473,6 +495,14 @@ namespace AdamMSc2020
                 this.CostASHP = technologyParameters["CostASHP"];
             else
                 this.CostASHP = 1000.0;
+            if (technologyParameters.ContainsKey("CostDistrictHeating"))
+                this.CostDistrictHeating = technologyParameters["CostDistrictHeating"];
+            else
+                this.CostDistrictHeating = 200.0;
+            if (technologyParameters.ContainsKey("CostHeatExchanger"))
+                this.CostHeatExchanger = technologyParameters["CostHeatExchanger"];
+            else
+                this.CostHeatExchanger = 200.0;
 
             // Operation and Maintenance cost
             if (technologyParameters.ContainsKey("c_PV_OM"))
@@ -504,8 +534,6 @@ namespace AdamMSc2020
             else
                 this.c_ASHP_OM = 0.1;    // Waibel et al 2017
 
-
-
             // lifetime
             if (technologyParameters.ContainsKey("LifetimePV"))
                 this.LifetimePV = technologyParameters["LifetimePV"];
@@ -535,6 +563,14 @@ namespace AdamMSc2020
                 this.LifetimeAirCon = technologyParameters["LifetimeAirCon"];
             else
                 this.LifetimeAirCon = 20.0;
+            if (technologyParameters.ContainsKey("LifetimeDistrictHeating"))
+                this.LifetimeDistrictHeating = technologyParameters["LifetimeDistrictHeating"];
+            else
+                this.LifetimeDistrictHeating = 50.0;
+            if (technologyParameters.ContainsKey("LifetimeHeatExchanger"))
+                this.LifetimeHeatExchanger = technologyParameters["LifetimeHeatExchanger"];
+            else
+                this.LifetimeHeatExchanger = 30.0;
 
             // Annuity
             this.AnnuityPV = this.InterestRate / (1 - (1 / (Math.Pow((1 + this.InterestRate), (this.LifetimePV)))));
@@ -544,6 +580,8 @@ namespace AdamMSc2020
             this.AnnuityCHP = this.InterestRate / (1 - (1 / (Math.Pow((1 + this.InterestRate), (this.LifetimeCHP)))));
             this.AnnuityBoiler = this.InterestRate / (1 - (1 / (Math.Pow((1 + this.InterestRate), (this.LifetimeBoiler)))));
             this.AnnuityAirCon = this.InterestRate / (1 - (1 / (Math.Pow((1 + this.InterestRate), (this.LifetimeAirCon)))));
+            this.AnnuityDistrictHeating = this.InterestRate / (1 - (1 / (Math.Pow((1 + this.InterestRate), (this.LifetimeDistrictHeating)))));
+            this.AnnuityHeatExchanger = this.InterestRate / (1 - (1 / (Math.Pow((1 + this.InterestRate), (this.LifetimeHeatExchanger)))));
 
             // Levelized cost
             this.c_PV = this.CostPV * this.AnnuityPV;
@@ -553,6 +591,8 @@ namespace AdamMSc2020
             this.c_CHP = this.CostCHP * this.AnnuityCHP;
             this.c_Boiler = this.CostBoiler * this.AnnuityBoiler;
             this.c_AirCon = this.CostAirCon * this.AnnuityAirCon;
+            this.c_DistrictHeating = this.CostDistrictHeating * this.AnnuityDistrictHeating;
+            this.c_HeatExchanger = this.CostHeatExchanger * this.AnnuityHeatExchanger;
 
 
             // PV efficiency
@@ -563,6 +603,42 @@ namespace AdamMSc2020
 
             this.a_ASHP_Efficiency = EhubMisc.TechnologyEfficiencies.CalculateCOPHeatPump(this.AmbientTemperature, this.hp_supplyTemp, this.hp_pi1, this.hp_pi2, this.hp_pi3, this.hp_pi4);
             this.a_AirCon_Efficiency = EhubMisc.TechnologyEfficiencies.CalculateCOPAirCon(this.AmbientTemperature);
+
+
+            // District Heating
+            if (technologyParameters.ContainsKey("NumberOfBuildingsInEHub"))
+                this.NumberOfBuildingsInDistrict = Convert.ToInt32(technologyParameters["NumberOfBuildingsInEHub"]);
+            else
+                this.NumberOfBuildingsInDistrict = 1;
+            if(this.NumberOfBuildingsInDistrict > 1)
+            {
+                double _networkLengthFactor;
+                if (technologyParameters.ContainsKey("GridLengthDistrictHeating"))
+                    _networkLengthFactor = technologyParameters["GridLengthDistrictHeating"];
+                else
+                    _networkLengthFactor = 0.1;
+
+                double _maxNetworkPerBuilding = 500.0;
+                this.NetworkLengthTotal = Convert.ToDouble(this.NumberOfBuildingsInDistrict) * _maxNetworkPerBuilding * _networkLengthFactor;
+
+                //get peak loads per building
+                this.PeakHeatingLoadsPerBuilding = new double[this.NumberOfBuildingsInDistrict];
+                for(int i=0; i<this.NumberOfBuildingsInDistrict; i++)
+                {
+                    string buildingLoad = "Peak_B_" + Convert.ToString(i + 1);
+                    if (technologyParameters.ContainsKey(buildingLoad))
+                        this.PeakHeatingLoadsPerBuilding[i] = technologyParameters[buildingLoad];
+                    else
+                        this.PeakHeatingLoadsPerBuilding[i] = 1000.0;
+                }
+            }
+            else
+            {
+                this.NetworkLengthTotal = 0.0;
+                this.PeakHeatingLoadsPerBuilding = new double[1] { 0.0 };
+                this.c_HeatExchanger = 0.0;
+                this.c_DistrictHeating = 0.0;
+            }
         }
 
 
@@ -570,10 +646,27 @@ namespace AdamMSc2020
         {
             Cplex cpl = new Cplex();
 
+            /// ////////////////////////////////////////////////////////////////////////
+            /// District Heating
+            /// ////////////////////////////////////////////////////////////////////////
+            double LevCostDH = this.NetworkLengthTotal * this.c_DistrictHeating;
+            double [] LevCostHX = new double[this.NumberOfBuildingsInDistrict];
+            double TotLevCostDH = 0.0;
+            for (int i = 0; i < this.NumberOfBuildingsInDistrict; i++) 
+            {
+                LevCostHX[i] = this.c_HeatExchanger * this.PeakHeatingLoadsPerBuilding[i];
+                TotLevCostDH += LevCostHX[i];
+            }
+            TotLevCostDH += LevCostDH; // add this to total investment cost. ignore operation cost
+
 
             /// ////////////////////////////////////////////////////////////////////////
             /// Variables
             /// ////////////////////////////////////////////////////////////////////////
+
+            // district heating dummys
+            INumVar dh_dummy = cpl.BoolVar();
+            cpl.AddEq(1, dh_dummy);
 
             // grid
             INumVar[] x_Purchase = new INumVar[this.Horizon];
@@ -823,6 +916,7 @@ namespace AdamMSc2020
             capex.AddTerm(this.c_Boiler, x_Boiler);
             capex.AddTerm(this.c_CHP, x_CHP);
             capex.AddTerm(this.c_TES, x_TES);
+            capex.AddTerm(TotLevCostDH, dh_dummy);
 
             for (int t = 0; t < this.Horizon; t++)
             {
@@ -916,6 +1010,14 @@ namespace AdamMSc2020
                     solution.x_tes_charge[t] = cpl.GetValue(x_TES_charge[t]);
                     solution.x_tes_discharge[t] = cpl.GetValue(x_TES_discharge[t]);
                     solution.x_tes_soc[t] = cpl.GetValue(x_TES_soc[t]);
+                }
+
+                solution.cost_dh = TotLevCostDH;
+                solution.x_hx_dh = new double[this.NumberOfBuildingsInDistrict];
+                for(int i=0; i<this.NumberOfBuildingsInDistrict; i++)
+                {
+                    solution.x_hx_dh[i] = this.PeakHeatingLoadsPerBuilding[i];
+                    solution.x_dh = this.NetworkLengthTotal;
                 }
 
                 return solution;

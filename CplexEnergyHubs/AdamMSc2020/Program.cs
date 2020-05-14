@@ -663,6 +663,8 @@ namespace AdamMSc2020
             header_units.Add("CHF/a");
             header.Add("CAPEX");
             header_units.Add("CHF/a");
+            header.Add("DistrictHeatingCost");
+            header_units.Add("CHF/a");
             header.Add("x_Battery");
             header_units.Add("kWh");
             header.Add("x_TES");
@@ -708,6 +710,11 @@ namespace AdamMSc2020
                 header.Add("x_PV_" + i);
                 header_units.Add("sqm");
             }
+            for(int i=0; i<ehub.NumberOfBuildingsInDistrict; i++)
+            {
+                header.Add("x_HeatExchanger_DH_" + i);
+                header_units.Add("kW");
+            }
             header.Add("b_PV_totalProduction");
             header_units.Add("kWh");
             header.Add("TypicalHeating");
@@ -732,6 +739,7 @@ namespace AdamMSc2020
                 firstLine.Add(Convert.ToString(ehub.Outputs[e].cost));
                 firstLine.Add(Convert.ToString(ehub.Outputs[e].OPEX));
                 firstLine.Add(Convert.ToString(ehub.Outputs[e].CAPEX));
+                firstLine.Add(Convert.ToString(ehub.Outputs[e].cost_dh));
                 firstLine.Add(Convert.ToString(ehub.Outputs[e].x_bat));
                 firstLine.Add(Convert.ToString(ehub.Outputs[e].x_tes));
                 firstLine.Add(Convert.ToString(ehub.Outputs[e].x_chp));
@@ -754,6 +762,8 @@ namespace AdamMSc2020
                 firstLine.Add(Convert.ToString(ehub.Outputs[e].x_feedin[0]));
                 for (int i = 0; i < numberOfSolarAreas; i++)
                     firstLine.Add(Convert.ToString(ehub.Outputs[e].x_pv[i]));
+                for (int i = 0; i < ehub.NumberOfBuildingsInDistrict; i++)
+                    firstLine.Add(Convert.ToString(ehub.Outputs[e].x_hx_dh[i]));
                 firstLine.Add(Convert.ToString(ehub.Outputs[e].b_pvprod[0]));
 
                 firstLine.Add(Convert.ToString(typicalDays.DayProfiles[0][0]));
@@ -767,7 +777,7 @@ namespace AdamMSc2020
                 for (int t = 1; t < ehub.Outputs[e].x_elecpur.Length; t++)
                 {
                     List<string> newLine = new List<string>();
-                    for (int skip = 0; skip < 10; skip++)
+                    for (int skip = 0; skip < 11; skip++)
                         newLine.Add("");
                     newLine.Add(Convert.ToString(ehub.Outputs[e].x_bat_charge[t]));
                     newLine.Add(Convert.ToString(ehub.Outputs[e].x_bat_discharge[t]));
@@ -784,6 +794,8 @@ namespace AdamMSc2020
                     newLine.Add(Convert.ToString(ehub.Outputs[e].x_elecpur[t]));
                     newLine.Add(Convert.ToString(ehub.Outputs[e].x_feedin[t]));
                     for (int skip = 0; skip < numberOfSolarAreas; skip++)
+                        newLine.Add("");
+                    for (int skip = 0; skip < ehub.NumberOfBuildingsInDistrict; skip++)
                         newLine.Add("");
                     newLine.Add(Convert.ToString(ehub.Outputs[e].b_pvprod[t]));
 

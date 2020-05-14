@@ -9,6 +9,7 @@
         internal double cost;               // cost. levelized.
         internal double OPEX;               // annual operation cost.
         internal double CAPEX;              // capital cost. levelized.
+        internal double cost_dh;            // district heating network cost (heat exchangers and network)
 
         // Technology sizing
         internal double[] x_pv;             // pv sizing [m2]
@@ -18,6 +19,8 @@
         internal double x_chp;              // combined heat and power
         internal double x_ac;               // air condition
         internal double x_boi;              // gas boiler
+        internal double[] x_hx_dh;          // district heating heat exchanger. per building that is connected to grid [kW]
+        internal double x_dh;               // district heating network length [m]
 
         // Operation. Time resolved.
         internal double[] x_elecpur;        // purchase from grid
