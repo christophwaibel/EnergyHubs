@@ -4,7 +4,7 @@ This program runs energyhubs for 1 or more samples (building or district). If a 
 This energyhub uses Typical Days for dimension reduction. Model equations are given below.
 
 ## Objective Function
-<img src="https://latex.codecogs.com/svg.latex?\Large&space;min_x{2a}" title="\Large x=\frac{-b\pm\sqrt{b^2-4ac}}{2a}" />
+<img src="https://latex.codecogs.com/svg.latex?;min_x f(x)" title="cost function" />
 ## Constraints
 
 ## Inputs
