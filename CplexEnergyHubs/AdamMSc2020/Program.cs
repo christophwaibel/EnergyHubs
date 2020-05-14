@@ -731,6 +731,8 @@ namespace AdamMSc2020
             header_units.Add(@"W/sqm");
             header.Add("TypicalAmbientTemp");
             header_units.Add("deg C");
+            header.Add("ClusterSize");
+            header_units.Add("Days");
 
             for (int e = 0; e < ehub.Outputs.Length; e++)
             {
@@ -777,6 +779,7 @@ namespace AdamMSc2020
                 firstLine.Add(Convert.ToString(typicalDays.DayProfiles[2][0]));
                 firstLine.Add(Convert.ToString(typicalDays.DayProfiles[3][0]));
                 firstLine.Add(Convert.ToString(typicalDays.DayProfiles[4][0]));
+                firstLine.Add(Convert.ToString(ehub.Outputs[e].clustersize[0]));
 
                 outputString.Add(firstLine);
 
@@ -811,6 +814,7 @@ namespace AdamMSc2020
                     newLine.Add(Convert.ToString(typicalDays.DayProfiles[2][t]));
                     newLine.Add(Convert.ToString(typicalDays.DayProfiles[3][t]));
                     newLine.Add(Convert.ToString(typicalDays.DayProfiles[4][t]));
+                    newLine.Add(Convert.ToString(ehub.Outputs[e].clustersize[t]));
 
                     outputString.Add(newLine);
                 }

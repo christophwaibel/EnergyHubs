@@ -69,6 +69,7 @@ namespace AdamMSc2020
         // Coefficients natural gas and biomass boilers
         internal double a_boi_eff { get; private set; }
         internal double a_bmboi_eff { get; private set; }
+        internal double b_maxbiomassperyear { get; private set; }  // kWh biomass per year
 
         // Coefficients CHP
         internal double c_chp_eff { get; private set; }
@@ -339,6 +340,10 @@ namespace AdamMSc2020
                 this.a_bmboi_eff = technologyParameters["a_bmboi_eff"];
             else
                 this.a_bmboi_eff = 0.9;
+            if (technologyParameters.ContainsKey("b_MaxBiomassAvailable"))
+                this.b_maxbiomassperyear = technologyParameters["b_MaxBiomassAvailable"];
+            else
+                this.b_maxbiomassperyear = 10000.0;
 
             // CHP
             if (technologyParameters.ContainsKey("c_chp_eff"))
@@ -835,6 +840,7 @@ namespace AdamMSc2020
 
             // meeting demands
             ILinearNumExpr carbonEmissions = cpl.LinearNumExpr();
+            ILinearNumExpr biomassConsumptionTotal = cpl.LinearNumExpr();
             for(int t=0; t<this.Horizon; t++)
             {
                 ILinearNumExpr elecGeneration = cpl.LinearNumExpr();
@@ -899,6 +905,11 @@ namespace AdamMSc2020
 
 
                 /// ////////////////////////////////////////////////////////////////////////
+                /// Biomass availability per year
+                biomassConsumptionTotal.AddTerm(this.ClustersizePerTimestep[t] / this.a_bmboi_eff, x_BiomassBoiler_op[t]);
+
+
+                /// ////////////////////////////////////////////////////////////////////////
                 /// Sizing
                 cpl.AddLe(x_AirCon_op[t], x_AirCon);
                 cpl.AddLe(x_CHP_op_e[t], x_CHP);
@@ -921,6 +932,9 @@ namespace AdamMSc2020
                 cpl.AddEq(cpl.Diff(thermalGeneration, thermalAdditionalDemand), this.HeatingDemand[t] );
                 cpl.AddGe(cpl.Diff(elecGeneration, elecAdditionalDemand), this.ElectricityDemand[t] );
             }
+            /// ////////////////////////////////////////////////////////////////////////
+            /// Total Biomass consumption per year
+            cpl.AddLe(biomassConsumptionTotal, this.b_maxbiomassperyear);
 
 
             /// ////////////////////////////////////////////////////////////////////////
@@ -1097,6 +1111,7 @@ namespace AdamMSc2020
                 solution.x_tes_charge = new double[this.Horizon];
                 solution.x_tes_discharge = new double[this.Horizon];
                 solution.x_tes_soc = new double[this.Horizon];
+                solution.clustersize = new int[this.Horizon];
                 for (int t = 0; t < this.Horizon; t++)
                 {
                     solution.b_pvprod[t] = cpl.GetValue(x_PV_production[t]);
@@ -1115,6 +1130,8 @@ namespace AdamMSc2020
                     solution.x_tes_charge[t] = cpl.GetValue(x_TES_charge[t]);
                     solution.x_tes_discharge[t] = cpl.GetValue(x_TES_discharge[t]);
                     solution.x_tes_soc[t] = cpl.GetValue(x_TES_soc[t]);
+
+                    solution.clustersize[t] = this.ClustersizePerTimestep[t];
                 }
 
                 solution.cost_dh = TotLevCostDH;

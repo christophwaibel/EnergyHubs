@@ -47,5 +47,8 @@
         internal double[] b_pvprod_S_b; // pv prod South B
         internal double[] b_pvprod_W_a; // pv prod West A
         internal double[] b_pvprod_W_b; // pv prod West B
+
+        // typical days related 
+        internal int[] clustersize;         // cluster size per timestep. used as scalar
     }
 }
