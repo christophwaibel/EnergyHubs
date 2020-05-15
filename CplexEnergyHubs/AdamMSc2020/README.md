@@ -49,6 +49,7 @@ This energyhub uses Typical Days for dimension reduction. Model equations are gi
 <img src="https://latex.codecogs.com/svg.latex?\min_x&space;f(x)">
 
 ### Constraints
+In the following, the technical system constraints are described. ![\forall t \in T](https://render.githubusercontent.com/render/math?math=%5Cforall%20t%20%5Cin%20T), if not stated otherwise.
 
 **Storages: Batteries and TES**
 
