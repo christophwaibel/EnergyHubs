@@ -2,7 +2,7 @@
 This program runs energyhubs for 1 or more samples (building or district). If a sample represents a district, loads need to be aggregated and a simplified district heating network with heat exchanger per building is added (no losses, no flowrate, nothing, just network length cost and heat exchanger costs).
 
 ## How to use
-Execute the `AdamMSc2020.exe` program and follow the instructions on the console:
+Download and build the solution on your computer, or ask me to send you the program. Execute `AdamMSc2020.exe` and follow the instructions on the console:
 - Enter the path to the inputs folder
 - The program identifies all valid samples (see below in section **Inputs** for their format). Enter an integer number smaller or equals to that number.
 - The program will now generate Energyhubs for each sample. It should take around 5 seconds per sample on an i7-8700K and 32GB RAM. The console will inform you on the iterations, i.e. how many Energyhubs still need to be run.
