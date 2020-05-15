@@ -1,7 +1,9 @@
 # Multi-Energy Systems Design Optimization Model for Adam Bufacchi's MSc Thesis 2020
-Adam's MSc Thesis with the title *&quot;Interactions of building- /urban-, and multi-energy systems design variables&quot;* aims to study interaction effects between building design parameters and energy systems parameters. In other words, how important is it that the demand and potential side (a.k.a. the architecture) needs to be coupled with the supply side (a.k.a. the energy hub) in order to achieve efficient low-carbon solutions?
+Adam's MSc Thesis *&quot;Interactions of building- /urban-, and multi-energy systems design variables&quot;* aims to study interaction effects between building design parameters and energy systems parameters. In other words, how important is it that the demand and potential side (a.k.a. the architecture) needs to be coupled on par with the supply side (a.k.a. the energy hub)? Also, by coupling them, can we achieve low-carbon building / neighbourhood designs more efficiently? This thesis is on quantifying such interaction effects.
 
-This program runs energyhubs for 1 or more samples (building or district). If a sample represents a district, loads need to be aggregated and a simplified district heating network with heat exchanger per building is added (no losses, no flowrate, nothing, just network length cost and heat exchanger costs).
+The repository here provides the Mixed Integer Linear Programming optimization model for the design of the multi-energy system for a building / neighbourhood (in short: Energyhub). The Energyhub is packaged as an `.exe` and needs `.csv` files that containt technology parameters as well as building information, including demand profiles. An arbitrary amount of samples (inputs) can be used and the program will iterate through all of them.
+
+The Energyhub uses the Typical Days approach for dimension reduction. Technologies included are: Natural Gas Boiler, Biomass Boiler, Air Source Heat Pump, Combined Heat and Power, Battery, Thermal Energy Storage, Air Chiller, and Photovoltaic. If a sample represents a neighbourhood instead of a single building only, loads need to be aggregated beforehand. District heating network costs are then added to the model, as well as heat exchangers for each building of the aggregated neighbourhood. The district heating nework is simplifid and does not include losses or flow rates etc. Also, only one thermal temperature level is considered, which means space heating and domestic hot water are aggregated.
 
 ## How to use
 Download and build the solution on your computer, or ask me to send you the program. Execute `AdamMSc2020.exe` and follow the instructions on the console:
@@ -11,16 +13,23 @@ Download and build the solution on your computer, or ask me to send you the prog
 - The results are written into `<inputs-folder-path>\results\`, with 5 result files for each sample. Each of the 5 result files correspond to one &varepsilon;-cut, with &varepsilon;=0 being the carbon minimal solution and &varepsilon;=5 the cost minimal solution.
 - Should something go wrong, the console will print the error exception message.
 
-
-
 ### Inputs
 Per sample, the program needs a csv file pair:
 1. `building_input_<index>.csv`
 2. `technology_input_<index>.csv`
+The index is required by the program to identify, which file pairs belong to each other.
+
+Each sample can describe either a single building, or a neighbourhood of buildings. The parameter `NumberOfBuildingsInEHub` in the `technology_input_<index>.csv` needs to be set accordingly, 1 for single building, any integer number >1 for a neighbourhood. In latter case, `technology_input_<index>.csv` also needs parameters `Peak_B_<building-index>` that describe the peak total heating load (space heating + domestic hot water) of each building in kW. E.g. if `NumberOfBuildingsInEHub=2`, then there need to be parameters `Peak_B_1` and `Peak_B_2` in the `technology_input_<index>.csv`.
+
+Furthermore, `technology_input_<index>.csv` needs information on:
+- `TotalFloorArea` of the sample (single building or neighbourhood) in m²,
+- `lca_Building` of the sample in kgCO2eq/year, which are the levelized embodied carbon emissions of the building construction.
+
+The `building_input_<index>.csv` contains all energy demand profiles of the sample (as said earlier, if it is a neighbourhood, these need to be aggregated loads), global horizontal irradiation, ambient temperature, but also available areas for placing PV on, and the solar irradiance profiles for each of the surfaces. The program recognizes how many available surface areas you indicate and from that expects the equal amount of solar irradiance profiles. E.g. if you have 20 available areas, you also need to have 20 separate solar irradiance profiles. Follow the example input files that I have sent you for details on how to prepare the input files.
 
 ### Dependencies
 - IBM CPLEX 12.6.1 full academic version
-- (Clustering class in BB-O library, once `Clustering.cs` is moved over to that repo)
+- (In some future: Clustering class in BB-O library, once `Clustering.cs` is moved over to that repo)
 
 ## MILP optimization model description
 This energyhub uses Typical Days for dimension reduction. Model equations are given below.
