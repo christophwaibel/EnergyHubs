@@ -27,6 +27,7 @@ Download and build the solution on your computer, or ask me to send you the prog
 Per sample, the program needs a csv file pair:
 1. `building_input_<index>.csv`
 2. `technology_input_<index>.csv`
+
 The index is required by the program to identify, which file pairs belong to each other.
 
 Each sample can describe either a single building, or a neighbourhood of buildings. The parameter `NumberOfBuildingsInEHub` in the `technology_input_<index>.csv` needs to be set accordingly, 1 for single building, any integer number >1 for a neighbourhood. In latter case, `technology_input_<index>.csv` also needs parameters `Peak_B_<building-index>` that describe the peak total heating load (space heating + domestic hot water) of each building in kW. E.g. if `NumberOfBuildingsInEHub=2`, then there need to be parameters `Peak_B_1` and `Peak_B_2` in the `technology_input_<index>.csv`.
