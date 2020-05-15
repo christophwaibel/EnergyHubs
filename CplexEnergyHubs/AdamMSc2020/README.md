@@ -12,6 +12,7 @@ The Energyhub uses the Typical Days approach for dimension reduction. Technologi
 - Thermal Energy Storage, 
 - Air Chiller, and 
 - Photovoltaic. 
+
 If a sample represents a neighbourhood instead of a single building only, loads need to be aggregated beforehand. District heating network costs are then added to the model, as well as heat exchangers for each building of the aggregated neighbourhood. The district heating nework is simplifid and does not include losses or flow rates etc. Also, only one thermal temperature level is considered, which means space heating and domestic hot water are aggregated.
 
 ## How to use
