@@ -58,4 +58,14 @@ The storage energy balance is given with:
 
 ...![\forall t \in T](https://render.githubusercontent.com/render/math?math=%5Cforall%20t%20%5Cin%20T), except for ![x_{\text{stor},t=0}^{\text{soc}}](https://render.githubusercontent.com/render/math?math=x_%7B%5Ctext%7Bstor%7D%2Ct%3D0%7D%5E%7B%5Ctext%7Bsoc%7D%7D), which equals to the ![\Delta Q](https://render.githubusercontent.com/render/math?math=%5CDelta%20Q) computed from the last timestep ![t=\text{End of horizon}](https://render.githubusercontent.com/render/math?math=t%3D%5Ctext%7BEnd%20of%20horizon%7D) instead.
 
-https://latex.codecogs.com/
+Since we are using typical days, we need to decouple days from each other (no seasonal storage possible):
+
+![x_{\text{stor}, t}^{\text{soc}} = x_{\text{stor}, t-24}^{\text{soc}}, \forall t \in T_{24}](https://render.githubusercontent.com/render/math?math=x_%7B%5Ctext%7Bstor%7D%2C%20t%7D%5E%7B%5Ctext%7Bsoc%7D%7D%20%3D%20x_%7B%5Ctext%7Bstor%7D%2C%20t-24%7D%5E%7B%5Ctext%7Bsoc%7D%7D%2C%20%5Cforall%20t%20%5Cin%20T_%7B24%7D)
+
+...where ![T_{24}](https://render.githubusercontent.com/render/math?math=T_%7B24%7D) denotes the set of timesteps that correspond to the first hour of each day.
+
+Furthermore, we do not allow discharging and charging of storages from one day to another, i.e. ![\forall t \in T_{24}](https://render.githubusercontent.com/render/math?math=%5Cforall%20t%20%5Cin%20T_%7B24%7D) :
+
+![x_{\text{stor}, t}^{\text{ch}} = 0,](https://render.githubusercontent.com/render/math?math=x_%7B%5Ctext%7Bstor%7D%2C%20t%7D%5E%7B%5Ctext%7Bch%7D%7D%20%3D%200%2C)
+
+![x_{\text{stor}, t}^{\text{dis}} = 0.](https://render.githubusercontent.com/render/math?math=x_%7B%5Ctext%7Bstor%7D%2C%20t%7D%5E%7B%5Ctext%7Bdis%7D%7D%20%3D%200.)
