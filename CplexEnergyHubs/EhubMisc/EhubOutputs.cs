@@ -50,5 +50,7 @@
 
         // typical days related 
         internal int[] clustersize;         // cluster size per timestep. used as scalar
+
+        internal double biomassConsumed;        // consumed Biomass in kWh
     }
 }

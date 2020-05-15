@@ -838,14 +838,6 @@ namespace AdamMSc2020
             /// ////////////////////////////////////////////////////////////////////////
             /// 
 
-            // yearly demands
-            double yearlyHeating = 0.0;
-            //double yearlyCooling = 0.0;
-            double yearlyElectricity = 0.0;
-            ILinearNumExpr yearlyHeatingProd = cpl.LinearNumExpr();
-            //ILinearNumExpr yearlyCoolingProd = cpl.LinearNumExpr();
-            ILinearNumExpr yearlyElecProd = cpl.LinearNumExpr();
-
             // meeting demands
             ILinearNumExpr carbonEmissions = cpl.LinearNumExpr();
             ILinearNumExpr biomassConsumptionTotal = cpl.LinearNumExpr();
@@ -878,7 +870,6 @@ namespace AdamMSc2020
                 {
                     double pvElec = this.SolarLoads[i][t]  * 0.001 * this.a_PV_Efficiency[i][t];
                     elecGeneration.AddTerm(pvElec, x_PV[i]);
-                    yearlyElecProd.AddTerm(this.ClustersizePerTimestep[t] * pvElec, x_PV[i]);
                     x_PV_production[t].AddTerm(pvElec, x_PV[i]);
                     OM_PV += pvElec * this.c_PV_OM;
                 }
@@ -887,7 +878,7 @@ namespace AdamMSc2020
                 elecGeneration.AddTerm(this.c_chp_htp, x_CHP_op_e[t]);
                 elecAdditionalDemand.AddTerm(1, x_FeedIn[t]);
                 elecAdditionalDemand.AddTerm(1, x_Battery_charge[t]);
-                yearlyElectricity += (this.ClustersizePerTimestep[t] * this.ElectricityDemand[t]);
+
 
                 /// ////////////////////////////////////////////////////////////////////////
                 /// PV Technical Constraints
@@ -938,32 +929,6 @@ namespace AdamMSc2020
                 cpl.AddEq(x_AirCon_op[t], this.CoolingDemand[t] );
                 cpl.AddEq(cpl.Diff(thermalGeneration, thermalAdditionalDemand), this.HeatingDemand[t] );
                 cpl.AddGe(cpl.Diff(elecGeneration, elecAdditionalDemand), this.ElectricityDemand[t] );
-
-
-                /// ////////////////////////////////////////////////////////////////////////
-                /// Yearly Energy Balance
-                //yearlyCoolingProd.AddTerm(this.ClustersizePerTimestep[t] * 1 / this.a_AirCon_Efficiency[t], x_AirCon_op[t]);
-
-                yearlyHeatingProd.AddTerm(this.ClustersizePerTimestep[t], x_Boiler_op[t]);
-                yearlyHeatingProd.AddTerm(this.ClustersizePerTimestep[t], x_BiomassBoiler_op[t]);
-                yearlyHeatingProd.AddTerm(this.ClustersizePerTimestep[t], x_CHP_op_th[t]);
-                yearlyHeatingProd.AddTerm(this.ClustersizePerTimestep[t], x_ASHP_op[t]);
-                yearlyHeatingProd.AddTerm(this.ClustersizePerTimestep[t], x_TES_discharge[t]);
-                yearlyHeatingProd.AddTerm(-this.ClustersizePerTimestep[t], x_TES_charge[t]);
-                yearlyHeatingProd.AddTerm(-this.ClustersizePerTimestep[t], x_CHP_op_dump[t]);
-
-                yearlyElecProd.AddTerm(this.ClustersizePerTimestep[t], x_Purchase[t]);
-                yearlyElecProd.AddTerm(this.ClustersizePerTimestep[t], x_Battery_discharge[t]);
-                yearlyElecProd.AddTerm(this.ClustersizePerTimestep[t]*this.c_chp_htp, x_CHP_op_e[t]);
-                yearlyElecProd.AddTerm(-this.ClustersizePerTimestep[t] / this.a_AirCon_Efficiency[t], x_AirCon_op[t]);
-                yearlyElecProd.AddTerm(-this.ClustersizePerTimestep[t] / this.a_ASHP_Efficiency[t], x_ASHP_op[t]);
-                yearlyElecProd.AddTerm(-this.ClustersizePerTimestep[t], x_FeedIn[t]);
-                yearlyElecProd.AddTerm(-this.ClustersizePerTimestep[t], x_Battery_charge[t]);
-
-                //yearlyCooling += (this.ClustersizePerTimestep[t] * this.CoolingDemand[t]);
-                yearlyHeating += (this.ClustersizePerTimestep[t] * this.HeatingDemand[t]);
-                yearlyElectricity += (this.ClustersizePerTimestep[t] * this.ElectricityDemand[t]);
-
             }
             /// ////////////////////////////////////////////////////////////////////////
             /// Total Biomass consumption per year
@@ -971,25 +936,32 @@ namespace AdamMSc2020
 
 
             /// ////////////////////////////////////////////////////////////////////////
-            /// Making sure total yearly demand is met (because of scaling with clustersize, using storages could mean some days are cheaper and the storage is used to discharge/charge)
-            //cpl.AddGe(yearlyCoolingProd, yearlyCooling);
-            cpl.AddGe(yearlyHeatingProd, yearlyHeating);
-            cpl.AddGe(yearlyElecProd, yearlyElectricity);
-
-
-            /// ////////////////////////////////////////////////////////////////////////
             /// battery model
-            for (int t=0; t<this.Horizon-1; t++)
+            for (int t=0; t<this.Horizon; t++)
             {
                 ILinearNumExpr batteryState = cpl.LinearNumExpr();
                 batteryState.AddTerm((1 - this.bat_decay), x_Battery_soc[t]);
                 batteryState.AddTerm(this.bat_ch_eff, x_Battery_charge[t]);
                 batteryState.AddTerm(-1 / this.bat_disch_eff, x_Battery_discharge[t]);
-                cpl.AddEq(x_Battery_soc[t + 1], batteryState);
+                if (t == this.Horizon - 1)
+                    cpl.AddEq(x_Battery_soc[0], batteryState);
+                else
+                    cpl.AddEq(x_Battery_soc[t + 1], batteryState);
+
+                if ((t + 1) % 24 == 0) 
+                { 
+                    if (t != this.Horizon - 1)
+                        cpl.AddEq(x_Battery_soc[t+1], x_Battery_soc[t + 1 - 24]);
+                    cpl.AddEq(x_Battery_discharge[t], 0);
+                    cpl.AddEq(x_Battery_charge[t], 0);
+                }
             }
-            cpl.AddGe(x_Battery_soc[0], cpl.Prod(x_Battery, this.bat_min_state)); // initial state of battery >= min_state
-            cpl.AddEq(x_Battery_soc[0], cpl.Diff(x_Battery_soc[this.Horizon - 1], x_Battery_discharge[this.Horizon - 1])); // initial state equals the last state minis discharge at last timestep
-            cpl.AddEq(x_Battery_discharge[0], 0);        // no discharge at t=0
+            cpl.AddGe(x_Battery_soc[0], cpl.Prod(x_Battery, this.bat_min_state));                 // initial state of battery >= min_state
+            //cpl.AddEq(x_Battery_soc[0], cpl.Sum(cpl.Diff(
+            //    cpl.Prod(x_Battery_soc[this.Horizon - 1], 1 - this.bat_decay),
+            //    cpl.Prod(x_Battery_discharge[this.Horizon - 1], -1 / this.bat_disch_eff)),
+            //    cpl.Prod(x_Battery_charge[this.Horizon - 1], this.bat_ch_eff)));                  // initial state equals the state at last timestep (minus discharge, minus losses, plus charge)
+            //cpl.AddEq(x_Battery_discharge[0], 0);                                                 // no discharge at t=0
 
             for (int t=0; t<this.Horizon; t++)
             {
@@ -1001,16 +973,31 @@ namespace AdamMSc2020
 
             /// ////////////////////////////////////////////////////////////////////////
             /// TES model
-            for (int t = 0; t < this.Horizon - 1; t++)
+            for (int t = 0; t < this.Horizon; t++)
             {
                 ILinearNumExpr tesState = cpl.LinearNumExpr();
                 tesState.AddTerm((1 - this.tes_decay), x_TES_soc[t]);
                 tesState.AddTerm(this.tes_ch_eff, x_TES_charge[t]);
                 tesState.AddTerm(-1 / this.tes_disch_eff, x_TES_discharge[t]);
-                cpl.AddEq(x_TES_soc[t + 1], tesState);
+                if (t == this.Horizon - 1)
+                    cpl.AddEq(x_TES_soc[0], tesState);
+                else
+                    cpl.AddEq(x_TES_soc[t + 1], tesState);
+
+                if ((t + 1) % 24 == 0)
+                {
+                    if (t != this.Horizon - 1)
+                        cpl.AddEq(x_TES_soc[t + 1], x_TES_soc[t + 1 - 24]);
+                    cpl.AddEq(x_TES_discharge[t], 0);
+                    cpl.AddEq(x_TES_charge[t], 0);
+                }
             }
-            cpl.AddEq(x_TES_soc[0], x_TES_soc[this.Horizon - 1]);
-            cpl.AddEq(x_TES_discharge[0], 0);
+            //cpl.AddEq(x_TES_soc[0], cpl.Sum(cpl.Diff(
+            //    cpl.Prod(x_TES_soc[this.Horizon - 1], 1 - this.tes_decay), 
+            //    cpl.Prod(x_TES_discharge[this.Horizon - 1], -1 / this.tes_disch_eff)), 
+            //    cpl.Prod(x_TES_charge[this.Horizon - 1], this.tes_ch_eff)));           // soc at t=0 equals soc at end of horizon (minus losses, charge and discharge)
+            //cpl.AddEq(x_TES_discharge[0], 0);                               // no discharge at t=0
+           
             for (int t = 0; t < this.Horizon; t++)
             {
                 cpl.AddLe(x_TES_charge[t], cpl.Prod(x_TES, this.tes_max_ch));
@@ -1182,6 +1169,7 @@ namespace AdamMSc2020
                     solution.x_dh = this.NetworkLengthTotal;
                 }
 
+                solution.biomassConsumed = cpl.GetValue(biomassConsumptionTotal);
                 return solution;
             }
             catch(ILOG.Concert.Exception ex)
