@@ -43,7 +43,7 @@ The `building_input_<index>.csv` contains all energy demand profiles of the samp
 - (In some future: Clustering class in BB-O library, once `Clustering.cs` is moved over to that repo)
 
 ## MILP optimization model description
-This energyhub uses Typical Days for dimension reduction. Model equations are given below.
+Note that this energyhub uses Typical Days for dimension reduction, therefore we cannot use seasonal storages.
 
 ### Objective Function
 <img src="https://latex.codecogs.com/svg.latex?\min_x&space;f(x)">
@@ -54,6 +54,12 @@ In the following, the technical system constraints are described. ![\forall t \i
 The general sizing constraint for any energy technology states that the operation at any timestep cannot exceed the capacity of the technology (in case of storages, the state of charge cannot exceed the capacity):
 
 ![x_{\text{tech},t}^{\text{op}} \leq x_{\text{tech}} .](https://render.githubusercontent.com/render/math?math=x_%7B%5Ctext%7Btech%7D%2Ct%7D%5E%7B%5Ctext%7Bop%7D%7D%20%5Cleq%20x_%7B%5Ctext%7Btech%7D%7D%20.)
+
+**Energy Balance**
+
+The energy balances ensure that demand is met at all timesteps:
+
+
 
 **Storages: Batteries and TES**
 
