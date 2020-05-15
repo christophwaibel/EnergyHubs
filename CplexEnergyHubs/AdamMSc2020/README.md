@@ -1,4 +1,6 @@
 # Multi-Energy Systems Design Optimization Model for Adam Bufacchi's MSc Thesis 2020
+Adam's MSc Thesis with the title *Interactions of building- /urban-, and multi-energy systems design variables* aims to study interaction effects between building design parameters and energy systems parameters. In other words, how important is it that the demand and potential side (a.k.a. the architecture) needs to be coupled with the supply side (a.k.a. the energy hub) in order to achieve efficient low-carbon solutions?
+
 This program runs energyhubs for 1 or more samples (building or district). If a sample represents a district, loads need to be aggregated and a simplified district heating network with heat exchanger per building is added (no losses, no flowrate, nothing, just network length cost and heat exchanger costs).
 
 ## How to use
