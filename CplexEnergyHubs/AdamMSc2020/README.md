@@ -62,7 +62,7 @@ Since we are using typical days, we need to decouple days from each other (no se
 
 ![x_{\text{stor}, t}^{\text{soc}} = x_{\text{stor}, t-24}^{\text{soc}}, \forall t \in T_{1}](https://render.githubusercontent.com/render/math?math=x_%7B%5Ctext%7Bstor%7D%2C%20t%7D%5E%7B%5Ctext%7Bsoc%7D%7D%20%3D%20x_%7B%5Ctext%7Bstor%7D%2C%20t-24%7D%5E%7B%5Ctext%7Bsoc%7D%7D%2C%20%5Cforall%20t%20%5Cin%20T_%7B1%7D)
 
-...where ![T_{1}](https://render.githubusercontent.com/render/math?math=T_%7B1%7D) denotes the set of timesteps that correspond to the first hour of each day.
+...where ![T_{1}](https://render.githubusercontent.com/render/math?math=T_%7B1%7D) denotes the set of timesteps that correspond to the first hour of each day. This constraint enforces the state of charge (SOC) of a storage to start at the same level on each day, therefore effectively disabling seasonal storage. A drawback however is that the initial SOC at t=0 might be nonzero, i.e. the storage starts non-empty (free energy!). However, the optimization should not start with a full storage, because then it needs to end with a full storage each day as well, therefore limiting its actual load-shifting function.
 
 Furthermore, we do not allow discharging and charging of storages from one day to another, i.e. ![\forall t \in T_{24}](https://render.githubusercontent.com/render/math?math=%5Cforall%20t%20%5Cin%20T_%7B24%7D), ![T_{24}](https://render.githubusercontent.com/render/math?math=T_%7B24%7D) denoting the last hour of each day:
 
