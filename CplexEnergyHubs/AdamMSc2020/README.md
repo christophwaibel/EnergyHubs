@@ -125,3 +125,4 @@ where:
 - Maximal storage capacities are limited as functions of the total floor area. 
 - Air Chiller is implemented as variable, even though, because it is the only cooling technology, there is no degree of freedom in the optimization. This is to keep the model flexible for future cooling technology additions
 - for technology details, see [Waibel et al 2019](https://doi.org/10.1016/j.apenergy.2019.03.177).
+- I used [this web app](https://alexanderrodin.com/github-latex-markdown/) to convert latex equations into markdown compatible syntax
