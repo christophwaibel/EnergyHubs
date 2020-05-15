@@ -9,7 +9,9 @@ Per sample, the program needs a csv file pair:
 1. `building_input_<index>.csv`
 2. `technology_input_<index>.csv`
 
-
+### Dependencies
+- IBM CPLEX 12.6.1 full academic version
+- (Clustering class in BB-O library, once `Clustering.cs` is moved over to that repo)
 
 ## MILP optimization model description
 This energyhub uses Typical Days for dimension reduction. Model equations are given below.
