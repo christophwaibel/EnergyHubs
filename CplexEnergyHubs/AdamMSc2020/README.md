@@ -53,6 +53,8 @@ The cost and carbon objective functions are given with:
 
 where the cost coefficients either represent monetary cost for investment and operation, or embodied and operational carbon emissions. The cost coefficients themselves might include conversion efficiencies, depending on technology. ![k_t](https://render.githubusercontent.com/render/math?math=k_t) is a scaling factor that depends on the typical day and it ensures that the costs of a certain day are weighed according to the size of the cluster that this day belongs to.
 
+Carbon emissions and investment cost of the district heating network and the heat exchangers are added to the objective function as constants, since they are not impacted by the MILP optimization.
+
 ### Constraints
 In the following, the system constraints are described. ![\forall t \in T](https://render.githubusercontent.com/render/math?math=%5Cforall%20t%20%5Cin%20T), if not stated otherwise.
 
