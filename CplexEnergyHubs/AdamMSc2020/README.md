@@ -60,11 +60,11 @@ The storage energy balance is given with:
 
 Since we are using typical days, we need to decouple days from each other (no seasonal storage possible):
 
-![x_{\text{stor}, t}^{\text{soc}} = x_{\text{stor}, t-24}^{\text{soc}}, \forall t \in T_{24}](https://render.githubusercontent.com/render/math?math=x_%7B%5Ctext%7Bstor%7D%2C%20t%7D%5E%7B%5Ctext%7Bsoc%7D%7D%20%3D%20x_%7B%5Ctext%7Bstor%7D%2C%20t-24%7D%5E%7B%5Ctext%7Bsoc%7D%7D%2C%20%5Cforall%20t%20%5Cin%20T_%7B24%7D)
+![x_{\text{stor}, t}^{\text{soc}} = x_{\text{stor}, t-24}^{\text{soc}}, \forall t \in T_{1}](https://render.githubusercontent.com/render/math?math=x_%7B%5Ctext%7Bstor%7D%2C%20t%7D%5E%7B%5Ctext%7Bsoc%7D%7D%20%3D%20x_%7B%5Ctext%7Bstor%7D%2C%20t-24%7D%5E%7B%5Ctext%7Bsoc%7D%7D%2C%20%5Cforall%20t%20%5Cin%20T_%7B1%7D)
 
-...where ![T_{24}](https://render.githubusercontent.com/render/math?math=T_%7B24%7D) denotes the set of timesteps that correspond to the first hour of each day.
+...where ![T_{1}](https://render.githubusercontent.com/render/math?math=T_%7B1%7D) denotes the set of timesteps that correspond to the first hour of each day.
 
-Furthermore, we do not allow discharging and charging of storages from one day to another, i.e. ![\forall t \in T_{24}](https://render.githubusercontent.com/render/math?math=%5Cforall%20t%20%5Cin%20T_%7B24%7D) :
+Furthermore, we do not allow discharging and charging of storages from one day to another, i.e. ![\forall t \in T_{24}](https://render.githubusercontent.com/render/math?math=%5Cforall%20t%20%5Cin%20T_%7B24%7D), ![T_{24}](https://render.githubusercontent.com/render/math?math=T_%7B24%7D) denoting the last hour of each day:
 
 ![x_{\text{stor}, t}^{\text{ch}} = 0,](https://render.githubusercontent.com/render/math?math=x_%7B%5Ctext%7Bstor%7D%2C%20t%7D%5E%7B%5Ctext%7Bch%7D%7D%20%3D%200%2C)
 
