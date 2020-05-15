@@ -43,7 +43,7 @@ The `building_input_<index>.csv` contains all energy demand profiles of the samp
 - (In some future: Clustering class in BB-O library, once `Clustering.cs` is moved over to that repo)
 
 ## MILP optimization model description
-Note that this energyhub uses Typical Days for dimension reduction, therefore we cannot use seasonal storages.
+Note that this energyhub uses Typical Days for dimension reduction, therefore we cannot easily use seasonal storages. Methods that allow seasonal storages with typical days exist, but are out of scope for this project.
 
 ### Objective Functions
 
