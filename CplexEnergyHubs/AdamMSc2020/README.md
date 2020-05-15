@@ -51,6 +51,10 @@ This energyhub uses Typical Days for dimension reduction. Model equations are gi
 ### Constraints
 In the following, the technical system constraints are described. ![\forall t \in T](https://render.githubusercontent.com/render/math?math=%5Cforall%20t%20%5Cin%20T), if not stated otherwise.
 
+The general sizing constraint for any energy technology states that the operation at any timestep cannot exceed the capacity of the technology (in case of storages, the state of charge cannot exceed the capacity):
+
+![x_{\text{tech},t}^{\text{op}} \leq x_{\text{tech}} .](https://render.githubusercontent.com/render/math?math=x_%7B%5Ctext%7Btech%7D%2Ct%7D%5E%7B%5Ctext%7Bop%7D%7D%20%5Cleq%20x_%7B%5Ctext%7Btech%7D%7D%20.)
+
 **Storages: Batteries and TES**
 
 The storage energy balance is given with:
