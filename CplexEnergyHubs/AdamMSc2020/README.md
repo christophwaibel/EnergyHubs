@@ -78,3 +78,10 @@ The storage charging, discharging and sizing constraints are given with:
 ![x_{\text{stor}, t}^{dis} \leq b_{\text{stor}}^{\text{maxdis}} x_{\text{stor}} ,](https://render.githubusercontent.com/render/math?math=x_%7B%5Ctext%7Bstor%7D%2C%20t%7D%5E%7Bdis%7D%20%5Cleq%20b_%7B%5Ctext%7Bstor%7D%7D%5E%7B%5Ctext%7Bmaxdis%7D%7D%20x_%7B%5Ctext%7Bstor%7D%7D%20%2C)
 
 ![x_{\text{stor},t}^{\text{soc}} \leq x_{\text{stor}} .](https://render.githubusercontent.com/render/math?math=x_%7B%5Ctext%7Bstor%7D%2Ct%7D%5E%7B%5Ctext%7Bsoc%7D%7D%20%5Cleq%20x_%7B%5Ctext%7Bstor%7D%7D%20.)
+
+Additionally, batteries should not be discharged below a certain SOC:
+
+![x_{\text{battery},t}^{\text{soc}} \geq b_{\text{battery}}^{\text{minsoc}} x_{\text{battery}} .](https://render.githubusercontent.com/render/math?math=x_%7B%5Ctext%7Bbattery%7D%2Ct%7D%5E%7B%5Ctext%7Bsoc%7D%7D%20%5Cgeq%20b_%7B%5Ctext%7Bbattery%7D%7D%5E%7B%5Ctext%7Bminsoc%7D%7D%20x_%7B%5Ctext%7Bbattery%7D%7D%20.)
+
+For thermal energy storages, an artifact caused simultaneous charging and discharging, results in a ![\Delta Q](https://render.githubusercontent.com/render/math?math=%5CDelta%20Q) of zero, but to avoid confusion when analysing results, following constraints have been added:
+
