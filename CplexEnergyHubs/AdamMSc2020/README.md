@@ -83,5 +83,9 @@ Additionally, batteries should not be discharged below a certain SOC:
 
 ![x_{\text{battery},t}^{\text{soc}} \geq b_{\text{battery}}^{\text{minsoc}} x_{\text{battery}} .](https://render.githubusercontent.com/render/math?math=x_%7B%5Ctext%7Bbattery%7D%2Ct%7D%5E%7B%5Ctext%7Bsoc%7D%7D%20%5Cgeq%20b_%7B%5Ctext%7Bbattery%7D%7D%5E%7B%5Ctext%7Bminsoc%7D%7D%20x_%7B%5Ctext%7Bbattery%7D%7D%20.)
 
-For thermal energy storages, an artifact caused simultaneous charging and discharging, results in a ![\Delta Q](https://render.githubusercontent.com/render/math?math=%5CDelta%20Q) of zero, but to avoid confusion when analysing results, following constraints have been added:
+For thermal energy storages, an artifact caused simultaneous charging and discharging. ![\Delta Q](https://render.githubusercontent.com/render/math?math=%5CDelta%20Q) was always zero due to the energy balance of the storage, but to avoid confusion when analysing results, following constraints have been added to avoid this artifact:
+
+![x_{\text{tes},t}^{\text{ch}} \leq M y_{\text{tes},t} ,](https://render.githubusercontent.com/render/math?math=x_%7B%5Ctext%7Btes%7D%2Ct%7D%5E%7B%5Ctext%7Bch%7D%7D%20%5Cleq%20M%20y_%7B%5Ctext%7Btes%7D%2Ct%7D%20%2C)
+
+![x_{\text{tes},t}^{\text{dis}} \leq M (1 - y_{\text{tes},t}) .](https://render.githubusercontent.com/render/math?math=x_%7B%5Ctext%7Btes%7D%2Ct%7D%5E%7B%5Ctext%7Bdis%7D%7D%20%5Cleq%20M%20(1%20-%20y_%7B%5Ctext%7Btes%7D%2Ct%7D)%20.)
 
