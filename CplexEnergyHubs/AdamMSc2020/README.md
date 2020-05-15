@@ -2,7 +2,7 @@
 This program runs energyhubs for 1 or more samples (building or district). If a sample represents a district, loads need to be aggregated and a simplified district heating network with heat exchanger per building is added (no losses, no flowrate, nothing, just network length cost and heat exchanger costs).
 
 ## How to use
-Run the `.exe`, give path to the inputs, wait. Results are written into `<input-path>\results\`, 5 result files for each input pair. Why 5? Because 5 &varepsilon; cuts.
+Run the `.exe`, give path to the inputs, wait. Results are written into `<input-path>\results\`, 5 result files for each input pair. Why 5? Because 5 &varepsilon;-cuts.
 
 ### Inputs
 Per sample, the program needs a csv file pair:
