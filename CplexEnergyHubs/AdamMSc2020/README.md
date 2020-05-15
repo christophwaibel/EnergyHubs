@@ -2,7 +2,13 @@
 This program runs energyhubs for 1 or more samples (building or district). If a sample represents a district, loads need to be aggregated and a simplified district heating network with heat exchanger per building is added (no losses, no flowrate, nothing, just network length cost and heat exchanger costs).
 
 ## How to use
-Run the `.exe`, give path to the inputs, wait. Results are written into `<input-path>\results\`, 5 result files for each input pair. Why 5? Because 5 &varepsilon;-cuts.
+Execute the `AdamMSc2020.exe` program and follow the instructions on the console:
+- Enter the path to the inputs folder
+- The program identifies all valid samples (see below in section **Inputs** for their format). Enter an integer number smaller or equals to that number.
+- The program will now generate Energyhubs for each sample. It should take around 5 seconds per sample on an i7-8700K and 32GB RAM. The console will inform you on the iterations, i.e. how many Energyhubs still need to be run.
+- The results are written into `<inputs-folder-path>\results\`, with 5 result files for each sample. Each of the 5 result files correspond to one &varepsilon;-cut, with &varepsilon=0; being the carbon minimal solution and &varepsilon=5; the cost minimal solution.
+
+
 
 ### Inputs
 Per sample, the program needs a csv file pair:
