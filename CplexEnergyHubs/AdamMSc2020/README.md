@@ -71,13 +71,11 @@ Furthermore, we do not allow discharging and charging of storages from one day t
 
 ![x_{\text{stor}, t}^{\text{dis}} = 0.](https://render.githubusercontent.com/render/math?math=x_%7B%5Ctext%7Bstor%7D%2C%20t%7D%5E%7B%5Ctext%7Bdis%7D%7D%20%3D%200.)
 
-The storage charging, discharging and sizing constraints are given with:
+The storage charging and discharging constraints are given with:
 
 ![x_{\text{stor}, t}^{ch} \leq b_{\text{stor}}^{\text{maxch}} x_{\text{stor}} ,](https://render.githubusercontent.com/render/math?math=x_%7B%5Ctext%7Bstor%7D%2C%20t%7D%5E%7Bch%7D%20%5Cleq%20b_%7B%5Ctext%7Bstor%7D%7D%5E%7B%5Ctext%7Bmaxch%7D%7D%20x_%7B%5Ctext%7Bstor%7D%7D%20%2C)
 
-![x_{\text{stor}, t}^{dis} \leq b_{\text{stor}}^{\text{maxdis}} x_{\text{stor}} ,](https://render.githubusercontent.com/render/math?math=x_%7B%5Ctext%7Bstor%7D%2C%20t%7D%5E%7Bdis%7D%20%5Cleq%20b_%7B%5Ctext%7Bstor%7D%7D%5E%7B%5Ctext%7Bmaxdis%7D%7D%20x_%7B%5Ctext%7Bstor%7D%7D%20%2C)
-
-![x_{\text{stor},t}^{\text{soc}} \leq x_{\text{stor}} .](https://render.githubusercontent.com/render/math?math=x_%7B%5Ctext%7Bstor%7D%2Ct%7D%5E%7B%5Ctext%7Bsoc%7D%7D%20%5Cleq%20x_%7B%5Ctext%7Bstor%7D%7D%20.)
+![x_{\text{stor}, t}^{dis} \leq b_{\text{stor}}^{\text{maxdis}} x_{\text{stor}} .](https://render.githubusercontent.com/render/math?math=x_%7B%5Ctext%7Bstor%7D%2C%20t%7D%5E%7Bdis%7D%20%5Cleq%20b_%7B%5Ctext%7Bstor%7D%7D%5E%7B%5Ctext%7Bmaxdis%7D%7D%20x_%7B%5Ctext%7Bstor%7D%7D%20.)
 
 Additionally, batteries should not be discharged below a certain SOC:
 
