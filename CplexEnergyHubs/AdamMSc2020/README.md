@@ -52,6 +52,6 @@ This energyhub uses Typical Days for dimension reduction. Model equations are gi
 
 **Storages - Batteries and TES**
 
-<img src="https://latex.codecogs.com/svg.latex?\x_{SOC,t}^{Storage}=0">
+![x_{\text{stor},t}^{\text{soc}}=(1-a^{\text{loss}}_{\text{stor}})x_{\text{stor},t}^{\text{soc}} + a_{\text{stor}}^{\text{ch}}x_{\text{stor},t}^{\text{ch}} + \frac{-1}{a_{\text{stor},t}^{\text{dis}}}x_{\text{stor},t}^{\text{dis}}](https://render.githubusercontent.com/render/math?math=x_%7B%5Ctext%7Bstor%7D%2Ct%7D%5E%7B%5Ctext%7Bsoc%7D%7D%3D(1-a%5E%7B%5Ctext%7Bloss%7D%7D_%7B%5Ctext%7Bstor%7D%7D)x_%7B%5Ctext%7Bstor%7D%2Ct%7D%5E%7B%5Ctext%7Bsoc%7D%7D%20%2B%20a_%7B%5Ctext%7Bstor%7D%7D%5E%7B%5Ctext%7Bch%7D%7Dx_%7B%5Ctext%7Bstor%7D%2Ct%7D%5E%7B%5Ctext%7Bch%7D%7D%20%2B%20%5Cfrac%7B-1%7D%7Ba_%7B%5Ctext%7Bstor%7D%2Ct%7D%5E%7B%5Ctext%7Bdis%7D%7D%7Dx_%7B%5Ctext%7Bstor%7D%2Ct%7D%5E%7B%5Ctext%7Bdis%7D%7D)
 
 https://latex.codecogs.com/
