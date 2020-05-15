@@ -3,7 +3,16 @@ Adam's MSc Thesis *&quot;Interactions of building- /urban-, and multi-energy sys
 
 The repository here provides the Mixed Integer Linear Programming optimization model for the design of the multi-energy system for a building / neighbourhood (in short: Energyhub). The Energyhub is packaged as an `.exe` and needs `.csv` files that contain technology parameters as well as building information, including demand profiles. An arbitrary amount of samples (inputs) can be used and the program will iterate through all of them.
 
-The Energyhub uses the Typical Days approach for dimension reduction. Technologies included are: Natural Gas Boiler, Biomass Boiler, Air Source Heat Pump, Combined Heat and Power, Battery, Thermal Energy Storage, Air Chiller, and Photovoltaic. If a sample represents a neighbourhood instead of a single building only, loads need to be aggregated beforehand. District heating network costs are then added to the model, as well as heat exchangers for each building of the aggregated neighbourhood. The district heating nework is simplifid and does not include losses or flow rates etc. Also, only one thermal temperature level is considered, which means space heating and domestic hot water are aggregated.
+The Energyhub uses the Typical Days approach for dimension reduction. Technologies included are: 
+- Natural Gas Boiler, 
+- Biomass Boiler, 
+- Air Source Heat Pump, 
+- Combined Heat and Power, 
+- Battery, 
+- Thermal Energy Storage, 
+- Air Chiller, and 
+- Photovoltaic. 
+If a sample represents a neighbourhood instead of a single building only, loads need to be aggregated beforehand. District heating network costs are then added to the model, as well as heat exchangers for each building of the aggregated neighbourhood. The district heating nework is simplifid and does not include losses or flow rates etc. Also, only one thermal temperature level is considered, which means space heating and domestic hot water are aggregated.
 
 ## How to use
 Download and build the solution on your computer, or ask me to send you the program. Execute `AdamMSc2020.exe` and follow the instructions on the console:
