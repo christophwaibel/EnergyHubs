@@ -57,9 +57,9 @@ The general sizing constraint for any energy technology states that the operatio
 
 **Energy Balance**
 
-The energy balances ensure that demand is met at all timesteps:
+The general energy balances ensure that demand is met at all timesteps:
 
-
+![\sum_{i=1}^{N^{\text{demand}}} a_{i,t}^{\text{demand}} x_{i,t}^{\text{op,demand}} = d_t^{\text{demand}} .](https://render.githubusercontent.com/render/math?math=%5Csum_%7Bi%3D1%7D%5E%7BN%5E%7B%5Ctext%7Bdemand%7D%7D%7D%20a_%7Bi%2Ct%7D%5E%7B%5Ctext%7Bdemand%7D%7D%20x_%7Bi%2Ct%7D%5E%7B%5Ctext%7Bop%2Cdemand%7D%7D%20%3D%20d_t%5E%7B%5Ctext%7Bdemand%7D%7D%20.)
 
 **Storages: Batteries and TES**
 
