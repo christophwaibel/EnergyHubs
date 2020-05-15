@@ -51,7 +51,9 @@ This energyhub uses Typical Days for dimension reduction. Model equations are gi
 ### Constraints
 
 **Storages: Batteries and TES**
+
 The storage energy balance is given with:
+
 ![x_{\text{stor},t+1}^{\text{soc}}=(1-a^{\text{loss}}_{\text{stor}})x_{\text{stor},t}^{\text{soc}} + a_{\text{stor}}^{\text{ch}}x_{\text{stor},t}^{\text{ch}} + \frac{-1}{a_{\text{stor},t}^{\text{dis}}}x_{\text{stor},t}^{\text{dis}}](https://render.githubusercontent.com/render/math?math=x_%7B%5Ctext%7Bstor%7D%2Ct%2B1%7D%5E%7B%5Ctext%7Bsoc%7D%7D%3D(1-a%5E%7B%5Ctext%7Bloss%7D%7D_%7B%5Ctext%7Bstor%7D%7D)x_%7B%5Ctext%7Bstor%7D%2Ct%7D%5E%7B%5Ctext%7Bsoc%7D%7D%20%2B%20a_%7B%5Ctext%7Bstor%7D%7D%5E%7B%5Ctext%7Bch%7D%7Dx_%7B%5Ctext%7Bstor%7D%2Ct%7D%5E%7B%5Ctext%7Bch%7D%7D%20%2B%20%5Cfrac%7B-1%7D%7Ba_%7B%5Ctext%7Bstor%7D%2Ct%7D%5E%7B%5Ctext%7Bdis%7D%7D%7Dx_%7B%5Ctext%7Bstor%7D%2Ct%7D%5E%7B%5Ctext%7Bdis%7D%7D)
 
 ...![\forall t \in T](https://render.githubusercontent.com/render/math?math=%5Cforall%20t%20%5Cin%20T), except for ![x_{\text{stor},t=0}^{\text{soc}}](https://render.githubusercontent.com/render/math?math=x_%7B%5Ctext%7Bstor%7D%2Ct%3D0%7D%5E%7B%5Ctext%7Bsoc%7D%7D), which equals to the ![\Delta Q](https://render.githubusercontent.com/render/math?math=%5CDelta%20Q) computed from the last timestep ![t=\text{End of horizon}](https://render.githubusercontent.com/render/math?math=t%3D%5Ctext%7BEnd%20of%20horizon%7D) instead.
