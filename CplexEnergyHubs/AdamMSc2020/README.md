@@ -119,3 +119,9 @@ Following constraint limits the yearly available biomass:
 where:
 
 ![x_{\text{biomass}}^{\text{total}} \coloneqq \sum_{t=1}^{T} (\frac{k_t}{a_{\text{bio},t}} x_{\text{bio},t}^{\text{op}}) .](https://render.githubusercontent.com/render/math?math=x_%7B%5Ctext%7Bbiomass%7D%7D%5E%7B%5Ctext%7Btotal%7D%7D%20%5Ccoloneqq%20%5Csum_%7Bt%3D1%7D%5E%7BT%7D%20(%5Cfrac%7Bk_t%7D%7Ba_%7B%5Ctext%7Bbio%7D%2Ct%7D%7D%20x_%7B%5Ctext%7Bbio%7D%2Ct%7D%5E%7B%5Ctext%7Bop%7D%7D)%20.)
+
+**Other remarks**
+
+- Maximal storage capacities are limited as functions of the total floor area. 
+- Air Chiller is implemented as variable, even though, because it is the only cooling technology, there is no degree of freedom in the optimization. This is to keep the model flexible for future cooling technology additions
+- for technology details, see [Waibel et al 2019](https://doi.org/10.1016/j.apenergy.2019.03.177).
