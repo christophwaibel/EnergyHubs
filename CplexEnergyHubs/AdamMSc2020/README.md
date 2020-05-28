@@ -30,11 +30,12 @@ Per sample, the program needs a csv file pair:
 
 The index is required by the program to identify, which file pairs belong to each other.
 
-Each sample can describe either a single building, or a neighbourhood of buildings. The parameter `NumberOfBuildingsInEHub` in the `technology_input_<index>.csv` needs to be set accordingly, 1 for single building, any integer number >1 for a neighbourhood. In latter case, `technology_input_<index>.csv` also needs parameters `Peak_B_<building-index>` that describe the peak total heating load (space heating + domestic hot water) of each building in kW. E.g. if `NumberOfBuildingsInEHub=2`, then there need to be parameters `Peak_B_1` and `Peak_B_2` in the `technology_input_<index>.csv`.
+Each sample can describe either a single building, or a neighbourhood of buildings. The parameter `NumberOfBuildingsInEHub` in the `technology_input_<index>.csv` needs to be set accordingly, 1 for single building, any integer number >1 for a neighbourhood. In latter case, `technology_input_<index>.csv` also needs parameters `Peak_B_<building-index>` that describe the peak total heating load (space heating + domestic hot water) of each building in kW. E.g. if `NumberOfBuildingsInEHub=2`, then there need to be parameters `Peak_B_1` and `Peak_B_2` in the `technology_input_<index>.csv`. The peak heating load is required to size the heat exchanger between a building and the district heating network.
 
 Furthermore, `technology_input_<index>.csv` needs information on:
 - `TotalFloorArea` of the sample (single building or neighbourhood) in m²,
 - `lca_Building` of the sample in kgCO2eq/year, which are the levelized embodied carbon emissions of the building construction.
+- `GridLengthDistrictHeating` as a fractional number from 0 - 1. It assumes that the maximal (i.e. value of 1 for this parameter) district heating network length is 500 m per building in the district. With a value of 0.1, it means the network length is 50 m per building. So with 2 buildings and factor 0.1, we have a network length of 100 m.
 
 The `building_input_<index>.csv` contains all energy demand profiles of the sample (as said earlier, if it is a neighbourhood, these need to be aggregated loads), global horizontal irradiation, ambient temperature, but also available areas for placing PV on, and the solar irradiance profiles for each of the surfaces. The program recognizes how many available surface areas you indicate and from that expects the equal amount of solar irradiance profiles. E.g. if you have 20 available areas, you also need to have 20 separate solar irradiance profiles. Follow the example input files that I have sent you for details on how to prepare the input files.
 
