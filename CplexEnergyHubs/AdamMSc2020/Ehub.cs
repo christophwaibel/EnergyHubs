@@ -1101,7 +1101,11 @@ namespace AdamMSc2020
             try
             {
                 bool success = cpl.Solve();
-                if (!success) return solution;
+                if (!success)
+                {
+                    solution.infeasible = true;
+                    return solution;
+                }
                 /// ////////////////////////////////////////////////////////////////////////
                 /// Outputs
                 /// ////////////////////////////////////////////////////////////////////////
@@ -1176,6 +1180,7 @@ namespace AdamMSc2020
             {
                 Console.WriteLine(ex);
                 Console.ReadKey();
+                solution.infeasible = true;
                 return solution;
             }
         }

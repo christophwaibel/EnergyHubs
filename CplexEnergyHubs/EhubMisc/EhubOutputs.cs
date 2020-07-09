@@ -5,6 +5,8 @@
     /// </summary>
     public struct EhubOutputs
     {
+        internal bool infeasible;           // true, if no solution exists
+
         internal double carbon;             // annual carbon.
         internal double cost;               // cost. levelized.
         internal double OPEX;               // annual operation cost.
