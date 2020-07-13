@@ -5,12 +5,13 @@ VisualStudioVersion = 16.0.29411.108
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ECOS2018", "ECOS2018\ECOS2018.csproj", "{D6CBD4DE-8CAE-4220-AE0E-7B61694F9622}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "AdamMSc2020", "AdamMSc2020\AdamMSc2020.csproj", "{5DC0C1D9-A856-47D4-AE40-8EDDAC393D3E}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "AdamMSc2020", "AdamMSc2020\AdamMSc2020.csproj", "{5DC0C1D9-A856-47D4-AE40-8EDDAC393D3E}"
 EndProject
 Project("{D954291E-2A0B-460D-934E-DC6B0785DB48}") = "EhubMisc", "EhubMisc\EhubMisc.shproj", "{CDD8E35A-FBE9-4E56-991F-12DD33803882}"
 EndProject
 Global
 	GlobalSection(SharedMSBuildProjectFiles) = preSolution
+		EhubMisc\EhubMisc.projitems*{5dc0c1d9-a856-47d4-ae40-8eddac393d3e}*SharedItemsImports = 5
 		EhubMisc\EhubMisc.projitems*{cdd8e35a-fbe9-4e56-991f-12dd33803882}*SharedItemsImports = 13
 		EhubMisc\EhubMisc.projitems*{d6cbd4de-8cae-4220-ae0e-7b61694f9622}*SharedItemsImports = 4
 	EndGlobalSection

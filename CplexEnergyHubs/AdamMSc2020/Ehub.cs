@@ -96,6 +96,15 @@ namespace AdamMSc2020
         internal double tes_max_disch { get; private set; }
         internal double b_MaxTES { get; private set; }
 
+        // Minimal Capacities
+        internal double minCapBattery { get; private set; }
+        internal double minCapTES { get; private set; }
+        internal double minCapBoiler { get; private set; }
+        internal double minCapBioBoiler { get; private set; }
+        internal double minCapCHP { get; private set; }
+        internal double minCapAirCon { get; private set; }
+        internal double minCapASHP { get; private set; }
+
         #endregion
 
 
@@ -145,7 +154,7 @@ namespace AdamMSc2020
         internal double c_NaturalGas { get; private set; }
         internal double c_Biomass { get; private set; }
 
-        // Investment Cost
+        // Linear Investment Cost
         internal double CostPV { get; private set; }
         internal double CostBattery { get; private set; }
         internal double CostTES { get; private set; }
@@ -156,6 +165,18 @@ namespace AdamMSc2020
         internal double CostASHP { get; private set; }
         internal double CostDistrictHeating { get; private set; }
         internal double CostHeatExchanger { get; private set; }
+
+        // Fix Cost
+        internal double FixCostPV { get; private set; }
+        internal double FixCostBattery { get; private set; }
+        internal double FixCostTES { get; private set; }
+        internal double FixCostBoiler { get; private set; }
+        internal double FixCostBiomassBoiler { get; private set; }
+        internal double FixCostCHP { get; private set; }
+        internal double FixCostAirCon { get; private set; }
+        internal double FixCostASHP { get; private set; }
+        internal double FixCostDistrictHeating { get; private set; }
+        internal double FixCostHeatExchanger { get; private set; }
 
         // Annuity
         internal double AnnuityPV { get; private set; }
@@ -180,6 +201,18 @@ namespace AdamMSc2020
         internal double c_ASHP { get; private set; }
         internal double c_DistrictHeating { get; private set; }   
         internal double c_HeatExchanger { get; private set; }
+
+        // levelized fix cost
+        internal double c_fix_PV { get; private set; }
+        internal double c_fix_Battery { get; private set; }
+        internal double c_fix_TES { get; private set; }
+        internal double c_fix_Boiler { get; private set; }
+        internal double c_fix_BiomassBoiler{ get; private set; }
+        internal double c_fix_CHP{ get; private set; }
+        internal double c_fix_AirCon { get; private set; }
+        internal double c_fix_ASHP { get; private set; }
+        internal double c_fix_DistrictHeating { get; private set; }
+        internal double c_fix_HeatExchanger { get; private set; }
 
         // operation and maintenance cost
         internal double c_PV_OM { get; private set; }
@@ -247,7 +280,7 @@ namespace AdamMSc2020
 
         internal void Solve(int epsilonCuts, bool verbose = false)
         {
-            double costTolerance = 1;
+            double costTolerance = 200.0;
             double carbonTolerance = 0.01;
             this.Outputs = new EhubOutputs[epsilonCuts + 2];
 
@@ -259,7 +292,7 @@ namespace AdamMSc2020
 
             // 3. solve for minCost, ignoring Carbon (then, solve for minCarbon, using mincost as constraint. check, if it makes a difference in carbon)
             this.Outputs[0] = EnergyHub("cost", minCarbon.carbon + carbonTolerance, null, verbose);
-            this.Outputs[epsilonCuts + 1] = EnergyHub("carbon", null, minCost.cost + costTolerance, verbose);
+            this.Outputs[epsilonCuts + 1] = minCost; // EnergyHub("carbon", null, minCost.cost + costTolerance, verbose);
             double carbonInterval = (minCost.carbon - minCarbon.carbon) / (epsilonCuts + 1);
 
             // 4. make epsilonCuts cuts and solve for each minCost s.t. carbon
@@ -416,6 +449,38 @@ namespace AdamMSc2020
                 this.tes_max_disch = 0.25;
 
 
+            /// ////////////////////////////////////////////////////////////////////////
+            /// Minimal Capacities
+            /// ////////////////////////////////////////////////////////////////////////
+            if (technologyParameters.ContainsKey("minCapBattery"))
+                this.minCapBattery = technologyParameters["minCapBattery"];
+            else
+                this.minCapBattery = 10;
+            if (technologyParameters.ContainsKey("minCapTES"))
+                this.minCapTES = technologyParameters["minCapTES"];
+            else
+                this.minCapTES = 10;
+            if (technologyParameters.ContainsKey("minCapBoiler"))
+                this.minCapBoiler = technologyParameters["minCapBoiler"];
+            else
+                this.minCapBoiler = 10;
+            if (technologyParameters.ContainsKey("minCapBioBoiler"))
+                this.minCapBioBoiler = technologyParameters["minCapBioBoiler"];
+            else
+                this.minCapBioBoiler = 10;
+            if (technologyParameters.ContainsKey("minCapCHP"))
+                this.minCapCHP = technologyParameters["minCapCHP"];
+            else
+                this.minCapCHP = 10;
+            if (technologyParameters.ContainsKey("minCapAirCon"))
+                this.minCapAirCon = technologyParameters["minCapAirCon"];
+            else
+                this.minCapAirCon = 10;
+            if (technologyParameters.ContainsKey("minCapASHP"))
+                this.minCapASHP = technologyParameters["minCapASHP"];
+            else
+                this.minCapASHP = 10;
+
 
             /// ////////////////////////////////////////////////////////////////////////
             /// LCA
@@ -524,7 +589,7 @@ namespace AdamMSc2020
 
 
 
-            // Investment Cost
+            // Linear Investment Cost
             if (technologyParameters.ContainsKey("CostPV"))
                 this.CostPV = technologyParameters["CostPV"];
             else
@@ -565,6 +630,48 @@ namespace AdamMSc2020
                 this.CostHeatExchanger = technologyParameters["CostHeatExchanger"];
             else
                 this.CostHeatExchanger = 200.0;
+
+            // Fix Investment Cost
+            if (technologyParameters.ContainsKey("FixCostPV"))
+                this.FixCostPV = technologyParameters["FixCostPV"];
+            else
+                this.FixCostPV = 250.0;
+            if (technologyParameters.ContainsKey("FixCostBattery"))
+                this.FixCostBattery = technologyParameters["FixCostBattery"];
+            else
+                this.FixCostBattery = 250.0;
+            if (technologyParameters.ContainsKey("FixCostTES"))
+                this.FixCostTES = technologyParameters["FixCostTES"];
+            else
+                this.FixCostTES = 250.0;
+            if (technologyParameters.ContainsKey("FixCostBoiler"))
+                this.FixCostBoiler = technologyParameters["FixCostBoiler"];
+            else
+                this.FixCostBoiler = 250.0;
+            if (technologyParameters.ContainsKey("FixCostBiomassBoiler"))
+                this.FixCostBiomassBoiler = technologyParameters["FixCostBiomassBoiler"];
+            else
+                this.FixCostBiomassBoiler = 250.0;
+            if (technologyParameters.ContainsKey("FixCostCHP"))
+                this.FixCostCHP = technologyParameters["FixCostCHP"];
+            else
+                this.FixCostCHP = 250.0;
+            if (technologyParameters.ContainsKey("FixCostAirCon"))
+                this.FixCostAirCon = technologyParameters["FixCostAirCon"];
+            else
+                this.FixCostAirCon = 250.0;
+            if (technologyParameters.ContainsKey("FixCostASHP"))
+                this.FixCostASHP = technologyParameters["FixCostASHP"];
+            else
+                this.FixCostASHP = 250.0;
+            if (technologyParameters.ContainsKey("FixCostDistrictHeating"))
+                this.FixCostDistrictHeating = technologyParameters["FixCostDistrictHeating"];
+            else
+                this.FixCostDistrictHeating = 250.0;
+            if (technologyParameters.ContainsKey("FixCostHeatExchanger"))
+                this.FixCostHeatExchanger = technologyParameters["FixCostHeatExchanger"];
+            else
+                this.FixCostHeatExchanger = 250.0;
 
             // Operation and Maintenance cost
             if (technologyParameters.ContainsKey("c_PV_OM"))
@@ -666,6 +773,17 @@ namespace AdamMSc2020
             this.c_DistrictHeating = this.CostDistrictHeating * this.AnnuityDistrictHeating;
             this.c_HeatExchanger = this.CostHeatExchanger * this.AnnuityHeatExchanger;
 
+            // levelized fix cost
+            this.c_fix_PV = this.FixCostPV * this.AnnuityPV;
+            this.c_fix_Battery = this.FixCostBattery * this.AnnuityBattery;
+            this.c_fix_TES = this.FixCostTES * this.AnnuityTES;
+            this.c_fix_Boiler = this.FixCostBoiler * this.AnnuityBoiler;
+            this.c_fix_BiomassBoiler = this.FixCostBiomassBoiler * this.AnnuityBiomassBoiler;
+            this.c_fix_CHP = this.FixCostCHP * this.AnnuityCHP;
+            this.c_fix_AirCon = this.FixCostAirCon * this.AnnuityAirCon;
+            this.c_fix_ASHP = this.FixCostASHP * this.AnnuityASHP;
+            this.c_fix_DistrictHeating = this.FixCostDistrictHeating * this.AnnuityDistrictHeating;
+            this.c_fix_HeatExchanger = this.FixCostHeatExchanger * this.AnnuityHeatExchanger;
 
             // PV efficiency
             this.a_PV_Efficiency = new double[this.NumberOfSolarAreas][];
@@ -710,6 +828,8 @@ namespace AdamMSc2020
                 this.PeakHeatingLoadsPerBuilding = new double[1] { 0.0 };
                 this.c_HeatExchanger = 0.0;
                 this.c_DistrictHeating = 0.0;
+                this.c_fix_DistrictHeating = 0.0;
+                this.c_fix_HeatExchanger = 0.0;
             }
 
 
@@ -734,7 +854,7 @@ namespace AdamMSc2020
             /// ////////////////////////////////////////////////////////////////////////
             /// District Heating
             /// ////////////////////////////////////////////////////////////////////////
-            double LevCostDH = this.NetworkLengthTotal * this.c_DistrictHeating;
+            double LevCostDH = this.NetworkLengthTotal * this.c_DistrictHeating + this.c_fix_DistrictHeating + this.c_fix_HeatExchanger;
             double [] LevCostHX = new double[this.NumberOfBuildingsInDistrict];
             double TotLevCostDH = 0.0;
             double TotHXsizing = 0.0;
@@ -769,46 +889,53 @@ namespace AdamMSc2020
             double OM_PV = 0.0; // operation maintanence for PV
             for (int i = 0; i < this.NumberOfSolarAreas; i++)
                 x_PV[i] = cpl.NumVar(0, this.SolarAreas[i]);
-            INumVar[] y_PV = new INumVar[this.Horizon];    // binary to indicate if PV is used (=1). no selling and purchasing from the grid at the same time allowed
+            INumVar[] y_PV_op = new INumVar[this.Horizon];    // binary to indicate if PV is used (=1). no selling and purchasing from the grid at the same time allowed
             
             // AirCon
             INumVar x_AirCon = cpl.NumVar(0.0, System.Double.MaxValue);
             INumVar[] x_AirCon_op = new INumVar[this.Horizon];
+            INumVar y_AirCon = cpl.BoolVar();
 
             // Boiler
             INumVar x_Boiler = cpl.NumVar(0.0, System.Double.MaxValue);
             INumVar[] x_Boiler_op = new INumVar[this.Horizon];
+            INumVar y_Boiler = cpl.BoolVar();
 
             // Biomass Boiler
             INumVar x_BiomassBoiler = cpl.NumVar(0.0, System.Double.MaxValue);
             INumVar[] x_BiomassBoiler_op = new INumVar[this.Horizon];
+            INumVar y_BiomassBoiler = cpl.BoolVar();
 
             // CHP
             INumVar x_CHP = cpl.NumVar(0.0, System.Double.MaxValue);
             INumVar[] x_CHP_op_e = new INumVar[this.Horizon];
             INumVar[] x_CHP_op_th = new INumVar[this.Horizon];
             INumVar[] x_CHP_op_dump = new INumVar[this.Horizon];
+            INumVar y_CHP = cpl.BoolVar();
 
             // ASHP
             INumVar x_ASHP = cpl.NumVar(0.0, System.Double.MaxValue);
             INumVar[] x_ASHP_op = new INumVar[this.Horizon];
+            INumVar y_ASHP = cpl.BoolVar();
 
             // Battery
             INumVar x_Battery = cpl.NumVar(0.0, this.b_MaxBattery);     // kWh
             INumVar[] x_Battery_charge = new INumVar[this.Horizon];     // kW
             INumVar[] x_Battery_discharge = new INumVar[this.Horizon];  // kW
             INumVar[] x_Battery_soc = new INumVar[this.Horizon];        // kWh
+            INumVar y_Battery = cpl.BoolVar();
 
             // TES
             INumVar x_TES = cpl.NumVar(0.0, this.b_MaxTES);             // kWh
             INumVar[] x_TES_charge = new INumVar[this.Horizon];         // kW
             INumVar[] x_TES_discharge = new INumVar[this.Horizon];      // kW
             INumVar[] x_TES_soc = new INumVar[this.Horizon];            // kWh
-            INumVar[] y_TES = new INumVar[this.Horizon];
+            INumVar[] y_TES_op = new INumVar[this.Horizon];
+            INumVar y_TES = cpl.BoolVar();
 
             for (int t = 0; t < this.Horizon; t++)
             {
-                y_PV[t] = cpl.BoolVar();
+                y_PV_op[t] = cpl.BoolVar();
                 x_Purchase[t] = cpl.NumVar(0, System.Double.MaxValue);
                 x_FeedIn[t] = cpl.NumVar(0, System.Double.MaxValue);
                 x_PV_production[t] = cpl.LinearNumExpr();
@@ -829,7 +956,7 @@ namespace AdamMSc2020
                 x_TES_charge[t] = cpl.NumVar(0.0, System.Double.MaxValue);
                 x_TES_discharge[t] = cpl.NumVar(0.0, System.Double.MaxValue);
                 x_TES_soc[t] = cpl.NumVar(0.0, System.Double.MaxValue);
-                y_TES[t] = cpl.BoolVar();
+                y_TES_op[t] = cpl.BoolVar();
             }
 
 
@@ -885,8 +1012,8 @@ namespace AdamMSc2020
                 // pv production must be greater equal feedin
                 cpl.AddGe(x_PV_production[t], x_FeedIn[t]);
                 // donnot allow feedin and purchase at the same time. y = 1 means elec is produced
-                cpl.AddLe(x_Purchase[t], cpl.Prod(M, y_PV[t]));    
-                cpl.AddLe(x_FeedIn[t], cpl.Prod(M, cpl.Diff(1, y_PV[t])));
+                cpl.AddLe(x_Purchase[t], cpl.Prod(M, y_PV_op[t]));    
+                cpl.AddLe(x_FeedIn[t], cpl.Prod(M, cpl.Diff(1, y_PV_op[t])));
 
 
                 /// ////////////////////////////////////////////////////////////////////////
@@ -1005,9 +1132,28 @@ namespace AdamMSc2020
                 cpl.AddLe(x_TES_soc[t], x_TES);
 
                 // donnot allow charge and discharge at the same time. y = 1 means charging
-                cpl.AddLe(x_TES_charge[t], cpl.Prod(M, y_TES[t]));
-                cpl.AddLe(x_TES_discharge[t], cpl.Prod(M, cpl.Diff(1, y_TES[t])));
+                cpl.AddLe(x_TES_charge[t], cpl.Prod(M, y_TES_op[t]));
+                cpl.AddLe(x_TES_discharge[t], cpl.Prod(M, cpl.Diff(1, y_TES_op[t])));
             }
+
+
+            /// ////////////////////////////////////////////////////////////////////////
+            /// Binary selection variables
+            /// ////////////////////////////////////////////////////////////////////////
+            cpl.AddLe(x_Battery, cpl.Prod(M, y_Battery));
+            cpl.AddGe(x_Battery, cpl.Prod(this.minCapBattery, y_Battery));
+            cpl.AddLe(x_TES, cpl.Prod(M, y_TES));
+            cpl.AddGe(x_TES, cpl.Prod(this.minCapTES, y_TES));
+            cpl.AddLe(x_Boiler, cpl.Prod(M, y_Boiler));
+            cpl.AddGe(x_Boiler, cpl.Prod(this.minCapBoiler, y_Boiler));
+            cpl.AddLe(x_BiomassBoiler, cpl.Prod(M, y_BiomassBoiler));
+            cpl.AddGe(x_BiomassBoiler, cpl.Prod(this.minCapBioBoiler, y_BiomassBoiler));
+            cpl.AddLe(x_CHP, cpl.Prod(M, y_CHP));
+            cpl.AddGe(x_CHP, cpl.Prod(this.minCapCHP, y_CHP));
+            cpl.AddLe(x_AirCon, cpl.Prod(M, y_AirCon));
+            cpl.AddGe(x_AirCon, cpl.Prod(this.minCapAirCon, y_AirCon));
+            cpl.AddLe(x_ASHP, cpl.Prod(M, y_ASHP));
+            cpl.AddGe(x_ASHP, cpl.Prod(this.minCapASHP, y_ASHP));
 
 
 
@@ -1050,12 +1196,19 @@ namespace AdamMSc2020
             for (int i = 0; i < this.NumberOfSolarAreas; i++)
                 capex.AddTerm(this.c_PV, x_PV[i]);
             capex.AddTerm(this.c_Battery, x_Battery);
+            capex.AddTerm(this.c_fix_Battery, y_Battery);
             capex.AddTerm(this.c_AirCon, x_AirCon);
+            capex.AddTerm(this.c_fix_AirCon, y_AirCon);
             capex.AddTerm(this.c_ASHP, x_ASHP);
+            capex.AddTerm(this.c_fix_ASHP, y_ASHP);
             capex.AddTerm(this.c_Boiler, x_Boiler);
+            capex.AddTerm(this.c_fix_Boiler, y_Boiler);
             capex.AddTerm(this.c_BiomassBoiler, x_BiomassBoiler);
+            capex.AddTerm(this.c_fix_BiomassBoiler, y_BiomassBoiler);
             capex.AddTerm(this.c_CHP, x_CHP);
+            capex.AddTerm(this.c_fix_CHP, y_CHP);
             capex.AddTerm(this.c_TES, x_TES);
+            capex.AddTerm(this.c_fix_TES, y_TES);
             capex.AddTerm(TotLevCostDH, dh_dummy);
 
             for (int t = 0; t < this.Horizon; t++)
@@ -1086,14 +1239,14 @@ namespace AdamMSc2020
             // epsilon constraints for carbon, 
             // or cost constraint in case of carbon minimization (the same reason why carbon minimization needs a cost constraint)
             if (hasCarbonConstraint && isCostMinimization) cpl.AddLe(carbonEmissions, (double)carbonConstraint);
-            else if (hasCostConstraint && !isCostMinimization) cpl.AddLe(cpl.Sum(opex, capex), (double)costConstraint);
+            else if (hasCostConstraint && !isCostMinimization) cpl.AddLe(cpl.Sum(capex, cpl.Sum(OM_PV, opex)), (double)costConstraint);
 
 
             /// ////////////////////////////////////////////////////////////////////////
             /// Solve
             /// ////////////////////////////////////////////////////////////////////////
             if (!verbose) cpl.SetOut(null);
-            cpl.SetParam(Cplex.Param.MIP.Tolerances.MIPGap, 0.01);
+            cpl.SetParam(Cplex.Param.MIP.Tolerances.MIPGap, 0.005);
 
             //if (!this.multithreading)
             //    cpl.SetParam(Cplex.Param.Threads, 1);
