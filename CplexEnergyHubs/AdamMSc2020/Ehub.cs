@@ -887,10 +887,15 @@ namespace AdamMSc2020
             INumVar[] x_PV = new INumVar[this.NumberOfSolarAreas];
             ILinearNumExpr[] x_PV_production = new ILinearNumExpr[Horizon];  
             double OM_PV = 0.0; // operation maintanence for PV
+            INumVar[] y_PV = new INumVar[this.NumberOfSolarAreas];
             for (int i = 0; i < this.NumberOfSolarAreas; i++)
+            {
                 x_PV[i] = cpl.NumVar(0, this.SolarAreas[i]);
+                y_PV[i] = cpl.BoolVar();
+            }
             INumVar[] y_PV_op = new INumVar[this.Horizon];    // binary to indicate if PV is used (=1). no selling and purchasing from the grid at the same time allowed
-            
+
+
             // AirCon
             INumVar x_AirCon = cpl.NumVar(0.0, System.Double.MaxValue);
             INumVar[] x_AirCon_op = new INumVar[this.Horizon];
@@ -1154,7 +1159,11 @@ namespace AdamMSc2020
             cpl.AddGe(x_AirCon, cpl.Prod(this.minCapAirCon, y_AirCon));
             cpl.AddLe(x_ASHP, cpl.Prod(M, y_ASHP));
             cpl.AddGe(x_ASHP, cpl.Prod(this.minCapASHP, y_ASHP));
-
+            for (int i = 0; i < this.NumberOfSolarAreas; i++)
+            {
+                cpl.AddLe(x_PV[i], cpl.Prod(M, y_PV[i]));
+                cpl.AddGe(x_PV[i], cpl.Prod(0.0, y_PV[i]));
+            }
 
 
             /// ////////////////////////////////////////////////////////////////////////
@@ -1194,7 +1203,11 @@ namespace AdamMSc2020
             ILinearNumExpr opex = cpl.LinearNumExpr();
             ILinearNumExpr capex = cpl.LinearNumExpr();
             for (int i = 0; i < this.NumberOfSolarAreas; i++)
+            {
                 capex.AddTerm(this.c_PV, x_PV[i]);
+                capex.AddTerm(this.c_fix_PV, y_PV[i]);
+            }
+
             capex.AddTerm(this.c_Battery, x_Battery);
             capex.AddTerm(this.c_fix_Battery, y_Battery);
             capex.AddTerm(this.c_AirCon, x_AirCon);
