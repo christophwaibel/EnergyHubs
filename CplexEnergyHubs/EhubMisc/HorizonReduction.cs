@@ -225,7 +225,8 @@ namespace EhubMisc
 
             for (int d = 0; d < typicalDays.NumOfTypicalDays; d++)
             {
-                typicalDays.DayOfTheYear[d] = clusteredData.Item1[d];
+                typicalDays.DayOfTheYear[d] = clusteredData.Item1[d] + 1; // + 1 because DayOfTheYear is from 1-365 (minus numOfPeakDays), but cluster item1 is from 0-364 (minus numOfPeakDays)
+                //typicalDays.DayOfTheYear[d] = XClusteringDayOfTheYear[clusteredData.Item1[d]];
                 typicalDays.DaysPerTypicalDay[d] = clusteredData.Item2[d].Length;
             }
 

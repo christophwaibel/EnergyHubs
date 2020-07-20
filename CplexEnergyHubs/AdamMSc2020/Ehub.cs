@@ -241,7 +241,7 @@ namespace AdamMSc2020
         /// ////////////////////////////////////////////////////////////////////////
         /// MILP
         /// ////////////////////////////////////////////////////////////////////////
-        private const double M = 9999999;   // Big M method
+        private const double M = 9999;   // Big M method
         #endregion
 
 
@@ -280,7 +280,7 @@ namespace AdamMSc2020
 
         internal void Solve(int epsilonCuts, bool verbose = false)
         {
-            double costTolerance = 200.0;
+            double costTolerance = 1.0;
             double carbonTolerance = 0.01;
             this.Outputs = new EhubOutputs[epsilonCuts + 2];
 
@@ -292,7 +292,8 @@ namespace AdamMSc2020
 
             // 3. solve for minCost, ignoring Carbon (then, solve for minCarbon, using mincost as constraint. check, if it makes a difference in carbon)
             this.Outputs[0] = EnergyHub("cost", minCarbon.carbon + carbonTolerance, null, verbose);
-            this.Outputs[epsilonCuts + 1] = minCost; // EnergyHub("carbon", null, minCost.cost + costTolerance, verbose);
+            //this.Outputs[epsilonCuts + 1] = minCost; 
+            this.Outputs[epsilonCuts + 1] = EnergyHub("carbon", null, minCost.cost + costTolerance, verbose);
             double carbonInterval = (minCost.carbon - minCarbon.carbon) / (epsilonCuts + 1);
 
             // 4. make epsilonCuts cuts and solve for each minCost s.t. carbon
