@@ -72,8 +72,8 @@ namespace AdamMSc2020
         internal double b_maxbiomassperyear { get; private set; }  // kWh biomass per year
 
         // Coefficients CHP
-        internal double c_chp_eff { get; private set; }
-        internal double c_chp_htp { get; private set; }         // heat to power ratio (for 1 kW of heat, 1.73 kW of electricity is produced)
+        internal double c_chp_eff_el { get; private set; }      // electric efficiency. so 1 kWh of gas results in 0.3 kWh of elec
+        internal double c_chp_htp { get; private set; }         // heat to power ratio (e.g. htp = 1.73, then 1.73 kW of heat is produced for 1 kW of elec)
         internal double c_chp_heatdump { get; private set; }    // heat dump allowed = 1
 
         // Coefficients AirCon
@@ -160,7 +160,7 @@ namespace AdamMSc2020
         internal double CostTES { get; private set; }
         internal double CostBoiler { get; private set; }
         internal double CostBiomassBoiler { get; private set; }
-        internal double CostCHP { get; private set; }
+        internal double CostCHPElectric { get; private set; } // cost per kW of electric power
         internal double CostAirCon { get; private set; }
         internal double CostASHP { get; private set; }
         internal double CostDistrictHeating { get; private set; }
@@ -381,9 +381,9 @@ namespace AdamMSc2020
 
             // CHP
             if (technologyParameters.ContainsKey("c_chp_eff"))
-                this.c_chp_eff = technologyParameters["c_chp_eff"];
+                this.c_chp_eff_el = technologyParameters["c_chp_eff"];
             else
-                this.c_chp_eff = 0.3;
+                this.c_chp_eff_el = 0.3;
             if (technologyParameters.ContainsKey("c_chp_htp"))
                 this.c_chp_htp = technologyParameters["c_chp_htp"];
             else
@@ -612,9 +612,9 @@ namespace AdamMSc2020
             else
                 this.CostBiomassBoiler = 300.0;
             if (technologyParameters.ContainsKey("CostCHP"))
-                this.CostCHP = technologyParameters["CostCHP"];
+                this.CostCHPElectric = technologyParameters["CostCHP"];
             else
-                this.CostCHP = 1500.0;
+                this.CostCHPElectric = 1500.0;
             if (technologyParameters.ContainsKey("CostAirCon"))
                 this.CostAirCon = technologyParameters["CostAirCon"];
             else
@@ -767,7 +767,7 @@ namespace AdamMSc2020
             this.c_Battery = this.CostBattery * this.AnnuityBattery;
             this.c_TES = this.CostTES * this.AnnuityTES;
             this.c_ASHP = this.CostASHP * this.AnnuityASHP;
-            this.c_CHP = this.CostCHP * this.AnnuityCHP;
+            this.c_CHP = this.CostCHPElectric * this.AnnuityCHP;
             this.c_Boiler = this.CostBoiler * this.AnnuityBoiler;
             this.c_BiomassBoiler = this.CostBiomassBoiler * this.AnnuityBiomassBoiler;
             this.c_AirCon = this.CostAirCon * this.AnnuityAirCon;
@@ -1008,7 +1008,7 @@ namespace AdamMSc2020
                 }
                 elecGeneration.AddTerm(1, x_Purchase[t]);
                 elecGeneration.AddTerm(1, x_Battery_discharge[t]);
-                elecGeneration.AddTerm(this.c_chp_htp, x_CHP_op_e[t]);
+                elecGeneration.AddTerm(1, x_CHP_op_e[t]);
                 elecAdditionalDemand.AddTerm(1, x_FeedIn[t]);
                 elecAdditionalDemand.AddTerm(1, x_Battery_charge[t]);
 
@@ -1053,7 +1053,7 @@ namespace AdamMSc2020
                 /// Emissions
                 carbonEmissions.AddTerm(this.ClustersizePerTimestep[t] * this.lca_GridElectricity, x_Purchase[t]);     // data needs to be kgCO2eq./kWh
                 carbonEmissions.AddTerm(this.ClustersizePerTimestep[t] * this.lca_NaturalGas * 1 / this.a_boi_eff, x_Boiler_op[t]);
-                carbonEmissions.AddTerm(this.ClustersizePerTimestep[t] * this.lca_NaturalGas * 1 / this.c_chp_eff, x_CHP_op_e[t]);
+                carbonEmissions.AddTerm(this.ClustersizePerTimestep[t] * this.lca_NaturalGas * 1 / this.c_chp_eff_el, x_CHP_op_e[t]);
                 carbonEmissions.AddTerm(this.ClustersizePerTimestep[t] * this.lca_Biomass * 1 / this.a_bmboi_eff, x_BiomassBoiler_op[t]);
 
 
@@ -1227,7 +1227,7 @@ namespace AdamMSc2020
 
             for (int t = 0; t < this.Horizon; t++)
             {
-                opex.AddTerm(this.ClustersizePerTimestep[t] * this.c_NaturalGas / this.c_chp_eff, x_CHP_op_e[t]);
+                opex.AddTerm(this.ClustersizePerTimestep[t] * this.c_NaturalGas / this.c_chp_eff_el, x_CHP_op_e[t]);
                 opex.AddTerm(this.ClustersizePerTimestep[t] * this.c_NaturalGas / this.a_boi_eff, x_Boiler_op[t]);
                 opex.AddTerm(this.ClustersizePerTimestep[t] * this.c_Biomass / this.a_bmboi_eff, x_BiomassBoiler_op[t]);
 
