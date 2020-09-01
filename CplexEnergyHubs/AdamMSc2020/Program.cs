@@ -98,88 +98,98 @@ namespace AdamMSc2020
 
             for (int i = 0; i < nRunsActually; i++)
             {
-                Console.WriteLine(@"*************************************************************************************");
-                Console.WriteLine("Loading data...");
-                LoadBuildingInput(path + inputBuildingFiles[i],
-                    out List<double> heating, out List<double> cooling, out List<double> electricity, out List<double> ghi, out List<double> dhw, out List<double> Tamb, out List<double[]> solar, out List<double> solarArea);
-                LoadTechParameters(path + inputTechnologyFiles[i], out Dictionary<string, double> technologyParameters);
-
-
-                /// data preparation, clustering and typical days
-                Console.WriteLine("Clustering and generating typical days...");
-                int numberOfSolarAreas = solar[0].Length;
-                int numBaseLoads = 5;                               // heating, cooling, electricity, ghi, tamb
-                int numLoads = numBaseLoads + numberOfSolarAreas;   // heating, cooling, electricity, ghi, tamb, solar. however, solar will include several profiles.
-                double[][] fullProfiles = new double[numLoads][];
-                string[] loadTypes = new string[numLoads];
-                bool[] peakDays = new bool[numLoads];
-                bool[] correctionLoad = new bool[numLoads];
-                for (int u = 0; u < numLoads; u++)
-                    fullProfiles[u] = new double[hoursPerYear];
-                loadTypes[0] = "heating";
-                loadTypes[1] = "cooling";
-                loadTypes[2] = "electricity";
-                loadTypes[3] = "ghi";
-                loadTypes[4] = "Tamb";
-                peakDays[0] = true;
-                peakDays[1] = true;
-                peakDays[2] = true;
-                peakDays[3] = false;
-                peakDays[4] = false;
-                correctionLoad[0] = true;
-                correctionLoad[1] = true;
-                correctionLoad[2] = true;
-                correctionLoad[3] = false;
-                correctionLoad[4] = false;
-
-                bool[] useForClustering = new bool[fullProfiles.Length]; // specificy here, which load is used for clustering. the others are just reshaped
-                for (int t = 0; t < hoursPerYear; t++)
+                try
                 {
-                    fullProfiles[0][t] = heating[t] + dhw[t];
-                    fullProfiles[1][t] = cooling[t];
-                    fullProfiles[2][t] = electricity[t];
-                    fullProfiles[3][t] = ghi[t];
-                    fullProfiles[4][t] = Tamb[t];
-                    useForClustering[0] = true;
-                    useForClustering[1] = true;
-                    useForClustering[2] = true;
-                    useForClustering[3] = true;
-                    useForClustering[4] = false;
-                }
+                    Console.WriteLine(@"*************************************************************************************");
+                    Console.WriteLine("Loading data...");
+                    LoadBuildingInput(path + inputBuildingFiles[i],
+                        out List<double> heating, out List<double> cooling, out List<double> electricity, out List<double> ghi, out List<double> dhw, out List<double> Tamb, out List<double[]> solar, out List<double> solarArea);
+                    LoadTechParameters(path + inputTechnologyFiles[i], out Dictionary<string, double> technologyParameters);
 
-                for (int u = 0; u < numberOfSolarAreas; u++)
-                {
-                    useForClustering[u + numBaseLoads] = false;
-                    peakDays[u + numBaseLoads] = false;
-                    correctionLoad[u + numBaseLoads] = true;
-                    loadTypes[u + numBaseLoads] = "solar";
+
+                    /// data preparation, clustering and typical days
+                    Console.WriteLine("Clustering and generating typical days...");
+                    int numberOfSolarAreas = solar[0].Length;
+                    int numBaseLoads = 5;                               // heating, cooling, electricity, ghi, tamb
+                    int numLoads = numBaseLoads + numberOfSolarAreas;   // heating, cooling, electricity, ghi, tamb, solar. however, solar will include several profiles.
+                    double[][] fullProfiles = new double[numLoads][];
+                    string[] loadTypes = new string[numLoads];
+                    bool[] peakDays = new bool[numLoads];
+                    bool[] correctionLoad = new bool[numLoads];
+                    for (int u = 0; u < numLoads; u++)
+                        fullProfiles[u] = new double[hoursPerYear];
+                    loadTypes[0] = "heating";
+                    loadTypes[1] = "cooling";
+                    loadTypes[2] = "electricity";
+                    loadTypes[3] = "ghi";
+                    loadTypes[4] = "Tamb";
+                    peakDays[0] = true;
+                    peakDays[1] = true;
+                    peakDays[2] = true;
+                    peakDays[3] = false;
+                    peakDays[4] = false;
+                    correctionLoad[0] = true;
+                    correctionLoad[1] = true;
+                    correctionLoad[2] = true;
+                    correctionLoad[3] = false;
+                    correctionLoad[4] = false;
+
+                    bool[] useForClustering = new bool[fullProfiles.Length]; // specificy here, which load is used for clustering. the others are just reshaped
                     for (int t = 0; t < hoursPerYear; t++)
-                        fullProfiles[u + numBaseLoads][t] = solar[t][u];
+                    {
+                        fullProfiles[0][t] = heating[t] + dhw[t];
+                        fullProfiles[1][t] = cooling[t];
+                        fullProfiles[2][t] = electricity[t];
+                        fullProfiles[3][t] = ghi[t];
+                        fullProfiles[4][t] = Tamb[t];
+                        useForClustering[0] = true;
+                        useForClustering[1] = true;
+                        useForClustering[2] = true;
+                        useForClustering[3] = true;
+                        useForClustering[4] = false;
+                    }
+
+                    for (int u = 0; u < numberOfSolarAreas; u++)
+                    {
+                        useForClustering[u + numBaseLoads] = false;
+                        peakDays[u + numBaseLoads] = false;
+                        correctionLoad[u + numBaseLoads] = true;
+                        loadTypes[u + numBaseLoads] = "solar";
+                        for (int t = 0; t < hoursPerYear; t++)
+                            fullProfiles[u + numBaseLoads][t] = solar[t][u];
+                    }
+
+                    // TO DO: load in GHI time series, add it to full profiles (right after heating, cooling, elec), and use it for clustering. exclude other solar profiles from clustering, but they need to be reshaped too
+                    EhubMisc.HorizonReduction.TypicalDays typicalDays = EhubMisc.HorizonReduction.GenerateTypicalDays(fullProfiles, loadTypes, numberOfTypicalDays, peakDays, useForClustering, correctionLoad, false);
+
+
+                    /// Running Energy Hub
+                    Console.WriteLine("Solving MILP optimization model...");
+                    double[][] typicalSolarLoads = new double[numberOfSolarAreas][];
+                    for (int u = 0; u < numberOfSolarAreas; u++)
+                        typicalSolarLoads[u] = typicalDays.DayProfiles[numBaseLoads + u];
+                    int[] clustersizePerTimestep = typicalDays.NumberOfDaysPerTimestep;
+                    Ehub ehub = new Ehub(typicalDays.DayProfiles[0], typicalDays.DayProfiles[1], typicalDays.DayProfiles[2],
+                        typicalSolarLoads, solarArea.ToArray(),
+                        typicalDays.DayProfiles[4], technologyParameters,
+                        clustersizePerTimestep);
+                    ehub.Solve(5);
+
+                    /// Storing Results
+                    Console.WriteLine("Saving results into {0}...", path + @"results\");
+                    WriteOutput(inputIndices[i], path, numberOfSolarAreas, ehub, typicalDays);
+
+                    Console.WriteLine("Energyhubs {0} of {1} completed...", i + 1, nRunsActually);
+                    Console.WriteLine(@"......");
                 }
-
-                // TO DO: load in GHI time series, add it to full profiles (right after heating, cooling, elec), and use it for clustering. exclude other solar profiles from clustering, but they need to be reshaped too
-                EhubMisc.HorizonReduction.TypicalDays typicalDays = EhubMisc.HorizonReduction.GenerateTypicalDays(fullProfiles, loadTypes, numberOfTypicalDays, peakDays, useForClustering, correctionLoad, false);
-
-
-                /// Running Energy Hub
-                Console.WriteLine("Solving MILP optimization model...");
-                double[][] typicalSolarLoads = new double[numberOfSolarAreas][];
-                for (int u = 0; u < numberOfSolarAreas; u++)
-                    typicalSolarLoads[u] = typicalDays.DayProfiles[numBaseLoads + u];
-                int[] clustersizePerTimestep = typicalDays.NumberOfDaysPerTimestep;
-                Ehub ehub = new Ehub(typicalDays.DayProfiles[0], typicalDays.DayProfiles[1], typicalDays.DayProfiles[2],
-                    typicalSolarLoads, solarArea.ToArray(),
-                    typicalDays.DayProfiles[4], technologyParameters,
-                    clustersizePerTimestep);
-                ehub.Solve(5);
-
-                /// Storing Results
-                Console.WriteLine("Saving results into {0}...", path + @"results\");
-                WriteOutput(inputIndices[i], path, numberOfSolarAreas, ehub, typicalDays);
-
-                Console.WriteLine("Energyhubs {0} of {1} completed...", i + 1, nRunsActually);
-                Console.WriteLine(@"......");
+                catch (Exception ex)
+                {
+                    Console.WriteLine(ex);
+                    WriteErrorFile(inputIndices[i], path, ex);
+                }
             }
+
+
 
             /// Waiting for user to close window
             Console.WriteLine(@"*************************************************************************************");
@@ -451,6 +461,19 @@ namespace AdamMSc2020
                 sw.Close();
 
             }
+        }
+
+        static void WriteErrorFile(int fileIndex, string path, Exception ex)
+        {
+            // check, if results folder exists in inputs folder
+            string outputPath = path + @"results\";
+            Directory.CreateDirectory(outputPath);
+
+            using var sw = new StreamWriter(outputPath + "result_" + Convert.ToString(fileIndex) + "_ERROR.csv");
+
+            sw.Write(ex);
+
+            sw.Close();
         }
 
 
