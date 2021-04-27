@@ -482,7 +482,7 @@ namespace AdamMSc2020
         /// </summary>
         static void WriteError()
         {
-            string[] dog = EhubMisc.Misc.AsciiDrawing(0);
+            string[] dog = EhubMisc.Misc.AsciiDrawing("dog");
 
             foreach (string d in dog)
                 Console.WriteLine(d);
