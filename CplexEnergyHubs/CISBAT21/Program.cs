@@ -7,23 +7,8 @@ namespace CISBAT21
     {
         static void Main(string[] args)
         {
-            Console.WriteLine("Hello World!");
+            Console.WriteLine("CISBAT 21 EnergyHubs with Demand Response to check BIPV feasibility");
 
-            //    Ehub ehub = new Ehub(heatingDemand, coolingDemand, electricityDemand, irradiance, 
-            //        solarTechSurfaceAreas, ambientTemperature, technologyParameters, clustersizePerTimestep);
-
-
-            // load hourly demand: 
-            // Risch_2020_demand.csv
-
-            // load peak loads per building, filter for 'Bxxx_Qh_40_kWh', 'Bxxx_Qh_60_kWh' and aggregate dhw and sh
-            // Risch_2020_PeakLoads.csv
-
-            // load GHI
-            // Risch_2020_GHI.csv
-
-            // load dry bulb
-            // Risch_2020_DryBulb.csv
 
             // load solar potentials on building facades
             // solar_Risch_2020_SP0.csv
@@ -39,12 +24,38 @@ namespace CISBAT21
 
             // construct one matrix with solar[surface_index][time_step]
 
+
+
+
+
+            // load hourly demand: 
+            // Risch_2020_demand.csv
+
+            // load peak loads per building, filter for 'Bxxx_Qh_40_kWh', 'Bxxx_Qh_60_kWh' and aggregate dhw and sh
+            // Risch_2020_PeakLoads.csv
+
+            // load GHI
+            // Risch_2020_GHI.csv
+
+            // load dry bulb
+            // Risch_2020_DryBulb.csv
+
+
+
+
+
+
+
+
+
             var irradiance = new double[2][];
             var dict = new Dictionary<string, double>() { };
 
             try
             {
-                Ehub ehub = new Ehub(new double[2] { 1, 1 }, new double[2] { 1, 1 }, new double[2] { 1, 1 }, irradiance, new double[2] { 1, 1 }, new double[2] { 1, 1 }, dict, new int[1] { 1 });
+                Ehub ehub = new Ehub(new double[2] { 1, 1 }, new double[2] { 1, 1 }, 
+                    new double[2] { 1, 1 }, irradiance, new double[2] { 1, 1 }, 
+                    new double[2] { 1, 1 }, dict, new int[1] { 1 });
             }
             catch(Exception e)
             {

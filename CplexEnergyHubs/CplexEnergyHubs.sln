@@ -9,10 +9,13 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "AdamMSc2020", "AdamMSc2020\
 EndProject
 Project("{D954291E-2A0B-460D-934E-DC6B0785DB48}") = "EhubMisc", "EhubMisc\EhubMisc.shproj", "{CDD8E35A-FBE9-4E56-991F-12DD33803882}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CISBAT21", "CISBAT21\CISBAT21.csproj", "{90D49203-2EF1-46D2-AC55-025C3CCBB99D}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "CISBAT21", "CISBAT21\CISBAT21.csproj", "{90D49203-2EF1-46D2-AC55-025C3CCBB99D}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "EhubExamples", "EhubExamples\EhubExamples.csproj", "{049A92A0-7C08-4EB0-BF6B-93B921C7F8DD}"
 EndProject
 Global
 	GlobalSection(SharedMSBuildProjectFiles) = preSolution
+		EhubMisc\EhubMisc.projitems*{049a92a0-7c08-4eb0-bf6b-93b921c7f8dd}*SharedItemsImports = 5
 		EhubMisc\EhubMisc.projitems*{5dc0c1d9-a856-47d4-ae40-8eddac393d3e}*SharedItemsImports = 5
 		EhubMisc\EhubMisc.projitems*{90d49203-2ef1-46d2-ac55-025c3ccbb99d}*SharedItemsImports = 5
 		EhubMisc\EhubMisc.projitems*{cdd8e35a-fbe9-4e56-991f-12dd33803882}*SharedItemsImports = 13
@@ -35,6 +38,10 @@ Global
 		{90D49203-2EF1-46D2-AC55-025C3CCBB99D}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{90D49203-2EF1-46D2-AC55-025C3CCBB99D}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{90D49203-2EF1-46D2-AC55-025C3CCBB99D}.Release|Any CPU.Build.0 = Release|Any CPU
+		{049A92A0-7C08-4EB0-BF6B-93B921C7F8DD}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{049A92A0-7C08-4EB0-BF6B-93B921C7F8DD}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{049A92A0-7C08-4EB0-BF6B-93B921C7F8DD}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{049A92A0-7C08-4EB0-BF6B-93B921C7F8DD}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
