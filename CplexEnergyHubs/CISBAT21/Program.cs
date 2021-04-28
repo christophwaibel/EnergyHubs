@@ -1,12 +1,32 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 
 namespace CISBAT21
 {
     class Program
     {
+
         static void Main(string[] args)
+        {
+            try
+            {
+                ehubRun();
+            }
+            catch (Exception e)
+            {
+                string[] cat = EhubMisc.Misc.AsciiDrawing("cat");
+
+                foreach (string c in cat)
+                    Console.WriteLine(c);
+
+                Console.WriteLine(e);
+            }
+            Console.ReadKey();
+        }
+
+        static void ehubRun()
         {
             Console.WriteLine("___________________________________________________________________");
             Console.WriteLine("CISBAT 21 EnergyHubs with Demand Response to check BIPV feasibility");
@@ -27,64 +47,125 @@ namespace CISBAT21
             string scenarioSelect = Console.ReadLine();
             int scenario;
             if (!Int32.TryParse(scenarioSelect, out scenario)) scenario = 0;
-            string[] scenarioString = new string[4] { "Risch_2020", "Risch_2050_8-5", "Singapore_2020", "Singapore_2050_RCP8-5" };
+            var scenarioString = new string[4] { "Risch_2020", "Risch_2050_8-5", "Singapore_2020", "Singapore_2050_RCP8-5" };
             Console.WriteLine("Cheers, using scenario {0}", scenarioString[scenario]);
 
-            double[][] irradiance;
-            List<double> solarAreas;
+            // read in solar data
             string fileName = path + scenarioString[scenario];
             LoadSolarInput(path + "SurfaceAreas.csv",
                 new string[4] {fileName+ "_solar_SP0.csv", fileName + "_solar_SP1.csv",
                     fileName + "_solar_SP4.csv", fileName + "_solar_SP5.csv"},
-                out irradiance, out solarAreas);
+                out var irradiance, out var solarAreas);
 
-
-
-
-
-            // load hourly demand: 
-            // Risch_2020_demand.csv
+            // load demand
+            LoadBuildingInput(path + scenarioString[scenario] + "_demand.csv", 
+                out var heating, out var dhw, out var cooling, out var electricity);
 
             // load peak loads per building, filter for 'Bxxx_Qh_40_kWh', 'Bxxx_Qh_60_kWh' and aggregate dhw and sh
-            // Risch_2020_PeakLoads.csv
+            LoadPeakLoads(path + scenarioString[scenario] + "_PeakLoads.csv",
+                out var numBuildings, out var peakHeatingLoads);
 
             // load GHI
-            // Risch_2020_GHI.csv
+            LoadTimeSeries(path + scenarioString[scenario] + "_GHI.csv", out var ghi);
 
             // load dry bulb
-            // Risch_2020_DryBulb.csv
+            LoadTimeSeries(path + scenarioString[scenario] + "_DryBulb.csv", out var dryBulb);
 
+            //Building Tech
+            LoadTechParameters(path + scenarioString[scenario] + "_technology.csv", out var technologyParameters);
+            technologyParameters.Add("NumberOfBuildingsInEHub", Convert.ToDouble(numBuildings));
+            for (int i = 0; i < numBuildings; i++)
+                technologyParameters.Add("Peak_B_" + Convert.ToString(i), peakHeatingLoads[i]);
 
+                Console.WriteLine();
+            Console.WriteLine("Loading Complete...");
+            Console.WriteLine();
 
+            /// data preparation, clustering and typical days
+            Console.WriteLine("Clustering and generating typical days...");
+            int numberOfSolarAreas = solarAreas.Count;
+            int numBaseLoads = 5;                               // heating, cooling, electricity, ghi, tamb
+            int numLoads = numBaseLoads + numberOfSolarAreas;   // heating, cooling, electricity, ghi, tamb, solar. however, solar will include several profiles.
+            const int hoursPerYear = 8760;
+            double[][] fullProfiles = new double[numLoads][];
+            string[] loadTypes = new string[numLoads];
+            bool[] peakDays = new bool[numLoads];
+            bool[] correctionLoad = new bool[numLoads];
+            for (int u = 0; u < numLoads; u++)
+                fullProfiles[u] = new double[hoursPerYear];
+            loadTypes[0] = "heating";
+            loadTypes[1] = "cooling";
+            loadTypes[2] = "electricity";
+            loadTypes[3] = "ghi";
+            loadTypes[4] = "Tamb";
+            peakDays[0] = true;
+            peakDays[1] = true;
+            peakDays[2] = true;
+            peakDays[3] = false;
+            peakDays[4] = false;
+            correctionLoad[0] = true;
+            correctionLoad[1] = true;
+            correctionLoad[2] = true;
+            correctionLoad[3] = false;
+            correctionLoad[4] = false;
 
-
-
-
-
-
-            //var irradiance = new double[2][];
-            var dict = new Dictionary<string, double>() { };
-
-            try
+            bool[] useForClustering = new bool[fullProfiles.Length]; // specificy here, which load is used for clustering. the others are just reshaped
+            for (int t = 0; t < hoursPerYear; t++)
             {
-                Ehub ehub = new Ehub(new double[2] { 1, 1 }, new double[2] { 1, 1 },
-                    new double[2] { 1, 1 }, irradiance, new double[2] { 1, 1 },
-                    new double[2] { 1, 1 }, dict, new int[1] { 1 });
+                fullProfiles[0][t] = heating[t] + dhw[t];
+                fullProfiles[1][t] = cooling[t];
+                fullProfiles[2][t] = electricity[t];
+                fullProfiles[3][t] = ghi[t];
+                fullProfiles[4][t] = dryBulb[t];
+                useForClustering[0] = true;
+                useForClustering[1] = true;
+                useForClustering[2] = true;
+                useForClustering[3] = true;
+                useForClustering[4] = false;
             }
-            catch (Exception e)
+
+            for (int u = 0; u < numberOfSolarAreas; u++)
             {
-                string[] cat = EhubMisc.Misc.AsciiDrawing("cat");
-
-                foreach (string c in cat)
-                    Console.WriteLine(c);
-
-                Console.WriteLine(e);
-
+                useForClustering[u + numBaseLoads] = false;
+                peakDays[u + numBaseLoads] = false;
+                correctionLoad[u + numBaseLoads] = true;
+                loadTypes[u + numBaseLoads] = "solar";
+                for (int t = 0; t < hoursPerYear; t++)
+                    fullProfiles[u + numBaseLoads][t] = irradiance[u][t];
             }
-            Console.ReadKey();
+
+            // TO DO: load in GHI time series, add it to full profiles (right after heating, cooling, elec), and use it for clustering. exclude other solar profiles from clustering, but they need to be reshaped too
+            EhubMisc.HorizonReduction.TypicalDays typicalDays = EhubMisc.HorizonReduction.GenerateTypicalDays(fullProfiles, loadTypes, 
+                12, peakDays, useForClustering, correctionLoad, false);
+
+            /// Running Energy Hub
+            Console.WriteLine("Solving MILP optimization model...");
+            double[][] typicalSolarLoads = new double[numberOfSolarAreas][];
+
+            //!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! solar profiles negative numbers in [213]
+            int reducedLength = 213;
+            for (int u = 0; u < reducedLength; u++) // numberOfSolarAreas
+                typicalSolarLoads[u] = typicalDays.DayProfiles[numBaseLoads + u];
+            var solarAreasDummy = new double[reducedLength];
+            for (int i = 0; i < solarAreasDummy.Length; i++)
+                solarAreasDummy[i] = solarAreas[i];
+
+            int[] clustersizePerTimestep = typicalDays.NumberOfDaysPerTimestep;
+            Ehub ehub = new Ehub(typicalDays.DayProfiles[0], typicalDays.DayProfiles[1], typicalDays.DayProfiles[2],
+                typicalSolarLoads, solarAreasDummy,
+                typicalDays.DayProfiles[4], technologyParameters,
+                clustersizePerTimestep);
+            ehub.Solve(3,true);
+
+            Console.WriteLine();
+            Console.WriteLine("ENERGY HUB SOLVER COMPLETED");
+
+
 
 
         }
+
+
 
         static void LoadSolarInput(string inputFileArea, string[] inputFilesPotentials, out double[][] solarPotentials, out List<double> solarArea)
         {
@@ -101,8 +182,7 @@ namespace CISBAT21
             //      construct an array with 193*4 entries to represent each sensor point
             // SurfaceAreas.csv
 
-            // construct one matrix with solar[surface_index][time_step] -> solar
-
+            // construct one matrix with solarPotentials[surface_index][time_step]
             solarArea = new List<double>();
 
             string[] solarAreaLines = File.ReadAllLines(inputFileArea);
@@ -153,37 +233,89 @@ namespace CISBAT21
 
         }
 
+
+
         static void LoadBuildingInput(string inputFile,
-            out List<double> heating, out List<double> cooling, out List<double> electricity, out List<double> ghi, out List<double> dhw, out List<double> Tamb, out List<double[]> solar, out List<double> solarArea)
+            out List<double> heating, out List<double> dhw, out List<double> cooling, out List<double> electricity)
         {
             heating = new List<double>();
+            dhw = new List<double>();
             cooling = new List<double>();
             electricity = new List<double>();
-            ghi = new List<double>();
-            dhw = new List<double>();
-            Tamb = new List<double>();
-            solar = new List<double[]>();
-            solarArea = new List<double>();
 
 
-            // Headers: [0] coolingLoads; [1] dhwLoads; [2] heatingLoads; [3] electricityLoads; [4] ghi; [5] Tamb; [6] solarAreas; [7] solarLoads_0; [8] solarLoads_1; etc.
+            // Headers: [0] -; [1] space heating; [2] dhw; [3] cooling; [4] electricity
             string[] lines = File.ReadAllLines(inputFile);
-            int numberOfSolarAreas = lines[0].Split(new char[2] { ',', ';' }).Length - 7;
             for (int i = 1; i < lines.Length; i++)
             {
                 string[] line = lines[i].Split(new char[2] { ',', ';' });
-                cooling.Add(Convert.ToDouble(line[0]));
-                dhw.Add(Convert.ToDouble(line[1]));
-                heating.Add(Convert.ToDouble(line[2]));
-                electricity.Add(Convert.ToDouble(line[3]));
-                ghi.Add(Convert.ToDouble(line[4]));
-                Tamb.Add(Convert.ToDouble(line[5]));
-                if (i - 1 < numberOfSolarAreas)
-                    solarArea.Add(Convert.ToDouble(line[6]));
-                solar.Add(new double[numberOfSolarAreas]);
-                for (int u = 0; u < numberOfSolarAreas; u++)
-                    solar[i - 1][u] = Convert.ToDouble(line[u + 7]);
+                cooling.Add(Convert.ToDouble(line[3]));
+                dhw.Add(Convert.ToDouble(line[2]));
+                heating.Add(Convert.ToDouble(line[1]));
+                electricity.Add(Convert.ToDouble(line[4]));
             }
         }
+
+
+
+        static void LoadPeakLoads(string inputFile,
+            out int numBuildings, out List<double> peakHeatingLoads)
+        {
+            peakHeatingLoads = new List<double>();
+            var lines = File.ReadAllLines(inputFile);
+            for (int i=1; i<lines.Length; i++)
+            {
+                var line = lines[i].Split(new char[2] { ',', ';' });
+                peakHeatingLoads.Add(Convert.ToDouble(line[1])); //assume, there is sh+dhw at [5]. Change later when ShanShan updated it
+            }
+
+            numBuildings = peakHeatingLoads.Count;
+        }
+
+
+
+        static void LoadTimeSeries(string inputFile, out List<double> timeSeries)
+        {
+            timeSeries = new List<double>();
+            var lines = File.ReadAllLines(inputFile);
+            foreach (var line in lines)
+            {
+                var lineSplit  = line.Split(new char[2] {',', ';'});
+                timeSeries.Add(Convert.ToDouble(lineSplit[0]));
+            }
+        }
+
+
+
+        static void LoadTechParameters(string inputFile, out Dictionary<string, double> technologyParameters)
+        {
+            // load technology parameters
+            technologyParameters = new Dictionary<string, double>();
+
+
+            string[] lines = File.ReadAllLines(inputFile);
+            for (int li = 0; li < lines.Length; li++)
+            {
+                string[] split = lines[li].Split(new char[2] { ';', ',' });
+                split = split.Where(x => !string.IsNullOrEmpty(x)).ToArray();
+                if (split.Length != 3)
+                {
+                    //WriteError();
+                    Console.WriteLine("Reading line {0}:..... '{1}'", li + 1, lines[li]);
+                    Console.Write("'{0}' contains {1} cells in line {2}, but it should contain 3 - the first two being strings and the third a number... Hit any key to abort the program: ",
+                        inputFile, split.Length, li + 1);
+                    Console.ReadKey();
+                    return;
+                }
+                else
+                {
+                    if (technologyParameters.ContainsKey(split[0])) continue;
+                    technologyParameters.Add(split[0], Convert.ToDouble(split[2]));
+                }
+            }
+
+        }
+
+
     }
 }

@@ -282,14 +282,14 @@ namespace CISBAT21
 
         internal void Solve(int epsilonCuts, bool verbose = false)
         {
-            double costTolerance = 1.0;
-            double carbonTolerance = 0.01;
+            double costTolerance = 100.0;
+            double carbonTolerance = 0.1;
             this.Outputs = new EhubOutputs[epsilonCuts + 2];
 
             // 1. solve for minCarbon, ignoring cost
             EhubOutputs minCarbon = EnergyHub("carbon", null, null, verbose);
 
-            // 2. solve for minCost, using minCarbon value found in 1 (+ small torelance)
+            // 2. solve for minCost, 
             EhubOutputs minCost = EnergyHub("cost", null, null, verbose);
 
             // 3. solve for minCost, ignoring Carbon (then, solve for minCarbon, using mincost as constraint. check, if it makes a difference in carbon)
@@ -1263,7 +1263,7 @@ namespace CISBAT21
             /// ////////////////////////////////////////////////////////////////////////
             if (!verbose) cpl.SetOut(null);
             cpl.SetParam(Cplex.Param.MIP.Tolerances.MIPGap, 0.005);
-
+            cpl.SetParam(Cplex.IntParam.MIPDisplay, 4);
             //if (!this.multithreading)
             //    cpl.SetParam(Cplex.Param.Threads, 1);
             EhubOutputs solution = new EhubOutputs();
