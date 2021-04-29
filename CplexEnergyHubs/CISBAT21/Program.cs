@@ -63,7 +63,7 @@ namespace CISBAT21
 
             // load peak loads per building, filter for 'Bxxx_Qh_40_kWh', 'Bxxx_Qh_60_kWh' and aggregate dhw and sh
             LoadPeakLoads(path + scenarioString[scenario] + "_PeakLoads.csv",
-                out var numBuildings, out var peakHeatingLoads);
+                out var numBuildings, out var peakHeatingLoads, out var peakCoolingLoads);
 
             // load GHI
             LoadTimeSeries(path + scenarioString[scenario] + "_GHI.csv", out var ghi);
@@ -75,7 +75,7 @@ namespace CISBAT21
             LoadTechParameters(path + scenarioString[scenario] + "_technology.csv", out var technologyParameters);
             technologyParameters.Add("NumberOfBuildingsInEHub", Convert.ToDouble(numBuildings));
             for (int i = 0; i < numBuildings; i++)
-                technologyParameters.Add("Peak_B_" + Convert.ToString(i), peakHeatingLoads[i]);
+                technologyParameters.Add("Peak_B_" + Convert.ToString(i), peakHeatingLoads[i]); // add for cooling too
 
                 Console.WriteLine();
             Console.WriteLine("Loading Complete...");
@@ -142,17 +142,20 @@ namespace CISBAT21
             Console.WriteLine("Solving MILP optimization model...");
             double[][] typicalSolarLoads = new double[numberOfSolarAreas][];
 
-            //!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! solar profiles negative numbers in [213]
-            int reducedLength = 213;
-            for (int u = 0; u < reducedLength; u++) // numberOfSolarAreas
+            // solar profiles negative or very small numbers. rounding floating numbers thing?
+            for (int u = 0; u < numberOfSolarAreas; u++)
+            {
                 typicalSolarLoads[u] = typicalDays.DayProfiles[numBaseLoads + u];
-            var solarAreasDummy = new double[reducedLength];
-            for (int i = 0; i < solarAreasDummy.Length; i++)
-                solarAreasDummy[i] = solarAreas[i];
+                for (int t = 0; t < typicalSolarLoads[u].Length; t++)
+                {
+                    if (typicalSolarLoads[u][t] < 0.1)
+                        typicalSolarLoads[u][t] = 0.0;
+                }
+            }
 
             int[] clustersizePerTimestep = typicalDays.NumberOfDaysPerTimestep;
             Ehub ehub = new Ehub(typicalDays.DayProfiles[0], typicalDays.DayProfiles[1], typicalDays.DayProfiles[2],
-                typicalSolarLoads, solarAreasDummy,
+                typicalSolarLoads, solarAreas.ToArray(),
                 typicalDays.DayProfiles[4], technologyParameters,
                 clustersizePerTimestep);
             ehub.Solve(3,true);
@@ -259,14 +262,16 @@ namespace CISBAT21
 
 
         static void LoadPeakLoads(string inputFile,
-            out int numBuildings, out List<double> peakHeatingLoads)
+            out int numBuildings, out List<double> peakHeatingLoads, out List<double> peakCoolingLoads)
         {
             peakHeatingLoads = new List<double>();
+            peakCoolingLoads = new List<double>();
             var lines = File.ReadAllLines(inputFile);
             for (int i=1; i<lines.Length; i++)
             {
                 var line = lines[i].Split(new char[2] { ',', ';' });
-                peakHeatingLoads.Add(Convert.ToDouble(line[1])); //assume, there is sh+dhw at [5]. Change later when ShanShan updated it
+                peakHeatingLoads.Add(Convert.ToDouble(line[3])); // sh_and_dhw at [3]
+                peakCoolingLoads.Add(Convert.ToDouble(line[4])); 
             }
 
             numBuildings = peakHeatingLoads.Count;

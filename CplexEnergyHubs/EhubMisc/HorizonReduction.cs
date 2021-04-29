@@ -174,6 +174,7 @@ namespace EhubMisc
                         double _value;
                         if (string.Equals(dataScaling, "normalization")) _value = (fullProfiles[load][h + (d * hoursPerDay)] - lowerBounds[load]) / (upperBounds[load] - lowerBounds[load]);
                         else _value = (fullProfiles[load][h + (d * hoursPerDay)] - mean[load]) / sigma[load];
+                        _value = double.IsNaN(_value) ? 0.0 : _value; // possible if sigma is zero. sigma is zero if the entire array is just 0, e.g. solar potentials with... zero solar potentials (shaded sensor point)
                         int _hour = h + (load * hoursPerDay);
                         if (!typicalDays.DayOfTheYear.Contains(d + 1))
                         {

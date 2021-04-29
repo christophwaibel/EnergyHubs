@@ -799,20 +799,10 @@ namespace CISBAT21
 
 
             // District Heating
-            if (technologyParameters.ContainsKey("NumberOfBuildingsInEHub"))
-                this.NumberOfBuildingsInDistrict = Convert.ToInt32(technologyParameters["NumberOfBuildingsInEHub"]);
-            else
-                this.NumberOfBuildingsInDistrict = 1;
+            this.NumberOfBuildingsInDistrict = technologyParameters.ContainsKey("NumberOfBuildingsInEHub") ? Convert.ToInt32(technologyParameters["NumberOfBuildingsInEHub"]) : 1;
             if (this.NumberOfBuildingsInDistrict > 1)
             {
-                double _networkLengthFactor;
-                if (technologyParameters.ContainsKey("GridLengthDistrictHeating"))
-                    _networkLengthFactor = technologyParameters["GridLengthDistrictHeating"];
-                else
-                    _networkLengthFactor = 0.1;
-
-                double _maxNetworkPerBuilding = 500.0;
-                this.NetworkLengthTotal = Convert.ToDouble(this.NumberOfBuildingsInDistrict) * _maxNetworkPerBuilding * _networkLengthFactor;
+                this.NetworkLengthTotal = technologyParameters.ContainsKey("GridLengthDistrictHeating") ? technologyParameters["GridLengthDistrictHeating"] : 1000.0;
 
                 //get peak loads per building
                 this.PeakHeatingLoadsPerBuilding = new double[this.NumberOfBuildingsInDistrict];
