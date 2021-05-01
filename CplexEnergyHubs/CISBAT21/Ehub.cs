@@ -46,9 +46,10 @@ namespace CISBAT21
         internal double LifetimeCHP { get; private set; }
         internal double LifetimeBoiler { get; private set; }
         internal double LifetimeBiomassBoiler { get; private set; }
-        internal double LifetimeAirCon { get; private set; }
+        internal double LifetimeElecChiller { get; private set; }
         internal double LifetimeDistrictHeating { get; private set; }
         internal double LifetimeHeatExchanger { get; private set; }
+        internal double LifetimeCoolingTower { get; private set; }
 
         // Coefficients PV
         internal double pv_NOCT { get; private set; }
@@ -76,8 +77,8 @@ namespace CISBAT21
         internal double c_chp_htp { get; private set; }         // heat to power ratio (e.g. htp = 1.73, then 1.73 kW of heat is produced for 1 kW of elec)
         internal double c_chp_heatdump { get; private set; }    // heat dump allowed = 1
 
-        // Coefficients AirCon
-        internal double[] a_AirCon_Efficiency { get; private set; }
+        // Coefficients Electric Chiller
+        internal double[] a_ElecChiller_Efficiency { get; private set; }
 
         // Coefficients Battery
         internal double bat_ch_eff { get; private set; }        // Battery charging efficiency
@@ -102,7 +103,7 @@ namespace CISBAT21
         internal double minCapBoiler { get; private set; }
         internal double minCapBioBoiler { get; private set; }
         internal double minCapCHP { get; private set; }
-        internal double minCapAirCon { get; private set; }
+        internal double minCapElecChiller { get; private set; }
         internal double minCapASHP { get; private set; }
 
         #endregion
@@ -124,9 +125,10 @@ namespace CISBAT21
         internal double lca_CHP { get; private set; }
         internal double lca_Boiler { get; private set; }
         internal double lca_BiomassBoiler { get; private set; }
-        internal double lca_AirCon { get; private set; }
+        internal double lca_ElecChiller { get; private set; }
         internal double lca_DistrictHeating { get; private set; }
         internal double lca_HeatExchanger { get; private set; }
+        internal double lca_CoolingTower { get; private set; }
 
 
         // total (non-levelized) LCA of technologies 
@@ -137,9 +139,10 @@ namespace CISBAT21
         internal double LcaTotal_CHP { get; private set; }
         internal double LcaTotal_Boiler { get; private set; }
         internal double LcaTotal_BiomassBoiler { get; private set; }
-        internal double LcaTotal_AirCon { get; private set; }
+        internal double LcaTotal_ElecChiller { get; private set; }
         internal double LcaTotal_DistrictHeating { get; private set; }
         internal double LcaTotal_HeatExchanger { get; private set; }
+        internal double LcaTotal_CoolingTower { get; private set; }
 
         // levelized LCA of building construction
         internal double lca_Building { get; private set; }
@@ -161,10 +164,11 @@ namespace CISBAT21
         internal double CostBoiler { get; private set; }
         internal double CostBiomassBoiler { get; private set; }
         internal double CostCHPElectric { get; private set; } // cost per kW of electric power
-        internal double CostAirCon { get; private set; }
+        internal double CostElecChiller { get; private set; }
         internal double CostASHP { get; private set; }
         internal double CostDistrictHeating { get; private set; }
         internal double CostHeatExchanger { get; private set; }
+        internal double CostCoolingTower { get; private set; }
 
         // Fix Cost
         internal double FixCostPV { get; private set; }
@@ -173,10 +177,11 @@ namespace CISBAT21
         internal double FixCostBoiler { get; private set; }
         internal double FixCostBiomassBoiler { get; private set; }
         internal double FixCostCHP { get; private set; }
-        internal double FixCostAirCon { get; private set; }
+        internal double FixCostElecChiller { get; private set; }
         internal double FixCostASHP { get; private set; }
         internal double FixCostDistrictHeating { get; private set; }
         internal double FixCostHeatExchanger { get; private set; }
+        internal double FixCostCoolingTower { get; private set; }
 
         // Annuity
         internal double AnnuityPV { get; private set; }
@@ -185,10 +190,11 @@ namespace CISBAT21
         internal double AnnuityBoiler { get; private set; }
         internal double AnnuityBiomassBoiler { get; private set; }
         internal double AnnuityCHP { get; private set; }
-        internal double AnnuityAirCon { get; private set; }
+        internal double AnnuityElecChiller { get; private set; }
         internal double AnnuityASHP { get; private set; }
         internal double AnnuityDistrictHeating { get; private set; }
         internal double AnnuityHeatExchanger { get; private set; }
+        internal double AnnuityCoolingTower { get; private set; }
 
         // levelized investment cost
         internal double c_PV { get; private set; }
@@ -197,10 +203,11 @@ namespace CISBAT21
         internal double c_Boiler { get; private set; }
         internal double c_BiomassBoiler { get; private set; }
         internal double c_CHP { get; private set; }
-        internal double c_AirCon { get; private set; }
+        internal double c_ElecChiller { get; private set; }
         internal double c_ASHP { get; private set; }
         internal double c_DistrictHeating { get; private set; }
         internal double c_HeatExchanger { get; private set; }
+        internal double c_CoolingTower { get; private set; }
 
         // levelized fix cost
         internal double c_fix_PV { get; private set; }
@@ -209,10 +216,11 @@ namespace CISBAT21
         internal double c_fix_Boiler { get; private set; }
         internal double c_fix_BiomassBoiler { get; private set; }
         internal double c_fix_CHP { get; private set; }
-        internal double c_fix_AirCon { get; private set; }
+        internal double c_fix_ElecChiller { get; private set; }
         internal double c_fix_ASHP { get; private set; }
         internal double c_fix_DistrictHeating { get; private set; }
         internal double c_fix_HeatExchanger { get; private set; }
+        internal double c_fix_CoolingTower { get; private set; }
 
         // operation and maintenance cost
         internal double c_PV_OM { get; private set; }
@@ -221,7 +229,7 @@ namespace CISBAT21
         internal double c_Boiler_OM { get; private set; }
         internal double c_BiomassBoiler_OM { get; private set; }
         internal double c_CHP_OM { get; private set; }
-        internal double c_AirCon_OM { get; private set; }
+        internal double c_ElecChiller_OM { get; private set; }
         internal double c_ASHP_OM { get; private set; }
 
         // time resolved operation cost
@@ -230,9 +238,10 @@ namespace CISBAT21
         #endregion
 
 
-        #region District Heating
+        #region District Heating and Cooling
         internal int NumberOfBuildingsInDistrict { get; private set; } // loads are aggregated. but if this number >1, then dh costs apply (HX and DH pipes)
         internal double[] PeakHeatingLoadsPerBuilding { get; private set; } // in kW. length of this array corresponds to number of buildings in the district
+        internal double[] PeakCoolingLoadsPerBuilding { get; private set; }
         internal double NetworkLengthTotal { get; private set; } // in m
         #endregion
 
@@ -475,10 +484,10 @@ namespace CISBAT21
                 this.minCapCHP = technologyParameters["minCapCHP"];
             else
                 this.minCapCHP = 10;
-            if (technologyParameters.ContainsKey("minCapAirCon"))
-                this.minCapAirCon = technologyParameters["minCapAirCon"];
+            if (technologyParameters.ContainsKey("minCapElecChiller"))
+                this.minCapElecChiller = technologyParameters["minCapElecChiller"];
             else
-                this.minCapAirCon = 10;
+                this.minCapElecChiller = 10;
             if (technologyParameters.ContainsKey("minCapASHP"))
                 this.minCapASHP = technologyParameters["minCapASHP"];
             else
@@ -526,10 +535,10 @@ namespace CISBAT21
                 this.LcaTotal_BiomassBoiler = technologyParameters["lca_BiomassBoiler"];
             else
                 this.LcaTotal_BiomassBoiler = 0.0;
-            if (technologyParameters.ContainsKey("lca_AirCon"))
-                this.LcaTotal_AirCon = technologyParameters["lca_AirCon"];
+            if (technologyParameters.ContainsKey("lca_ElecChiller"))
+                this.LcaTotal_ElecChiller = technologyParameters["lca_ElecChiller"];
             else
-                this.LcaTotal_AirCon = 0.0;
+                this.LcaTotal_ElecChiller = 0.0;
             if (technologyParameters.ContainsKey("lca_DistrictHeating"))
                 this.LcaTotal_DistrictHeating = technologyParameters["lca_DistrictHeating"];
             else
@@ -538,6 +547,10 @@ namespace CISBAT21
                 this.LcaTotal_HeatExchanger = technologyParameters["lca_HeatExchanger"];
             else
                 this.LcaTotal_HeatExchanger = 0.0;
+            if (technologyParameters.ContainsKey("lca_CoolingTower"))
+                this.LcaTotal_CoolingTower = technologyParameters["lca_CoolingTower"];
+            else
+                this.LcaTotal_CoolingTower = 0.0;
 
             // levelized lca of building construction
             if (technologyParameters.ContainsKey("lca_Building"))
@@ -617,10 +630,10 @@ namespace CISBAT21
                 this.CostCHPElectric = technologyParameters["CostCHP"];
             else
                 this.CostCHPElectric = 1500.0;
-            if (technologyParameters.ContainsKey("CostAirCon"))
-                this.CostAirCon = technologyParameters["CostAirCon"];
+            if (technologyParameters.ContainsKey("CostElecChiller"))
+                this.CostElecChiller = technologyParameters["CostElecChiller"];
             else
-                this.CostAirCon = 360.0;
+                this.CostElecChiller = 360.0;
             if (technologyParameters.ContainsKey("CostASHP"))
                 this.CostASHP = technologyParameters["CostASHP"];
             else
@@ -633,6 +646,10 @@ namespace CISBAT21
                 this.CostHeatExchanger = technologyParameters["CostHeatExchanger"];
             else
                 this.CostHeatExchanger = 200.0;
+            if (technologyParameters.ContainsKey("CostCoolingTower"))
+                this.CostCoolingTower = technologyParameters["CostCoolingTower"];
+            else
+                this.CostCoolingTower = 200.0;
 
             // Fix Investment Cost
             if (technologyParameters.ContainsKey("FixCostPV"))
@@ -659,10 +676,10 @@ namespace CISBAT21
                 this.FixCostCHP = technologyParameters["FixCostCHP"];
             else
                 this.FixCostCHP = 250.0;
-            if (technologyParameters.ContainsKey("FixCostAirCon"))
-                this.FixCostAirCon = technologyParameters["FixCostAirCon"];
+            if (technologyParameters.ContainsKey("FixCostElecChiller"))
+                this.FixCostElecChiller = technologyParameters["FixCostElecChiller"];
             else
-                this.FixCostAirCon = 250.0;
+                this.FixCostElecChiller = 250.0;
             if (technologyParameters.ContainsKey("FixCostASHP"))
                 this.FixCostASHP = technologyParameters["FixCostASHP"];
             else
@@ -675,6 +692,10 @@ namespace CISBAT21
                 this.FixCostHeatExchanger = technologyParameters["FixCostHeatExchanger"];
             else
                 this.FixCostHeatExchanger = 250.0;
+            if (technologyParameters.ContainsKey("FixCostCoolingTower"))
+                this.FixCostCoolingTower = technologyParameters["FixCostCoolingTower"];
+            else
+                this.FixCostCoolingTower = 250.0;
 
             // Operation and Maintenance cost
             if (technologyParameters.ContainsKey("c_PV_OM"))
@@ -701,10 +722,10 @@ namespace CISBAT21
                 this.c_CHP_OM = technologyParameters["c_CHP_OM"];
             else
                 this.c_CHP_OM = 0.021;    // Waibel et al 2017
-            if (technologyParameters.ContainsKey("c_AirCon_OM"))
-                this.c_AirCon_OM = technologyParameters["c_AirCon_OM"];
+            if (technologyParameters.ContainsKey("c_ElecChiller_OM"))
+                this.c_ElecChiller_OM = technologyParameters["c_ElecChiller_OM"];
             else
-                this.c_AirCon_OM = 0.1;
+                this.c_ElecChiller_OM = 0.1;
             if (technologyParameters.ContainsKey("c_ASHP_OM"))
                 this.c_ASHP_OM = technologyParameters["c_ASHP_OM"];
             else
@@ -739,10 +760,10 @@ namespace CISBAT21
                 this.LifetimeBiomassBoiler = technologyParameters["LifetimeBiomassBoiler"];
             else
                 this.LifetimeBiomassBoiler = 30.0;
-            if (technologyParameters.ContainsKey("LifetimeAirCon"))
-                this.LifetimeAirCon = technologyParameters["LifetimeAirCon"];
+            if (technologyParameters.ContainsKey("LifetimeElecChiller"))
+                this.LifetimeElecChiller = technologyParameters["LifetimeElecChiller"];
             else
-                this.LifetimeAirCon = 20.0;
+                this.LifetimeElecChiller = 20.0;
             if (technologyParameters.ContainsKey("LifetimeDistrictHeating"))
                 this.LifetimeDistrictHeating = technologyParameters["LifetimeDistrictHeating"];
             else
@@ -751,6 +772,10 @@ namespace CISBAT21
                 this.LifetimeHeatExchanger = technologyParameters["LifetimeHeatExchanger"];
             else
                 this.LifetimeHeatExchanger = 30.0;
+            if (technologyParameters.ContainsKey("LifetimeCoolingTower"))
+                this.LifetimeCoolingTower = technologyParameters["LifetimeCoolingTower"];
+            else
+                this.LifetimeCoolingTower = 50.0;
 
             // Annuity
             this.AnnuityPV = this.InterestRate / (1 - (1 / (Math.Pow((1 + this.InterestRate), (this.LifetimePV)))));
@@ -760,9 +785,10 @@ namespace CISBAT21
             this.AnnuityCHP = this.InterestRate / (1 - (1 / (Math.Pow((1 + this.InterestRate), (this.LifetimeCHP)))));
             this.AnnuityBoiler = this.InterestRate / (1 - (1 / (Math.Pow((1 + this.InterestRate), (this.LifetimeBoiler)))));
             this.AnnuityBiomassBoiler = this.InterestRate / (1 - (1 / (Math.Pow((1 + this.InterestRate), (this.LifetimeBiomassBoiler)))));
-            this.AnnuityAirCon = this.InterestRate / (1 - (1 / (Math.Pow((1 + this.InterestRate), (this.LifetimeAirCon)))));
+            this.AnnuityElecChiller = this.InterestRate / (1 - (1 / (Math.Pow((1 + this.InterestRate), (this.LifetimeElecChiller)))));
             this.AnnuityDistrictHeating = this.InterestRate / (1 - (1 / (Math.Pow((1 + this.InterestRate), (this.LifetimeDistrictHeating)))));
             this.AnnuityHeatExchanger = this.InterestRate / (1 - (1 / (Math.Pow((1 + this.InterestRate), (this.LifetimeHeatExchanger)))));
+            this.AnnuityCoolingTower = this.InterestRate / (1 - (1 / (Math.Pow((1 + this.InterestRate), (this.LifetimeCoolingTower)))));
 
             // Levelized cost
             this.c_PV = this.CostPV * this.AnnuityPV;
@@ -772,9 +798,10 @@ namespace CISBAT21
             this.c_CHP = this.CostCHPElectric * this.AnnuityCHP;
             this.c_Boiler = this.CostBoiler * this.AnnuityBoiler;
             this.c_BiomassBoiler = this.CostBiomassBoiler * this.AnnuityBiomassBoiler;
-            this.c_AirCon = this.CostAirCon * this.AnnuityAirCon;
+            this.c_ElecChiller = this.CostElecChiller * this.AnnuityElecChiller;
             this.c_DistrictHeating = this.CostDistrictHeating * this.AnnuityDistrictHeating;
             this.c_HeatExchanger = this.CostHeatExchanger * this.AnnuityHeatExchanger;
+            this.c_CoolingTower = this.CostCoolingTower * this.AnnuityCoolingTower;
 
             // levelized fix cost
             this.c_fix_PV = this.FixCostPV * this.AnnuityPV;
@@ -783,10 +810,11 @@ namespace CISBAT21
             this.c_fix_Boiler = this.FixCostBoiler * this.AnnuityBoiler;
             this.c_fix_BiomassBoiler = this.FixCostBiomassBoiler * this.AnnuityBiomassBoiler;
             this.c_fix_CHP = this.FixCostCHP * this.AnnuityCHP;
-            this.c_fix_AirCon = this.FixCostAirCon * this.AnnuityAirCon;
+            this.c_fix_ElecChiller = this.FixCostElecChiller * this.AnnuityElecChiller;
             this.c_fix_ASHP = this.FixCostASHP * this.AnnuityASHP;
             this.c_fix_DistrictHeating = this.FixCostDistrictHeating * this.AnnuityDistrictHeating;
             this.c_fix_HeatExchanger = this.FixCostHeatExchanger * this.AnnuityHeatExchanger;
+            this.c_fix_CoolingTower = this.FixCostCoolingTower * this.AnnuityCoolingTower;
 
             // PV efficiency
             this.a_PV_Efficiency = new double[this.NumberOfSolarAreas][];
@@ -795,7 +823,7 @@ namespace CISBAT21
                     this.pv_NOCT, this.pv_T_aNOCT, this.pv_P_NOCT, this.pv_beta_ref, this.pv_n_ref);
 
             this.a_ASHP_Efficiency = EhubMisc.TechnologyEfficiencies.CalculateCOPHeatPump(this.AmbientTemperature, this.hp_supplyTemp, this.hp_pi1, this.hp_pi2, this.hp_pi3, this.hp_pi4);
-            this.a_AirCon_Efficiency = EhubMisc.TechnologyEfficiencies.CalculateCOPAirCon(this.AmbientTemperature);
+            this.a_ElecChiller_Efficiency = EhubMisc.TechnologyEfficiencies.CalculateCOPAirCon(this.AmbientTemperature);
 
 
             // District Heating
@@ -806,19 +834,27 @@ namespace CISBAT21
 
                 //get peak loads per building
                 this.PeakHeatingLoadsPerBuilding = new double[this.NumberOfBuildingsInDistrict];
+                this.PeakCoolingLoadsPerBuilding = new double[this.NumberOfBuildingsInDistrict];
                 for (int i = 0; i < this.NumberOfBuildingsInDistrict; i++)
                 {
-                    string buildingLoad = "Peak_B_" + Convert.ToString(i + 1);
-                    if (technologyParameters.ContainsKey(buildingLoad))
-                        this.PeakHeatingLoadsPerBuilding[i] = technologyParameters[buildingLoad];
+                    string heatingLoad = "Peak_Htg_" + Convert.ToString(i + 1);
+                    if (technologyParameters.ContainsKey(heatingLoad))
+                        this.PeakHeatingLoadsPerBuilding[i] = technologyParameters[heatingLoad];
                     else
                         this.PeakHeatingLoadsPerBuilding[i] = 1000.0;
+
+                    string coolingLoad = "Peak_Clg_" + Convert.ToString(i + 1);
+                    if (technologyParameters.ContainsKey(coolingLoad))
+                        this.PeakCoolingLoadsPerBuilding[i] = technologyParameters[coolingLoad];
+                    else
+                        this.PeakCoolingLoadsPerBuilding[i] = 1000.0;
                 }
             }
             else
             {
                 this.NetworkLengthTotal = 0.0;
-                this.PeakHeatingLoadsPerBuilding = new double[1] { 0.0 };
+                this.PeakHeatingLoadsPerBuilding = new double[1] {0.0};
+                this.PeakCoolingLoadsPerBuilding = new double[1] {0.0};
                 this.c_HeatExchanger = 0.0;
                 this.c_DistrictHeating = 0.0;
                 this.c_fix_DistrictHeating = 0.0;
@@ -827,16 +863,17 @@ namespace CISBAT21
 
 
             // levelized LCA of technologies
-            this.lca_AirCon = this.LcaTotal_AirCon / this.LifetimeAirCon;
+            this.lca_ElecChiller = this.LcaTotal_ElecChiller / this.LifetimeElecChiller;
             this.lca_ASHP = this.LcaTotal_ASHP / this.LifetimeASHP;
             this.lca_Battery = this.LcaTotal_Battery / this.LifetimeBattery;
             this.lca_Boiler = this.LcaTotal_Boiler / this.LifetimeBoiler;
             this.lca_BiomassBoiler = this.LcaTotal_BiomassBoiler / this.LifetimeBiomassBoiler;
             this.lca_CHP = this.LcaTotal_CHP / this.LifetimeCHP;
             this.lca_DistrictHeating = this.LcaTotal_DistrictHeating / this.LifetimeDistrictHeating;
-            this.lca_HeatExchanger = this.LcaTotal_HeatExchanger / this.LifetimeHeatExchanger;
             this.lca_PV = this.LcaTotal_PV / this.LifetimePV;
             this.lca_TES = this.LcaTotal_TES / this.LifetimeTES;
+            this.lca_HeatExchanger = this.LcaTotal_HeatExchanger / this.LifetimeHeatExchanger;
+            this.lca_CoolingTower = this.LcaTotal_CoolingTower / this.LifetimeCoolingTower;
         }
 
 
@@ -847,15 +884,22 @@ namespace CISBAT21
             /// ////////////////////////////////////////////////////////////////////////
             /// District Heating
             /// ////////////////////////////////////////////////////////////////////////
-            double LevCostDH = this.NetworkLengthTotal * this.c_DistrictHeating + this.c_fix_DistrictHeating + this.c_fix_HeatExchanger;
+            double LevCostDH = (this.NetworkLengthTotal * this.c_DistrictHeating + this.c_fix_DistrictHeating + this.c_fix_HeatExchanger) * 2; // *2 because heating and cooling networks
             double[] LevCostHX = new double[this.NumberOfBuildingsInDistrict];
-            double TotLevCostDH = 0.0;
+            double[] LevCostHXClg = new double[this.NumberOfBuildingsInDistrict];
             double TotHXsizing = 0.0;
+            double TotHXsizingClg = 0.0;
+            double TotHXsizingCooling = 0.0;
+            double TotLevCostDH = 0.0;
             for (int i = 0; i < this.NumberOfBuildingsInDistrict; i++)
             {
                 TotHXsizing += this.PeakHeatingLoadsPerBuilding[i];
                 LevCostHX[i] = this.c_HeatExchanger * this.PeakHeatingLoadsPerBuilding[i];
                 TotLevCostDH += LevCostHX[i];
+
+                TotHXsizingClg += this.PeakCoolingLoadsPerBuilding[i];
+                LevCostHXClg[i] = this.c_HeatExchanger * this.PeakCoolingLoadsPerBuilding[i];
+                TotLevCostDH += LevCostHXClg[i];
             }
             TotLevCostDH += LevCostDH; // add this to total investment cost. ignore operation cost
 
@@ -890,9 +934,9 @@ namespace CISBAT21
 
 
             // AirCon
-            INumVar x_AirCon = cpl.NumVar(0.0, System.Double.MaxValue);
-            INumVar[] x_AirCon_op = new INumVar[this.Horizon];
-            INumVar y_AirCon = cpl.BoolVar();
+            INumVar x_ElecChiller = cpl.NumVar(0.0, System.Double.MaxValue);
+            INumVar[] x_ElecChiller_op = new INumVar[this.Horizon];
+            INumVar y_ElecChiller = cpl.BoolVar();
 
             // Boiler
             INumVar x_Boiler = cpl.NumVar(0.0, System.Double.MaxValue);
@@ -942,7 +986,7 @@ namespace CISBAT21
                 x_CHP_op_th[t] = cpl.NumVar(0.0, System.Double.MaxValue);
                 x_CHP_op_dump[t] = cpl.NumVar(0.0, System.Double.MaxValue);
 
-                x_AirCon_op[t] = cpl.NumVar(0.0, System.Double.MaxValue);
+                x_ElecChiller_op[t] = cpl.NumVar(0.0, System.Double.MaxValue);
                 x_Boiler_op[t] = cpl.NumVar(0.0, System.Double.MaxValue);
                 x_BiomassBoiler_op[t] = cpl.NumVar(0.0, System.Double.MaxValue);
                 x_ASHP_op[t] = cpl.NumVar(0.0, System.Double.MaxValue);
@@ -975,7 +1019,7 @@ namespace CISBAT21
 
                 /// ////////////////////////////////////////////////////////////////////////
                 /// Cooling
-                elecAdditionalDemand.AddTerm(1 / this.a_AirCon_Efficiency[t], x_AirCon_op[t]);
+                elecAdditionalDemand.AddTerm(1 / this.a_ElecChiller_Efficiency[t], x_ElecChiller_op[t]);
 
                 /// ////////////////////////////////////////////////////////////////////////
                 /// Heating
@@ -1034,7 +1078,7 @@ namespace CISBAT21
 
                 /// ////////////////////////////////////////////////////////////////////////
                 /// Sizing
-                cpl.AddLe(x_AirCon_op[t], x_AirCon);
+                cpl.AddLe(x_ElecChiller_op[t], x_ElecChiller);
                 cpl.AddLe(x_CHP_op_e[t], x_CHP);
                 cpl.AddLe(x_Boiler_op[t], x_Boiler);
                 cpl.AddLe(x_BiomassBoiler_op[t], x_BiomassBoiler);
@@ -1051,7 +1095,7 @@ namespace CISBAT21
 
                 /// ////////////////////////////////////////////////////////////////////////
                 /// Energy Balance
-                cpl.AddEq(x_AirCon_op[t], this.CoolingDemand[t]);
+                cpl.AddEq(x_ElecChiller_op[t], this.CoolingDemand[t]);
                 cpl.AddEq(cpl.Diff(thermalGeneration, thermalAdditionalDemand), this.HeatingDemand[t]);
                 cpl.AddGe(cpl.Diff(elecGeneration, elecAdditionalDemand), this.ElectricityDemand[t]);
             }
@@ -1148,8 +1192,8 @@ namespace CISBAT21
             cpl.AddGe(x_BiomassBoiler, cpl.Prod(this.minCapBioBoiler, y_BiomassBoiler));
             cpl.AddLe(x_CHP, cpl.Prod(M, y_CHP));
             cpl.AddGe(x_CHP, cpl.Prod(this.minCapCHP, y_CHP));
-            cpl.AddLe(x_AirCon, cpl.Prod(M, y_AirCon));
-            cpl.AddGe(x_AirCon, cpl.Prod(this.minCapAirCon, y_AirCon));
+            cpl.AddLe(x_ElecChiller, cpl.Prod(M, y_ElecChiller));
+            cpl.AddGe(x_ElecChiller, cpl.Prod(this.minCapElecChiller, y_ElecChiller));
             cpl.AddLe(x_ASHP, cpl.Prod(M, y_ASHP));
             cpl.AddGe(x_ASHP, cpl.Prod(this.minCapASHP, y_ASHP));
             for (int i = 0; i < this.NumberOfSolarAreas; i++)
@@ -1165,14 +1209,15 @@ namespace CISBAT21
             for (int i = 0; i < this.NumberOfSolarAreas; i++)
                 carbonEmissions.AddTerm(this.lca_PV, x_PV[i]);
             carbonEmissions.AddTerm(this.lca_Battery, x_Battery);
-            carbonEmissions.AddTerm(this.lca_AirCon, x_AirCon);
+            carbonEmissions.AddTerm(this.lca_ElecChiller, x_ElecChiller);
             carbonEmissions.AddTerm(this.lca_ASHP, x_ASHP);
             carbonEmissions.AddTerm(this.lca_Boiler, x_Boiler);
             carbonEmissions.AddTerm(this.lca_BiomassBoiler, x_BiomassBoiler);
             carbonEmissions.AddTerm(this.lca_CHP, x_CHP);
             carbonEmissions.AddTerm(this.lca_TES, x_TES);
             carbonEmissions.AddTerm(this.lca_HeatExchanger * TotHXsizing, dh_dummy);
-            carbonEmissions.AddTerm(this.lca_DistrictHeating * this.NetworkLengthTotal, dh_dummy);
+            carbonEmissions.AddTerm(this.lca_HeatExchanger * TotHXsizingClg, dh_dummy);
+            carbonEmissions.AddTerm(this.lca_DistrictHeating * this.NetworkLengthTotal * 2, dh_dummy); // *2 because I have separate cooling and heating network
             carbonEmissions.AddTerm(this.lca_Building, lcabuilding_dummy);
 
             /// checking for objectives and cost/carbon constraints
@@ -1203,8 +1248,8 @@ namespace CISBAT21
 
             capex.AddTerm(this.c_Battery, x_Battery);
             capex.AddTerm(this.c_fix_Battery, y_Battery);
-            capex.AddTerm(this.c_AirCon, x_AirCon);
-            capex.AddTerm(this.c_fix_AirCon, y_AirCon);
+            capex.AddTerm(this.c_ElecChiller, x_ElecChiller);
+            capex.AddTerm(this.c_fix_ElecChiller, y_ElecChiller);
             capex.AddTerm(this.c_ASHP, x_ASHP);
             capex.AddTerm(this.c_fix_ASHP, y_ASHP);
             capex.AddTerm(this.c_Boiler, x_Boiler);
@@ -1215,7 +1260,7 @@ namespace CISBAT21
             capex.AddTerm(this.c_fix_CHP, y_CHP);
             capex.AddTerm(this.c_TES, x_TES);
             capex.AddTerm(this.c_fix_TES, y_TES);
-            capex.AddTerm(TotLevCostDH, dh_dummy);
+            capex.AddTerm(TotLevCostDH, dh_dummy); 
 
             for (int t = 0; t < this.Horizon; t++)
             {
@@ -1229,7 +1274,7 @@ namespace CISBAT21
                 opex.AddTerm(this.ClustersizePerTimestep[t] * this.c_Battery_OM, x_Battery_discharge[t]);    // assuming discharging is causing deterioration
                 opex.AddTerm(this.ClustersizePerTimestep[t] * this.c_Boiler_OM, x_Boiler_op[t]);
                 opex.AddTerm(this.ClustersizePerTimestep[t] * this.c_BiomassBoiler_OM, x_BiomassBoiler_op[t]);
-                opex.AddTerm(this.ClustersizePerTimestep[t] * this.c_AirCon_OM, x_AirCon_op[t]);
+                opex.AddTerm(this.ClustersizePerTimestep[t] * this.c_ElecChiller_OM, x_ElecChiller_op[t]);
                 opex.AddTerm(this.ClustersizePerTimestep[t] * this.c_CHP_OM, x_CHP_op_e[t]);
                 opex.AddTerm(this.ClustersizePerTimestep[t] * this.c_ASHP_OM, x_ASHP_op[t]);
                 opex.AddTerm(this.ClustersizePerTimestep[t] * this.c_TES_OM, x_TES_discharge[t]);
@@ -1283,7 +1328,7 @@ namespace CISBAT21
                 solution.x_boi = cpl.GetValue(x_Boiler);
                 solution.x_bmboi = cpl.GetValue(x_BiomassBoiler);
                 solution.x_hp = cpl.GetValue(x_ASHP);
-                solution.x_ac = cpl.GetValue(x_AirCon);
+                solution.x_ac = cpl.GetValue(x_ElecChiller);
 
                 solution.b_pvprod = new double[this.Horizon];
                 solution.x_bat_charge = new double[this.Horizon];
@@ -1312,7 +1357,7 @@ namespace CISBAT21
                     solution.x_feedin[t] = cpl.GetValue(x_FeedIn[t]);
                     solution.x_boi_op[t] = cpl.GetValue(x_Boiler_op[t]);
                     solution.x_bmboi_op[t] = cpl.GetValue(x_BiomassBoiler_op[t]);
-                    solution.x_ac_op[t] = cpl.GetValue(x_AirCon_op[t]);
+                    solution.x_ac_op[t] = cpl.GetValue(x_ElecChiller_op[t]);
                     solution.x_hp_op[t] = cpl.GetValue(x_ASHP_op[t]);
                     solution.x_chp_op_e[t] = cpl.GetValue(x_CHP_op_e[t]);
                     solution.x_chp_op_h[t] = cpl.GetValue(x_CHP_op_th[t]);

@@ -75,9 +75,12 @@ namespace CISBAT21
             LoadTechParameters(path + scenarioString[scenario] + "_technology.csv", out var technologyParameters);
             technologyParameters.Add("NumberOfBuildingsInEHub", Convert.ToDouble(numBuildings));
             for (int i = 0; i < numBuildings; i++)
-                technologyParameters.Add("Peak_B_" + Convert.ToString(i), peakHeatingLoads[i]); // add for cooling too
+            {
+                technologyParameters.Add("Peak_Htg_" + Convert.ToString(i), peakHeatingLoads[i]);
+                technologyParameters.Add("Peak_Clg_" + Convert.ToString(i), peakCoolingLoads[i]);
+            }
 
-                Console.WriteLine();
+            Console.WriteLine();
             Console.WriteLine("Loading Complete...");
             Console.WriteLine();
 
