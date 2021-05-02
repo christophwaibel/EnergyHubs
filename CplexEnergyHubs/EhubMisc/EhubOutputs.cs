@@ -24,6 +24,7 @@
         internal double x_bmboi;            // biomass boiler
         internal double[] x_hx_dh;          // district heating heat exchanger. per building that is connected to grid [kW]
         internal double x_dh;               // district heating network length [m]
+        internal double x_clgtower;         // cooling tower
 
         // Operation. Time resolved.
         internal double[] x_elecpur;        // purchase from grid

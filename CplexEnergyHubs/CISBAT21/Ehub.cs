@@ -1,6 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Text;
+using System.Linq;
 
 using ILOG.CPLEX;
 using ILOG.Concert;
@@ -78,7 +78,9 @@ namespace CISBAT21
         internal double c_chp_heatdump { get; private set; }    // heat dump allowed = 1
 
         // Coefficients Electric Chiller
-        internal double[] a_ElecChiller_Efficiency { get; private set; }
+        internal double c_ElecChiller_eff_clg { get; private set; }
+        internal double c_ElecChiller_eff_htg { get; private set; }
+
 
         // Coefficients Battery
         internal double bat_ch_eff { get; private set; }        // Battery charging efficiency
@@ -329,6 +331,15 @@ namespace CISBAT21
             else
                 _floorarea = 1000.0;
 
+            // Electric Chiller
+            if (technologyParameters.ContainsKey("c_ElecChiller_eff_clg"))
+                this.c_ElecChiller_eff_clg = technologyParameters["c_ElecChiller_eff_clg"];
+            else
+                this.c_ElecChiller_eff_clg = 4.9;
+            if (technologyParameters.ContainsKey("c_ElecChiller_eff_htg"))
+                this.c_ElecChiller_eff_htg = technologyParameters["c_ElecChiller_eff_htg"];
+            else
+                this.c_ElecChiller_eff_htg = 5.8;
 
             // PV
             if (technologyParameters.ContainsKey("pv_NOCT"))
@@ -823,7 +834,6 @@ namespace CISBAT21
                     this.pv_NOCT, this.pv_T_aNOCT, this.pv_P_NOCT, this.pv_beta_ref, this.pv_n_ref);
 
             this.a_ASHP_Efficiency = EhubMisc.TechnologyEfficiencies.CalculateCOPHeatPump(this.AmbientTemperature, this.hp_supplyTemp, this.hp_pi1, this.hp_pi2, this.hp_pi3, this.hp_pi4);
-            this.a_ElecChiller_Efficiency = EhubMisc.TechnologyEfficiencies.CalculateCOPAirCon(this.AmbientTemperature);
 
 
             // District Heating
@@ -880,6 +890,7 @@ namespace CISBAT21
         private EhubOutputs EnergyHub(string objective = "cost", double? carbonConstraint = null, double? costConstraint = null, bool verbose = false)
         {
             Cplex cpl = new Cplex();
+            EhubOutputs solution = new EhubOutputs();
 
             /// ////////////////////////////////////////////////////////////////////////
             /// District Heating
@@ -903,14 +914,20 @@ namespace CISBAT21
             }
             TotLevCostDH += LevCostDH; // add this to total investment cost. ignore operation cost
 
+            // cooling tower:
+            solution.x_clgtower = (this.CoolingDemand.Max() / this.c_ElecChiller_eff_clg) * this.c_ElecChiller_eff_htg;
 
             /// ////////////////////////////////////////////////////////////////////////
             /// Variables
             /// ////////////////////////////////////////////////////////////////////////
 
-            // district heating dummys
+            // district heating dummys. needed for adding to cost and carbon
             INumVar dh_dummy = cpl.BoolVar();
             cpl.AddEq(1, dh_dummy);
+
+            // cooling tower dummy. needed for adding to cost and carbon
+            INumVar clgtower_dummy = cpl.BoolVar();
+            cpl.AddEq(1, clgtower_dummy);
 
             // building lca dummy
             INumVar lcabuilding_dummy = cpl.BoolVar();
@@ -1019,7 +1036,7 @@ namespace CISBAT21
 
                 /// ////////////////////////////////////////////////////////////////////////
                 /// Cooling
-                elecAdditionalDemand.AddTerm(1 / this.a_ElecChiller_Efficiency[t], x_ElecChiller_op[t]);
+                elecAdditionalDemand.AddTerm(1 / this.c_ElecChiller_eff_clg, x_ElecChiller_op[t]);
 
                 /// ////////////////////////////////////////////////////////////////////////
                 /// Heating
@@ -1218,7 +1235,7 @@ namespace CISBAT21
             carbonEmissions.AddTerm(this.lca_HeatExchanger * TotHXsizing, dh_dummy);
             carbonEmissions.AddTerm(this.lca_HeatExchanger * TotHXsizingClg, dh_dummy);
             carbonEmissions.AddTerm(this.lca_DistrictHeating * this.NetworkLengthTotal * 2, dh_dummy); // *2 because I have separate cooling and heating network
-            carbonEmissions.AddTerm(this.lca_Building, lcabuilding_dummy);
+            carbonEmissions.AddTerm(this.lca_CoolingTower * solution.x_clgtower, clgtower_dummy);
 
             /// checking for objectives and cost/carbon constraints
             /// 
@@ -1260,7 +1277,9 @@ namespace CISBAT21
             capex.AddTerm(this.c_fix_CHP, y_CHP);
             capex.AddTerm(this.c_TES, x_TES);
             capex.AddTerm(this.c_fix_TES, y_TES);
-            capex.AddTerm(TotLevCostDH, dh_dummy); 
+            capex.AddTerm(TotLevCostDH, dh_dummy);
+            capex.AddTerm(this.c_CoolingTower * solution.x_clgtower, clgtower_dummy);
+            capex.AddTerm(this.c_fix_CoolingTower, clgtower_dummy);
 
             for (int t = 0; t < this.Horizon; t++)
             {
@@ -1301,7 +1320,7 @@ namespace CISBAT21
             cpl.SetParam(Cplex.IntParam.MIPDisplay, 4);
             //if (!this.multithreading)
             //    cpl.SetParam(Cplex.Param.Threads, 1);
-            EhubOutputs solution = new EhubOutputs();
+
             try
             {
                 bool success = cpl.Solve();
