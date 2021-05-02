@@ -900,22 +900,28 @@ namespace CISBAT21
             double[] LevCostHXClg = new double[this.NumberOfBuildingsInDistrict];
             double TotHXsizing = 0.0;
             double TotHXsizingClg = 0.0;
-            double TotHXsizingCooling = 0.0;
             double TotLevCostDH = 0.0;
             for (int i = 0; i < this.NumberOfBuildingsInDistrict; i++)
             {
                 TotHXsizing += this.PeakHeatingLoadsPerBuilding[i];
                 LevCostHX[i] = this.c_HeatExchanger * this.PeakHeatingLoadsPerBuilding[i];
                 TotLevCostDH += LevCostHX[i];
+                solution.x_hx_dh[i] = this.PeakHeatingLoadsPerBuilding[i];
 
                 TotHXsizingClg += this.PeakCoolingLoadsPerBuilding[i];
                 LevCostHXClg[i] = this.c_HeatExchanger * this.PeakCoolingLoadsPerBuilding[i];
                 TotLevCostDH += LevCostHXClg[i];
+                solution.x_hx_clg_dh[i] = this.PeakCoolingLoadsPerBuilding[i];
             }
             TotLevCostDH += LevCostDH; // add this to total investment cost. ignore operation cost
 
+            solution.x_dh = this.NetworkLengthTotal;
+
             // cooling tower:
             solution.x_clgtower = (this.CoolingDemand.Max() / this.c_ElecChiller_eff_clg) * this.c_ElecChiller_eff_htg;
+            
+
+
 
             /// ////////////////////////////////////////////////////////////////////////
             /// Variables
