@@ -56,6 +56,10 @@
         internal double[] b_pvprod_W_a; // pv prod West A
         internal double[] b_pvprod_W_b; // pv prod West B
 
+        // demand response
+        internal double[] x_dr_elec_pos;    // positive shifting (electricity is generated, so less demand)
+        internal double[] x_dr_elec_neg;    // negative shifting (electricity is consumed, so more demand)
+
         // typical days related 
         internal int[] clustersize;         // cluster size per timestep. used as scalar
 

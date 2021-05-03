@@ -921,13 +921,25 @@ namespace CISBAT21
 
             // cooling tower:
             solution.x_clgtower = (this.CoolingDemand.Max() / this.c_ElecChiller_eff_clg) * this.c_ElecChiller_eff_htg;
-            
+
 
 
 
             /// ////////////////////////////////////////////////////////////////////////
             /// Variables
             /// ////////////////////////////////////////////////////////////////////////
+
+            // Demand Response
+            INumVar[] x_DrElecPos = new INumVar[this.Horizon];  // postive shifting variable elec
+            INumVar[] x_DrElecNeg = new INumVar[this.Horizon];  // negative shifting variable elec
+            INumVar[] y_DrElecPos = new INumVar[this.Horizon];  // booleans for positive and negative shifting
+            INumVar[] y_DrElecNeg = new INumVar[this.Horizon];
+            double a_DrElec = 0.1;                              // percentage of load that can be shifted
+            // write to linnumexpr as additional generation and additiomal demand
+
+            // same for heating and cooling
+
+
 
             // district heating dummys. needed for adding to cost and carbon
             INumVar dh_dummy = cpl.BoolVar();
@@ -955,7 +967,7 @@ namespace CISBAT21
                 x_PV[i] = cpl.NumVar(0, this.SolarAreas[i]);
                 y_PV[i] = cpl.BoolVar();
             }
-            INumVar[] y_PV_op = new INumVar[this.Horizon];    // binary to indicate if PV is used (=1). no selling and purchasing from the grid at the same time allowed
+            INumVar[] y_FeedIn = new INumVar[this.Horizon];    // binary to indicate Feed-In (=1). no selling and purchasing from the grid at the same time allowed
 
 
             // AirCon
@@ -1010,7 +1022,12 @@ namespace CISBAT21
 
             for (int t = 0; t < this.Horizon; t++)
             {
-                y_PV_op[t] = cpl.BoolVar();
+                x_DrElecNeg[t] = cpl.NumVar(0, this.CoolingDemand[t] * a_DrElec);
+                x_DrElecPos[t] = cpl.NumVar(0, this.CoolingDemand[t] * a_DrElec);
+                y_DrElecNeg[t] = cpl.BoolVar();
+                y_DrElecPos[t] = cpl.BoolVar();
+
+                y_FeedIn[t] = cpl.BoolVar();
                 x_Purchase[t] = cpl.NumVar(0, System.Double.MaxValue);
                 x_FeedIn[t] = cpl.NumVar(0, System.Double.MaxValue);
                 x_PV_production[t] = cpl.LinearNumExpr();
@@ -1088,8 +1105,17 @@ namespace CISBAT21
                 elecGeneration.AddTerm(1, x_Purchase[t]);
                 elecGeneration.AddTerm(1, x_Battery_discharge[t]);
                 elecGeneration.AddTerm(1, x_CHP_op_e[t]);
+                elecGeneration.AddTerm(1, x_DrElecPos[t]);
                 elecAdditionalDemand.AddTerm(1, x_FeedIn[t]);
                 elecAdditionalDemand.AddTerm(1, x_Battery_charge[t]);
+                elecAdditionalDemand.AddTerm(1, x_DrElecNeg[t]);
+
+
+                /// ////////////////////////////////////////////////////////////////////////
+                /// Demand Response Constraints
+                cpl.Le(cpl.Sum(y_DrElecNeg[t], y_DrElecPos[t]), 1);         // only allow either positive or negative demand shifting
+                cpl.AddLe(x_DrElecPos[t], cpl.Prod(M, y_DrElecPos[t]));     // toggle boolean on if positive demand response is activated
+                cpl.AddLe(x_DrElecNeg[t], cpl.Prod(M, y_DrElecNeg[t]));     // toggle boolean on if negative demand response is activated
 
 
                 /// ////////////////////////////////////////////////////////////////////////
@@ -1097,8 +1123,8 @@ namespace CISBAT21
                 // pv production must be greater equal feedin
                 cpl.AddGe(x_PV_production[t], x_FeedIn[t]);
                 // donnot allow feedin and purchase at the same time. y = 1 means elec is produced
-                cpl.AddLe(x_Purchase[t], cpl.Prod(M, y_PV_op[t]));
-                cpl.AddLe(x_FeedIn[t], cpl.Prod(M, cpl.Diff(1, y_PV_op[t])));
+                cpl.AddLe(x_Purchase[t], cpl.Prod(M, y_FeedIn[t]));
+                cpl.AddLe(x_FeedIn[t], cpl.Prod(M, cpl.Diff(1, y_FeedIn[t])));
 
 
                 /// ////////////////////////////////////////////////////////////////////////
@@ -1142,6 +1168,26 @@ namespace CISBAT21
                 cpl.AddEq(cpl.Diff(thermalGeneration, thermalAdditionalDemand), this.HeatingDemand[t]);
                 cpl.AddGe(cpl.Diff(elecGeneration, elecAdditionalDemand), this.ElectricityDemand[t]);
             }
+
+
+            // ////////////////////////////////////////////////////////////////////////
+            /// Demand Response Model
+            ILinearNumExpr DrElecPos = cpl.LinearNumExpr();
+            ILinearNumExpr DrElecNeg = cpl.LinearNumExpr();
+            for (int t = 0; t < this.Horizon; t++)
+            {
+                DrElecPos.AddTerm(1, x_DrElecPos[t]);
+                DrElecNeg.AddTerm(1, x_DrElecNeg[t]);
+
+                if ((t + 1) % 24 == 0)
+                {
+                    cpl.AddEq(DrElecPos, DrElecNeg);
+                    DrElecNeg = cpl.LinearNumExpr();
+                    DrElecPos = cpl.LinearNumExpr();
+                }
+            }
+
+
             /// ////////////////////////////////////////////////////////////////////////
             /// Total Biomass consumption per year
             cpl.AddLe(biomassConsumptionTotal, this.b_maxbiomassperyear);
@@ -1406,6 +1452,9 @@ namespace CISBAT21
                 solution.x_hp = cpl.GetValue(x_ASHP);
                 solution.x_ac = cpl.GetValue(x_ElecChiller);
 
+                solution.x_dr_elec_neg = new double[this.Horizon];
+                solution.x_dr_elec_pos = new double[this.Horizon];
+
                 solution.b_pvprod = new double[this.Horizon];
                 solution.x_bat_charge = new double[this.Horizon];
                 solution.x_bat_discharge = new double[this.Horizon];
@@ -1428,6 +1477,9 @@ namespace CISBAT21
                 solution.clustersize = new int[this.Horizon];
                 for (int t = 0; t < this.Horizon; t++)
                 {
+                    solution.x_dr_elec_neg[t] = cpl.GetValue(x_DrElecNeg[t]);
+                    solution.x_dr_elec_pos[t] = cpl.GetValue(x_DrElecPos[t]);
+
                     solution.b_pvprod[t] = cpl.GetValue(x_PV_production[t]);
                     solution.x_bat_charge[t] = cpl.GetValue(x_Battery_charge[t]);
                     solution.x_bat_discharge[t] = cpl.GetValue(x_Battery_discharge[t]);
