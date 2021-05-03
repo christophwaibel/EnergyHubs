@@ -170,7 +170,7 @@ namespace CISBAT21
 
             Console.WriteLine();
             Console.WriteLine("ENERGY HUB SOLVER COMPLETED");
-            WriteOutput(scenarioString[scenario], path, numberOfSolarAreas, ehub, typicalDays);
+            WriteOutput(scenarioString[scenario], path, numberOfSolarAreas, ehub, typicalDays, numBaseLoads);
 
 
 
@@ -179,7 +179,7 @@ namespace CISBAT21
 
 
 
-        static void WriteOutput(string scenario, string path, int numberOfSolarAreas, Ehub ehub, EhubMisc.HorizonReduction.TypicalDays typicalDays)
+        static void WriteOutput(string scenario, string path, int numberOfSolarAreas, Ehub ehub, EhubMisc.HorizonReduction.TypicalDays typicalDays, int numBaseLoads)
         {
             // check, if results folder exists in inputs folder
             string outputPath = path + @"results\";
@@ -293,6 +293,11 @@ namespace CISBAT21
             header_units.Add("Days");
             header.Add("BiomassConsumed");
             header_units.Add("kWh");
+            for (int i = 0; i < numberOfSolarAreas; i++)
+            {
+                header.Add("TypicalPotentialsSP_" + i);
+                header_units.Add("kWh/m^2");
+            }
 
             for (int e = 0; e < ehub.Outputs.Length; e++)
             {
@@ -360,8 +365,10 @@ namespace CISBAT21
                     firstLine.Add(Convert.ToString(typicalDays.DayProfiles[4][0]));
                     firstLine.Add(Convert.ToString(ehub.Outputs[e].clustersize[0]));
                     firstLine.Add(Convert.ToString(ehub.Outputs[e].biomassConsumed));
+                    for (int i = 0; i < numberOfSolarAreas; i++)
+                        firstLine.Add(Convert.ToString(typicalDays.DayProfiles[numBaseLoads+i][0]));
 
-                    outputString.Add(firstLine);
+                        outputString.Add(firstLine);
 
                     for (int t = 1; t < ehub.Outputs[e].x_elecpur.Length; t++)
                     {
@@ -405,6 +412,8 @@ namespace CISBAT21
                         newLine.Add(Convert.ToString(typicalDays.DayProfiles[4][t]));
                         newLine.Add(Convert.ToString(ehub.Outputs[e].clustersize[t]));
                         newLine.Add("");
+                        for (int i = 0; i < numberOfSolarAreas; i++)
+                            newLine.Add(Convert.ToString(typicalDays.DayProfiles[numBaseLoads + i][t]));
 
                         outputString.Add(newLine);
                     }
