@@ -56,6 +56,7 @@ Carbon emissions and investment cost of the district heating network and the hea
 In the following, the system constraints are described. ![\forall t \in T](https://render.githubusercontent.com/render/math?math=%5Cforall%20t%20%5Cin%20T), if not stated otherwise.
 
 **Demand Response**
+
 0 <= x_DR,pos^demand,t <= a_DR^demand,t * demand_t... maximal shift is a fraction of the total demand at that timestep. 
 
 0 <= x_DR,neg^demand,t <= a_DR^demand,t * demand_tsame for negative shift
