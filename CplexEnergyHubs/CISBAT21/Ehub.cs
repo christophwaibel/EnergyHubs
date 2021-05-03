@@ -297,7 +297,7 @@ namespace CISBAT21
             double carbonTolerance = 0.1;
             this.Outputs = new EhubOutputs[epsilonCuts + 2];
 
-            // 1. solve for minCarbon, ignoring cost
+            // 1. solve for minCarbon, ignoring cost. solve again, but mincost, with minCarbon constraint
             EhubOutputs minCarbon = EnergyHub("carbon", null, null, verbose);
 
             // 2. solve for minCost, 
@@ -891,6 +891,8 @@ namespace CISBAT21
         {
             Cplex cpl = new Cplex();
             EhubOutputs solution = new EhubOutputs();
+            solution.x_hx_dh = new double[this.NumberOfBuildingsInDistrict];
+            solution.x_hx_clg_dh = new double[this.NumberOfBuildingsInDistrict];
 
             /// ////////////////////////////////////////////////////////////////////////
             /// District Heating
@@ -998,6 +1000,14 @@ namespace CISBAT21
             INumVar[] y_TES_op = new INumVar[this.Horizon];
             INumVar y_TES = cpl.BoolVar();
 
+            // cool storage. using same parameters as heat storage for now, as in https://doi.org/10.1016/j.energy.2019.02.021
+            INumVar x_clgTES = cpl.NumVar(0.0, this.b_MaxTES);             // kWh
+            INumVar[] x_clgTES_charge = new INumVar[this.Horizon];         // kW
+            INumVar[] x_clgTES_discharge = new INumVar[this.Horizon];      // kW
+            INumVar[] x_clgTES_soc = new INumVar[this.Horizon];            // kWh
+            INumVar[] y_clgTES_op = new INumVar[this.Horizon];
+            INumVar y_clgTES = cpl.BoolVar();
+
             for (int t = 0; t < this.Horizon; t++)
             {
                 y_PV_op[t] = cpl.BoolVar();
@@ -1022,6 +1032,11 @@ namespace CISBAT21
                 x_TES_discharge[t] = cpl.NumVar(0.0, System.Double.MaxValue);
                 x_TES_soc[t] = cpl.NumVar(0.0, System.Double.MaxValue);
                 y_TES_op[t] = cpl.BoolVar();
+
+                x_clgTES_charge[t] = cpl.NumVar(0.0, System.Double.MaxValue);
+                x_clgTES_discharge[t] = cpl.NumVar(0.0, System.Double.MaxValue);
+                x_clgTES_soc[t] = cpl.NumVar(0.0, System.Double.MaxValue);
+                y_clgTES_op[t] = cpl.BoolVar();
             }
 
 
@@ -1039,10 +1054,15 @@ namespace CISBAT21
                 ILinearNumExpr elecAdditionalDemand = cpl.LinearNumExpr();
                 ILinearNumExpr thermalGeneration = cpl.LinearNumExpr();
                 ILinearNumExpr thermalAdditionalDemand = cpl.LinearNumExpr();
+                ILinearNumExpr coolingGeneration = cpl.LinearNumExpr();
+                ILinearNumExpr coolingAdditionalDemand = cpl.LinearNumExpr();
 
                 /// ////////////////////////////////////////////////////////////////////////
                 /// Cooling
+                coolingGeneration.AddTerm(1, x_ElecChiller_op[t]);
+                coolingGeneration.AddTerm(1, x_clgTES_discharge[t]);
                 elecAdditionalDemand.AddTerm(1 / this.c_ElecChiller_eff_clg, x_ElecChiller_op[t]);
+                coolingAdditionalDemand.AddTerm(1, x_clgTES_charge[t]);
 
                 /// ////////////////////////////////////////////////////////////////////////
                 /// Heating
@@ -1118,7 +1138,7 @@ namespace CISBAT21
 
                 /// ////////////////////////////////////////////////////////////////////////
                 /// Energy Balance
-                cpl.AddEq(x_ElecChiller_op[t], this.CoolingDemand[t]);
+                cpl.AddEq(cpl.Diff(coolingGeneration, coolingAdditionalDemand), this.CoolingDemand[t]);
                 cpl.AddEq(cpl.Diff(thermalGeneration, thermalAdditionalDemand), this.HeatingDemand[t]);
                 cpl.AddGe(cpl.Diff(elecGeneration, elecAdditionalDemand), this.ElectricityDemand[t]);
             }
@@ -1149,11 +1169,6 @@ namespace CISBAT21
                 }
             }
             cpl.AddGe(x_Battery_soc[0], cpl.Prod(x_Battery, this.bat_min_state));                 // initial state of battery >= min_state
-            //cpl.AddEq(x_Battery_soc[0], cpl.Sum(cpl.Diff(
-            //    cpl.Prod(x_Battery_soc[this.Horizon - 1], 1 - this.bat_decay),
-            //    cpl.Prod(x_Battery_discharge[this.Horizon - 1], -1 / this.bat_disch_eff)),
-            //    cpl.Prod(x_Battery_charge[this.Horizon - 1], this.bat_ch_eff)));                  // initial state equals the state at last timestep (minus discharge, minus losses, plus charge)
-            //cpl.AddEq(x_Battery_discharge[0], 0);                                                 // no discharge at t=0
 
             for (int t = 0; t < this.Horizon; t++)
             {
@@ -1164,7 +1179,7 @@ namespace CISBAT21
             }
 
             /// ////////////////////////////////////////////////////////////////////////
-            /// TES model
+            /// TES  model
             for (int t = 0; t < this.Horizon; t++)
             {
                 ILinearNumExpr tesState = cpl.LinearNumExpr();
@@ -1184,11 +1199,6 @@ namespace CISBAT21
                     cpl.AddEq(x_TES_charge[t], 0);
                 }
             }
-            //cpl.AddEq(x_TES_soc[0], cpl.Sum(cpl.Diff(
-            //    cpl.Prod(x_TES_soc[this.Horizon - 1], 1 - this.tes_decay), 
-            //    cpl.Prod(x_TES_discharge[this.Horizon - 1], -1 / this.tes_disch_eff)), 
-            //    cpl.Prod(x_TES_charge[this.Horizon - 1], this.tes_ch_eff)));           // soc at t=0 equals soc at end of horizon (minus losses, charge and discharge)
-            //cpl.AddEq(x_TES_discharge[0], 0);                               // no discharge at t=0
 
             for (int t = 0; t < this.Horizon; t++)
             {
@@ -1202,6 +1212,40 @@ namespace CISBAT21
             }
 
 
+            // ////////////////////////////////////////////////////////////////////////
+            /// cool storage model
+            for (int t = 0; t < this.Horizon; t++)
+            {
+                ILinearNumExpr clgTesState = cpl.LinearNumExpr();
+                clgTesState.AddTerm((1 - this.tes_decay), x_clgTES_soc[t]);
+                clgTesState.AddTerm(this.tes_ch_eff, x_clgTES_charge[t]);
+                clgTesState.AddTerm(-1 / this.tes_disch_eff, x_clgTES_discharge[t]);
+                if (t == this.Horizon - 1)
+                    cpl.AddEq(x_clgTES_soc[0], clgTesState);
+                else
+                    cpl.AddEq(x_clgTES_soc[t + 1], clgTesState);
+
+                if ((t + 1) % 24 == 0)
+                {
+                    if (t != this.Horizon - 1)
+                        cpl.AddEq(x_clgTES_soc[t + 1], x_clgTES_soc[t + 1 - 24]);
+                    cpl.AddEq(x_clgTES_discharge[t], 0);
+                    cpl.AddEq(x_clgTES_charge[t], 0);
+                }
+            }
+
+            for (int t = 0; t < this.Horizon; t++)
+            {
+                cpl.AddLe(x_clgTES_charge[t], cpl.Prod(x_clgTES, this.tes_max_ch));
+                cpl.AddLe(x_clgTES_discharge[t], cpl.Prod(x_clgTES, this.tes_max_disch));
+                cpl.AddLe(x_clgTES_soc[t], x_clgTES);
+
+                // donnot allow charge and discharge at the same time. y = 1 means charging
+                cpl.AddLe(x_clgTES_charge[t], cpl.Prod(M, y_clgTES_op[t]));
+                cpl.AddLe(x_clgTES_discharge[t], cpl.Prod(M, cpl.Diff(1, y_clgTES_op[t])));
+            }
+
+
             /// ////////////////////////////////////////////////////////////////////////
             /// Binary selection variables
             /// ////////////////////////////////////////////////////////////////////////
@@ -1209,6 +1253,8 @@ namespace CISBAT21
             cpl.AddGe(x_Battery, cpl.Prod(this.minCapBattery, y_Battery));
             cpl.AddLe(x_TES, cpl.Prod(M, y_TES));
             cpl.AddGe(x_TES, cpl.Prod(this.minCapTES, y_TES));
+            cpl.AddLe(x_clgTES, cpl.Prod(M, y_clgTES));
+            cpl.AddGe(x_clgTES, cpl.Prod(this.minCapTES, y_clgTES));
             cpl.AddLe(x_Boiler, cpl.Prod(M, y_Boiler));
             cpl.AddGe(x_Boiler, cpl.Prod(this.minCapBoiler, y_Boiler));
             cpl.AddLe(x_BiomassBoiler, cpl.Prod(M, y_BiomassBoiler));
@@ -1238,6 +1284,7 @@ namespace CISBAT21
             carbonEmissions.AddTerm(this.lca_BiomassBoiler, x_BiomassBoiler);
             carbonEmissions.AddTerm(this.lca_CHP, x_CHP);
             carbonEmissions.AddTerm(this.lca_TES, x_TES);
+            carbonEmissions.AddTerm(this.lca_TES, x_clgTES);
             carbonEmissions.AddTerm(this.lca_HeatExchanger * TotHXsizing, dh_dummy);
             carbonEmissions.AddTerm(this.lca_HeatExchanger * TotHXsizingClg, dh_dummy);
             carbonEmissions.AddTerm(this.lca_DistrictHeating * this.NetworkLengthTotal * 2, dh_dummy); // *2 because I have separate cooling and heating network
@@ -1283,6 +1330,8 @@ namespace CISBAT21
             capex.AddTerm(this.c_fix_CHP, y_CHP);
             capex.AddTerm(this.c_TES, x_TES);
             capex.AddTerm(this.c_fix_TES, y_TES);
+            capex.AddTerm(this.c_TES, x_clgTES);
+            capex.AddTerm(this.c_fix_TES, y_clgTES);
             capex.AddTerm(TotLevCostDH, dh_dummy);
             capex.AddTerm(this.c_CoolingTower * solution.x_clgtower, clgtower_dummy);
             capex.AddTerm(this.c_fix_CoolingTower, clgtower_dummy);
@@ -1303,6 +1352,7 @@ namespace CISBAT21
                 opex.AddTerm(this.ClustersizePerTimestep[t] * this.c_CHP_OM, x_CHP_op_e[t]);
                 opex.AddTerm(this.ClustersizePerTimestep[t] * this.c_ASHP_OM, x_ASHP_op[t]);
                 opex.AddTerm(this.ClustersizePerTimestep[t] * this.c_TES_OM, x_TES_discharge[t]);
+                opex.AddTerm(this.ClustersizePerTimestep[t] * this.c_TES_OM, x_clgTES_discharge[t]);
             }
 
 
@@ -1349,6 +1399,7 @@ namespace CISBAT21
                     solution.x_pv[i] = cpl.GetValue(x_PV[i]);
                 solution.x_bat = cpl.GetValue(x_Battery);
                 solution.x_tes = cpl.GetValue(x_TES);
+                solution.x_clgtes = cpl.GetValue(x_clgTES);
                 solution.x_chp = cpl.GetValue(x_CHP);
                 solution.x_boi = cpl.GetValue(x_Boiler);
                 solution.x_bmboi = cpl.GetValue(x_BiomassBoiler);
@@ -1371,6 +1422,9 @@ namespace CISBAT21
                 solution.x_tes_charge = new double[this.Horizon];
                 solution.x_tes_discharge = new double[this.Horizon];
                 solution.x_tes_soc = new double[this.Horizon];
+                solution.x_clgtes_charge = new double[this.Horizon];
+                solution.x_clgtes_discharge = new double[this.Horizon];
+                solution.x_clgtes_soc = new double[this.Horizon];
                 solution.clustersize = new int[this.Horizon];
                 for (int t = 0; t < this.Horizon; t++)
                 {
@@ -1390,6 +1444,9 @@ namespace CISBAT21
                     solution.x_tes_charge[t] = cpl.GetValue(x_TES_charge[t]);
                     solution.x_tes_discharge[t] = cpl.GetValue(x_TES_discharge[t]);
                     solution.x_tes_soc[t] = cpl.GetValue(x_TES_soc[t]);
+                    solution.x_clgtes_charge[t] = cpl.GetValue(x_clgTES_charge[t]);
+                    solution.x_clgtes_discharge[t] = cpl.GetValue(x_clgTES_discharge[t]);
+                    solution.x_clgtes_soc[t] = cpl.GetValue(x_clgTES_soc[t]);
 
                     solution.clustersize[t] = this.ClustersizePerTimestep[t];
                 }

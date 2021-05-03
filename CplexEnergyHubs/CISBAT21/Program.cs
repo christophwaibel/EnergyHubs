@@ -38,7 +38,7 @@ namespace CISBAT21
             Console.Write("Enter your path now and confirm by hitting the Enter-key: ");
             string path = Console.ReadLine();
             if (path.Length == 0)
-                path = @"C:\Users\Christoph\Documents\GitHub\EnergyHubs\CplexEnergyHubs\CISBAT21\data\";
+                path = @"C:\Users\chwaibel\Documents\GitHub\EnergyHubs\CplexEnergyHubs\CISBAT21\data\";
             if (!path.EndsWith(@"\"))
                 path = path + @"\";
             Console.WriteLine("Cheers, using path {0}", path);
@@ -155,6 +155,11 @@ namespace CISBAT21
                         typicalSolarLoads[u][t] = 0.0;
                 }
             }
+            // same for heating, cooling, elec demand... round very small numbers
+            for (int t=0; t<typicalDays.DayProfiles[0].Length; t++)
+                for(int i=0; i<3; i++)
+                    if (typicalDays.DayProfiles[i][t] < 0.001) typicalDays.DayProfiles[i][t] = 0.0;
+
 
             int[] clustersizePerTimestep = typicalDays.NumberOfDaysPerTimestep;
             Ehub ehub = new Ehub(typicalDays.DayProfiles[0], typicalDays.DayProfiles[1], typicalDays.DayProfiles[2],

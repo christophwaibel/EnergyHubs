@@ -18,6 +18,7 @@
         internal double x_bat;              // battery 
         internal double x_hp;               // heat pump. assume it reaches peak heat temperatures as simplification.
         internal double x_tes;              // thermal storage
+        internal double x_clgtes;       // cool storage
         internal double x_chp;              // combined heat and power
         internal double x_ac;               // air condition
         internal double x_boi;              // gas boiler
@@ -36,6 +37,9 @@
         internal double[] x_tes_discharge;   // thermal energy storage (tes) discharge
         internal double[] x_tes_charge;      // tes charge
         internal double[] x_tes_soc;         // tes state of charge
+        internal double[] x_clgtes_discharge;   // cool storage discharge
+        internal double[] x_clgtes_charge;  // cool storage charge
+        internal double[] x_clgtes_soc;     // cool storage state of charge
         internal double[] x_hp_op;          // heat pump operation
         internal double[] x_boi_op;         // boiler operation
         internal double[] x_bmboi_op;       // biomass boiler operation
