@@ -949,16 +949,18 @@ namespace CISBAT21
             /// ////////////////////////////////////////////////////////////////////////
 
             // Demand Response
-            INumVar[] x_DrElecPos = new INumVar[this.Horizon];  // postive shifting variable elec
-            INumVar[] x_DrElecNeg = new INumVar[this.Horizon];  // negative shifting variable elec
+            INumVar[] x_DrElecPos = new INumVar[this.Horizon];  // postive shifting variable elec (generating more)
+            INumVar[] x_DrElecNeg = new INumVar[this.Horizon];  // negative shifting variable elec (consuming more)
             INumVar[] y_DrElecPos = new INumVar[this.Horizon];  // booleans for positive and negative shifting
             INumVar[] y_DrElecNeg = new INumVar[this.Horizon];
-            //double a_DrElec = 0.1;                              // percentage of load that can be shifted
-            // write to linnumexpr as additional generation and additiomal demand
-
-            // same for heating and cooling
-
-
+            INumVar[] x_DrHeatPos = new INumVar[this.Horizon];  // generating more
+            INumVar[] x_DrHeatNeg = new INumVar[this.Horizon];  // consuming more
+            INumVar[] y_DrHeatPos = new INumVar[this.Horizon];
+            INumVar[] y_DrHeatNeg = new INumVar[this.Horizon];
+            INumVar[] x_DrCoolPos = new INumVar[this.Horizon];  // generating more
+            INumVar[] x_DrCoolNeg = new INumVar[this.Horizon];  // consuming more
+            INumVar[] y_DrCoolPos = new INumVar[this.Horizon];
+            INumVar[] y_DrCoolNeg = new INumVar[this.Horizon];
 
             // district heating dummys. needed for adding to cost and carbon
             INumVar dh_dummy = cpl.BoolVar();
@@ -1041,10 +1043,18 @@ namespace CISBAT21
 
             for (int t = 0; t < this.Horizon; t++)
             {
-                x_DrElecNeg[t] = cpl.NumVar(0, this.CoolingDemand[t] * a_DrElec);
-                x_DrElecPos[t] = cpl.NumVar(0, this.CoolingDemand[t] * a_DrElec);
+                x_DrElecNeg[t] = cpl.NumVar(0, this.ElectricityDemand[t] * a_DrElec);
+                x_DrElecPos[t] = cpl.NumVar(0, this.ElectricityDemand[t] * a_DrElec);
                 y_DrElecNeg[t] = cpl.BoolVar();
                 y_DrElecPos[t] = cpl.BoolVar();
+                x_DrHeatNeg[t] = cpl.NumVar(0, this.HeatingDemand[t] * a_DrHeat);
+                x_DrHeatPos[t] = cpl.NumVar(0, this.HeatingDemand[t] * a_DrHeat);
+                y_DrHeatNeg[t] = cpl.BoolVar();
+                y_DrHeatPos[t] = cpl.BoolVar();
+                x_DrCoolNeg[t] = cpl.NumVar(0, this.CoolingDemand[t] * a_DrCool);
+                x_DrCoolPos[t] = cpl.NumVar(0, this.CoolingDemand[t] * a_DrCool);
+                y_DrCoolNeg[t] = cpl.BoolVar();
+                y_DrCoolPos[t] = cpl.BoolVar();
 
                 y_FeedIn[t] = cpl.BoolVar();
                 x_Purchase[t] = cpl.NumVar(0, System.Double.MaxValue);
@@ -1097,8 +1107,10 @@ namespace CISBAT21
                 /// Cooling
                 coolingGeneration.AddTerm(1, x_ElecChiller_op[t]);
                 coolingGeneration.AddTerm(1, x_clgTES_discharge[t]);
+                coolingGeneration.AddTerm(1, x_DrCoolPos[t]);
                 elecAdditionalDemand.AddTerm(1 / this.c_ElecChiller_eff_clg, x_ElecChiller_op[t]);
                 coolingAdditionalDemand.AddTerm(1, x_clgTES_charge[t]);
+                coolingAdditionalDemand.AddTerm(1, x_DrCoolNeg[t]);
 
                 /// ////////////////////////////////////////////////////////////////////////
                 /// Heating
@@ -1107,9 +1119,11 @@ namespace CISBAT21
                 thermalGeneration.AddTerm(1, x_CHP_op_th[t]);
                 thermalGeneration.AddTerm(1, x_ASHP_op[t]);
                 thermalGeneration.AddTerm(1, x_TES_discharge[t]);
+                thermalGeneration.AddTerm(1, x_DrHeatPos[t]);
                 elecAdditionalDemand.AddTerm(1 / this.a_ASHP_Efficiency[t], x_ASHP_op[t]);
                 thermalAdditionalDemand.AddTerm(1, x_TES_charge[t]);
                 thermalAdditionalDemand.AddTerm(1, x_CHP_op_dump[t]);
+                thermalAdditionalDemand.AddTerm(1, x_DrHeatNeg[t]);
 
                 /// ////////////////////////////////////////////////////////////////////////
                 /// Electricity
@@ -1135,6 +1149,12 @@ namespace CISBAT21
                 cpl.Le(cpl.Sum(y_DrElecNeg[t], y_DrElecPos[t]), 1);         // only allow either positive or negative demand shifting
                 cpl.AddLe(x_DrElecPos[t], cpl.Prod(M, y_DrElecPos[t]));     // toggle boolean on if positive demand response is activated
                 cpl.AddLe(x_DrElecNeg[t], cpl.Prod(M, y_DrElecNeg[t]));     // toggle boolean on if negative demand response is activated
+                cpl.Le(cpl.Sum(y_DrHeatNeg[t], y_DrHeatPos[t]), 1);         
+                cpl.AddLe(x_DrHeatPos[t], cpl.Prod(M, y_DrHeatPos[t]));     
+                cpl.AddLe(x_DrHeatNeg[t], cpl.Prod(M, y_DrHeatNeg[t]));
+                cpl.Le(cpl.Sum(y_DrCoolNeg[t], y_DrCoolPos[t]), 1);
+                cpl.AddLe(x_DrCoolPos[t], cpl.Prod(M, y_DrCoolPos[t]));
+                cpl.AddLe(x_DrCoolNeg[t], cpl.Prod(M, y_DrCoolNeg[t]));
 
 
                 /// ////////////////////////////////////////////////////////////////////////
@@ -1193,16 +1213,32 @@ namespace CISBAT21
             /// Demand Response Model
             ILinearNumExpr DrElecPos = cpl.LinearNumExpr();
             ILinearNumExpr DrElecNeg = cpl.LinearNumExpr();
+            ILinearNumExpr DrHeatPos = cpl.LinearNumExpr();
+            ILinearNumExpr DrHeatNeg = cpl.LinearNumExpr();
+            ILinearNumExpr DrCoolPos = cpl.LinearNumExpr();
+            ILinearNumExpr DrCoolNeg = cpl.LinearNumExpr();
             for (int t = 0; t < this.Horizon; t++)
             {
                 DrElecPos.AddTerm(1, x_DrElecPos[t]);
                 DrElecNeg.AddTerm(1, x_DrElecNeg[t]);
+                DrHeatPos.AddTerm(1, x_DrHeatPos[t]);
+                DrHeatNeg.AddTerm(1, x_DrHeatNeg[t]);
+                DrCoolPos.AddTerm(1, x_DrCoolPos[t]);
+                DrCoolNeg.AddTerm(1, x_DrCoolNeg[t]);
 
                 if ((t + 1) % 24 == 0)
                 {
                     cpl.AddEq(DrElecPos, DrElecNeg);
                     DrElecNeg = cpl.LinearNumExpr();
                     DrElecPos = cpl.LinearNumExpr();
+
+                    cpl.AddEq(DrHeatPos, DrHeatNeg);
+                    DrHeatNeg = cpl.LinearNumExpr();
+                    DrHeatPos = cpl.LinearNumExpr();
+
+                    cpl.AddEq(DrCoolPos, DrCoolNeg);
+                    DrCoolNeg = cpl.LinearNumExpr();
+                    DrCoolPos = cpl.LinearNumExpr();
                 }
             }
 
@@ -1473,6 +1509,10 @@ namespace CISBAT21
 
                 solution.x_dr_elec_neg = new double[this.Horizon];
                 solution.x_dr_elec_pos = new double[this.Horizon];
+                solution.x_dr_heat_neg = new double[this.Horizon];
+                solution.x_dr_heat_pos = new double[this.Horizon];
+                solution.x_dr_cool_neg = new double[this.Horizon];
+                solution.x_dr_cool_pos = new double[this.Horizon];
 
                 solution.b_pvprod = new double[this.Horizon];
                 solution.x_bat_charge = new double[this.Horizon];
@@ -1498,6 +1538,10 @@ namespace CISBAT21
                 {
                     solution.x_dr_elec_neg[t] = cpl.GetValue(x_DrElecNeg[t]);
                     solution.x_dr_elec_pos[t] = cpl.GetValue(x_DrElecPos[t]);
+                    solution.x_dr_heat_neg[t] = cpl.GetValue(x_DrHeatNeg[t]);
+                    solution.x_dr_heat_pos[t] = cpl.GetValue(x_DrHeatPos[t]);
+                    solution.x_dr_cool_neg[t] = cpl.GetValue(x_DrCoolNeg[t]);
+                    solution.x_dr_cool_pos[t] = cpl.GetValue(x_DrCoolPos[t]);
 
                     solution.b_pvprod[t] = cpl.GetValue(x_PV_production[t]);
                     solution.x_bat_charge[t] = cpl.GetValue(x_Battery_charge[t]);
