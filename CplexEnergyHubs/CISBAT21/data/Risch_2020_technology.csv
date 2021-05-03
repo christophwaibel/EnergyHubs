@@ -1,3 +1,6 @@
+DemandResponseElec;fraction;0.2
+DemandResponseCool;fraction;0.1
+DemandResponseHeat;fraction;0.1
 InterestRate;factor;0.08
 lca_GridElectricity;kgCO2eq/kWh;0.1484
 lca_NaturalGas;kgCO2eq/kWh;0.237

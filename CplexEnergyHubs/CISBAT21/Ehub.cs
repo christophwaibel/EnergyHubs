@@ -51,6 +51,11 @@ namespace CISBAT21
         internal double LifetimeHeatExchanger { get; private set; }
         internal double LifetimeCoolingTower { get; private set; }
 
+        // Coefficients Demand Respons
+        internal double a_DrElec { get; private set; }
+        internal double a_DrCool { get; private set; }
+        internal double a_DrHeat { get; private set; }
+
         // Coefficients PV
         internal double pv_NOCT { get; private set; }
         internal double pv_T_aNOCT { get; private set; }
@@ -323,6 +328,20 @@ namespace CISBAT21
             /// ////////////////////////////////////////////////////////////////////////
             /// Technical Parameters
             /// ////////////////////////////////////////////////////////////////////////
+
+            // Demand Response
+            if (technologyParameters.ContainsKey("DemandResponseElec"))
+                this.a_DrElec = technologyParameters["DemandResponseElec"];
+            else
+                this.a_DrElec = 0.1;
+            if (technologyParameters.ContainsKey("DemandResponseCool"))
+                this.a_DrCool = technologyParameters["DemandResponseCool"];
+            else
+                this.a_DrCool = 0.1;
+            if (technologyParameters.ContainsKey("DemandResponseHeat"))
+                this.a_DrHeat = technologyParameters["DemandResponseHeat"];
+            else
+                this.a_DrHeat = 0.1;
 
             // floor area
             double _floorarea;
@@ -934,7 +953,7 @@ namespace CISBAT21
             INumVar[] x_DrElecNeg = new INumVar[this.Horizon];  // negative shifting variable elec
             INumVar[] y_DrElecPos = new INumVar[this.Horizon];  // booleans for positive and negative shifting
             INumVar[] y_DrElecNeg = new INumVar[this.Horizon];
-            double a_DrElec = 0.1;                              // percentage of load that can be shifted
+            //double a_DrElec = 0.1;                              // percentage of load that can be shifted
             // write to linnumexpr as additional generation and additiomal demand
 
             // same for heating and cooling
