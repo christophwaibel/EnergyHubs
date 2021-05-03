@@ -57,10 +57,15 @@ In the following, the system constraints are described. ![\forall t \in T](https
 
 **Demand Response**
 0 <= x_DR,pos^demand,t <= a_DR^demand,t * demand_t... maximal shift is a fraction of the total demand at that timestep. 
+
 0 <= x_DR,neg^demand,t <= a_DR^demand,t * demand_tsame for negative shift
+
 y_DR,neg^demand,t + y_DR,pos^demand,t <= 1... only either positive or negative shifting possible at a each timestep
+
 x_DR,pos^demand,t <= M * y_DR,pos^demand,t... big M method. toggle boolean on, if positive demand response is activated
+
 x_DR,neg^demand,t <= M * y_DR,neg^demand,t... same for negative shift
+
 sum_perDay(x_DR,pos^demand) = sum_perDay(x_DR,neg^demand)... total negative and positive shift per day must balance out. simplification for thermal and occupance dynamics. E.g., you can't take all heating demand away from winter and put it to summer. Also, you can't wait half a year to operate your dish washer...
 
 
