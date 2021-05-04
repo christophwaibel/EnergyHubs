@@ -38,16 +38,16 @@ namespace CISBAT21
             Console.Write("Enter your path now and confirm by hitting the Enter-key: ");
             string path = Console.ReadLine();
             if (path.Length == 0)
-                path = @"C:\Users\christoph\Documents\GitHub\EnergyHubs\CplexEnergyHubs\CISBAT21\data\";
+                path = @"C:\Users\chwaibel\Documents\GitHub\EnergyHubs\CplexEnergyHubs\CISBAT21\data\";
             if (!path.EndsWith(@"\"))
                 path = path + @"\";
             Console.WriteLine("Cheers, using path {0}", path);
             Console.WriteLine();
-            Console.WriteLine("Which Case? 1) Risch 2020; 2) Risch 2050; 3) Singapore 2020; 4) Singapore 2050? Enter an integer 1-4:");
+            Console.WriteLine("Which Case? 0) Risch 2020; 1) Risch 2050; 2) Singapore 2020; 3) Singapore 2050? Enter an integer 0-3:");
             string scenarioSelect = Console.ReadLine();
             int scenario;
             if (!Int32.TryParse(scenarioSelect, out scenario)) scenario = 0;
-            var scenarioString = new string[4] { "Risch_2020", "Risch_2050_8-5", "Singapore_2020", "Singapore_2050_RCP8-5" };
+            var scenarioString = new string[4] { "Risch_2020", "Risch_2050_RCP8-5", "Singapore_2020", "Singapore_2050_RCP8-5" };
             Console.WriteLine("Cheers, using scenario {0}", scenarioString[scenario]);
 
             // read in solar data

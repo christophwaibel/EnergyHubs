@@ -154,6 +154,49 @@ namespace EhubMisc
                 sigma[load] = Math.Sqrt(sigma[load]);
             }
 
+            // checking whether a peak day occurs double (e.g. cooling and electricity peak days are the same)
+            var query = typicalDays.DayOfTheYear.GroupBy(x => x)
+              .Where(g => g.Count() > 1)
+              .Select(y => y.Key)
+              .ToList();
+            if (query.Count > 1)
+            {
+                var newList = new List<int>();
+                for(int u = 1; u < query.Count; u++)
+                {
+                    for(int i = numberOfTypicalDays; i < typicalDays.NumOfDays; i++)
+                    {
+                        if (typicalDays.DayOfTheYear[i] == query[u])
+                        {
+                            newList.Add(query[u]);
+                            break;
+                        }
+                    }
+                }
+                List<int> newDayOfTheYear = Enumerable.Repeat(0, numberOfTypicalDays).ToList();
+                newDayOfTheYear.AddRange(newList);
+                var yetAnotherNewList = new List<int>();
+                for (int i = numberOfTypicalDays; i < typicalDays.NumOfDays; i++)
+                {
+                    for (int u= numberOfTypicalDays; u< newDayOfTheYear.Count; u++)
+                    {
+                        if (typicalDays.DayOfTheYear[i] != newDayOfTheYear[u])
+                        {
+                            yetAnotherNewList.Add(typicalDays.DayOfTheYear[i]);
+                            break;
+                        }
+                    }
+                }
+
+                typicalDays.NumOfPeakDays -= (query.Count - 1);
+                typicalDays.NumOfDays -= (query.Count - 1);
+                typicalDays.Horizon = typicalDays.NumOfDays * hoursPerDay;
+
+                newDayOfTheYear.AddRange(yetAnotherNewList);
+                typicalDays.DayOfTheYear = new int[typicalDays.NumOfDays];
+                newDayOfTheYear.CopyTo(typicalDays.DayOfTheYear);
+            }
+
             double[][] Xcomplete = new double[days][];
             double[][] X = new double[days - typicalDays.NumOfPeakDays][];
             double[][] Xclustering = new double[days - typicalDays.NumOfPeakDays][];
