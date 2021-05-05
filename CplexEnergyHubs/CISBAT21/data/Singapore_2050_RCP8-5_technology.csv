@@ -1,6 +1,6 @@
-DemandResponseElec,fraction,0.0,0.2,Rakipour2019_FilippiniLecture,
-DemandResponseCool,fraction,0.0,0.1,Rakipour2019,
-DemandResponseHeat,fraction,0.0,0.1,Rakipour2019,
+DemandResponseElec,fraction,0.2,0.2,Rakipour2019_FilippiniLecture,
+DemandResponseCool,fraction,0.1,0.1,Rakipour2019,
+DemandResponseHeat,fraction,0.1,0.1,Rakipour2019,
 InterestRate,factor,0.04,Waibel2019CoSimu,,
 lca_GridElectricity,kgCO2eq/kWh,0.41,EMA (SG 2019),0.121,KBOB2016
 lca_NaturalGas,kgCO2eq/kWh,0.228,KBOB2016,,

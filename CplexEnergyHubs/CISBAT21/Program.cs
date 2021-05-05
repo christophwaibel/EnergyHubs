@@ -177,6 +177,13 @@ namespace CISBAT21
         }
 
 
+        static void WriteSolarProfiles(string scenario, string path, double [][] solarPotentials)
+        {
+            // i need kWh/m2a per sensor point (from full 8760, coz typical profiles are scaled thus "unphysical". 
+            // and sized area per scenario
+
+        }
+
 
 
         static void WriteOutput(string scenario, string path, int numberOfSolarAreas, Ehub ehub, EhubMisc.HorizonReduction.TypicalDays typicalDays, int numBaseLoads)
