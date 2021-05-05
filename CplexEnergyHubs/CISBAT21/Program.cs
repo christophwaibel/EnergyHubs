@@ -10,9 +10,15 @@ namespace CISBAT21
 
         static void Main(string[] args)
         {
+            Console.WriteLine("Run ehub (0) or write annual solar potentials (1)");
+            string eHubOrSolar = Console.ReadLine();
+            int scenario;
+            if (!Int32.TryParse(eHubOrSolar, out scenario)) scenario = 0;
+
             try
             {
-                ehubRun();
+                if (scenario==0) ehubRun();
+                else writeAnnualSolarPotentials();
             }
             catch (Exception e)
             {
@@ -24,6 +30,35 @@ namespace CISBAT21
                 Console.WriteLine(e);
             }
             Console.ReadKey();
+        }
+
+        static void writeAnnualSolarPotentials()
+        {
+            Console.WriteLine("--------Writing annual solar potentials-----------");
+            Console.Write("Enter your path now and confirm by hitting the Enter-key: ");
+            string path = Console.ReadLine();
+            if (path.Length == 0)
+                path = @"C:\Users\christoph\Documents\GitHub\EnergyHubs\CplexEnergyHubs\CISBAT21\data\";
+            if (!path.EndsWith(@"\"))
+                path = path + @"\";
+            Console.WriteLine("Cheers, using path {0}", path);
+            Console.WriteLine();
+            Console.WriteLine("Which Case? 0) Risch 2020; 1) Risch 2050; 2) Singapore 2020; 3) Singapore 2050? Enter an integer 0-3:");
+            string scenarioSelect = Console.ReadLine();
+            int scenario;
+            if (!Int32.TryParse(scenarioSelect, out scenario)) scenario = 0;
+            var scenarioString = new string[4] { "Risch_2020", "Risch_2050_RCP8-5", "Singapore_2020", "Singapore_2050_RCP8-5" };
+            Console.WriteLine("Cheers, using scenario {0}", scenarioString[scenario]);
+
+            // read in solar data
+            string fileName = path + scenarioString[scenario];
+            LoadSolarInput(path + "SurfaceAreas.csv",
+                new string[4] {fileName+ "_solar_SP0.csv", fileName + "_solar_SP1.csv",
+                    fileName + "_solar_SP4.csv", fileName + "_solar_SP5.csv"},
+                out var irradiance, out var solarAreas);
+
+            WriteSolarProfiles(scenarioString[scenario],path, irradiance);
+            Console.WriteLine("Done. Hit any key to close");
         }
 
         static void ehubRun()
@@ -38,7 +73,7 @@ namespace CISBAT21
             Console.Write("Enter your path now and confirm by hitting the Enter-key: ");
             string path = Console.ReadLine();
             if (path.Length == 0)
-                path = @"C:\Users\chwaibel\Documents\GitHub\EnergyHubs\CplexEnergyHubs\CISBAT21\data\";
+                path = @"C:\Users\christoph\Documents\GitHub\EnergyHubs\CplexEnergyHubs\CISBAT21\data\";
             if (!path.EndsWith(@"\"))
                 path = path + @"\";
             Console.WriteLine("Cheers, using path {0}", path);
@@ -182,6 +217,32 @@ namespace CISBAT21
             // i need kWh/m2a per sensor point (from full 8760, coz typical profiles are scaled thus "unphysical". 
             // and sized area per scenario
 
+            //just write a vector with annual kWh/m2a per SP
+            string outputPath = path + @"results\";
+            Directory.CreateDirectory(outputPath);
+
+            List<string> header = new List<string>();
+            List<string> firstLine = new List<string>();
+            int counter = 0;
+            foreach (var sensorPoint in solarPotentials)
+            {
+                header.Add("SP" + Convert.ToString(counter) + " [kWh/m²a]");
+                double sum = sensorPoint.Sum()/1000.0; // in kWh
+                firstLine.Add(Convert.ToString(sum));
+                counter++;
+            }
+
+            List<List<string>> outputString = new List<List<string>>();
+            outputString.Add(header);
+            outputString.Add(firstLine);
+            using var sw = new StreamWriter(outputPath + scenario + "_annualSolar.csv");
+            foreach (List<string> line in outputString)
+            {
+                foreach (string cell in line)
+                    sw.Write(cell + ";");
+                sw.Write(Environment.NewLine);
+            }
+            sw.Close();
         }
 
 
