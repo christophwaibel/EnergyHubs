@@ -7,9 +7,13 @@ namespace EhubMisc
 {
     public static class Misc
     {
-        public static string[] AsciiDrawing(int graphic)
+        /// <summary>
+        /// Art by Susie Oviatt, from: https://www.asciiart.eu/animals
+        /// </summary>
+        /// <param name="graphic">dog or cat</param>
+        /// <returns></returns>
+        public static string[] AsciiDrawing(string graphic)
         {
-            /// Art by Susie Oviatt, from: https://www.asciiart.eu/animals/dogs
             string[] dog = new string[28];
             dog[0] = @"                          ..,,,,,,,,,..";
             dog[1] = @"                     .,;%%%%%%%%%%%%%%%%%%%%;,.";
@@ -40,7 +44,39 @@ namespace EhubMisc
             dog[26] = @"        %%% aa %@@@@@@@@@@@@@@0000000000000000000000@@@@@@@@%@@@%%%%";
             dog[27] = @"          %%@@@@@@@@@@@@@@@00000000000000000000000000000@@@@@@@@@%%%%%";
 
-            return dog;
+
+            string[] cat = new string[28];
+            cat[0] = @"                   ,";
+            cat[1] = @"                   \`-._           __";
+            cat[2] = @"                    \\  `-..____,.'  `.";
+            cat[3] = @"                     :`.         /    \`.";
+            cat[4] = @"                     :  )       :      : \";
+            cat[5] = @"                      ;'        '   ;  |  :";
+            cat[6] = @"                      )..      .. .:.`.;  :";
+            cat[7] = @"                     /::...  .:::...   ` ;";
+            cat[8] = @"                     ; _ '    __        /:\";
+            cat[9] = @"                     `:o>   /\o_>      ;:. `.";
+            cat[10] = @"                    `-`.__ ;   __..--- /:.   \";
+            cat[11] = @"                    === \_/   ;=====_.':.     ;";
+            cat[12] = @"                     ,/'`--'...`--....        ;";
+            cat[13] = @"                          ;                    ;";
+            cat[14] = @"                        .'                      ;";
+            cat[15] = @"                      .'                        ;";
+            cat[16] = @"                    .'     ..     ,      .       ;";
+            cat[17] = @"                   :       ::..  /      ;::.     |";
+            cat[18] = @"                  /      `.;::.  |       ;:..    ;";
+            cat[19] = @"                 :         |:.   :       ;:.    ;";
+            cat[20] = @"                 :         ::     ;:..   |.    ;";
+            cat[21] = @"                  :       :;      :::....|     |";
+            cat[22] = @"                  /\     ,/ \      ;:::::;     ;";
+            cat[23] = @"                .:. \:..|    :     ; '.--|     ;";
+            cat[24] = @"               ::.  :''  `-.,,;     ;'   ;     ;";
+            cat[25] = @"            .-'. _.'\      / `;      \,__:      \";
+            cat[26] = @"            `---'    `----'   ;      /    \,.,,,/";
+            cat[27] = @"                               `----`              ";
+
+            if (string.Equals(graphic, "dog")) return dog;
+            else return cat;
         }
 
         public static bool IsNullOrDefault<T>(this Nullable<T> value) where T : struct

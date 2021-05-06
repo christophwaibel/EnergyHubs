@@ -18,12 +18,15 @@
         internal double x_bat;              // battery 
         internal double x_hp;               // heat pump. assume it reaches peak heat temperatures as simplification.
         internal double x_tes;              // thermal storage
+        internal double x_clgtes;       // cool storage
         internal double x_chp;              // combined heat and power
         internal double x_ac;               // air condition
         internal double x_boi;              // gas boiler
         internal double x_bmboi;            // biomass boiler
         internal double[] x_hx_dh;          // district heating heat exchanger. per building that is connected to grid [kW]
+        internal double[] x_hx_clg_dh;      // district cooling heat exchanger. per building [kW]
         internal double x_dh;               // district heating network length [m]
+        internal double x_clgtower;         // cooling tower [kWh]
 
         // Operation. Time resolved.
         internal double[] x_elecpur;        // purchase from grid
@@ -34,6 +37,9 @@
         internal double[] x_tes_discharge;   // thermal energy storage (tes) discharge
         internal double[] x_tes_charge;      // tes charge
         internal double[] x_tes_soc;         // tes state of charge
+        internal double[] x_clgtes_discharge;   // cool storage discharge
+        internal double[] x_clgtes_charge;  // cool storage charge
+        internal double[] x_clgtes_soc;     // cool storage state of charge
         internal double[] x_hp_op;          // heat pump operation
         internal double[] x_boi_op;         // boiler operation
         internal double[] x_bmboi_op;       // biomass boiler operation
@@ -49,6 +55,14 @@
         internal double[] b_pvprod_S_b; // pv prod South B
         internal double[] b_pvprod_W_a; // pv prod West A
         internal double[] b_pvprod_W_b; // pv prod West B
+
+        // demand response
+        internal double[] x_dr_elec_pos;    // positive shifting (electricity is generated, so less demand)
+        internal double[] x_dr_elec_neg;    // negative shifting (electricity is consumed, so more demand)
+        internal double[] x_dr_heat_pos;    // positive shifting (heating is generated, so less demand)
+        internal double[] x_dr_heat_neg;    // negative shifting (heating is consumed, so more demand)
+        internal double[] x_dr_cool_pos;    // positive shifting (cooling is generated, so less demand)
+        internal double[] x_dr_cool_neg;    // negative shifting (cooling is consumed, so more demand)
 
         // typical days related 
         internal int[] clustersize;         // cluster size per timestep. used as scalar
