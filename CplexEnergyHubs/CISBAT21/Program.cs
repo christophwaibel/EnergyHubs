@@ -18,7 +18,7 @@ namespace CISBAT21
             try
             {
                 if (scenario==0) ehubRun();
-                else writeAnnualSolarPotentials();
+                else RunWriteAnnualSolarPotentials();
             }
             catch (Exception e)
             {
@@ -32,7 +32,7 @@ namespace CISBAT21
             Console.ReadKey();
         }
 
-        static void writeAnnualSolarPotentials()
+        static void RunWriteAnnualSolarPotentials()
         {
             Console.WriteLine("--------Writing annual solar potentials-----------");
             Console.Write("Enter your path now and confirm by hitting the Enter-key: ");
@@ -57,7 +57,7 @@ namespace CISBAT21
                     fileName + "_solar_SP4.csv", fileName + "_solar_SP5.csv"},
                 out var irradiance, out var solarAreas);
 
-            WriteSolarProfiles(scenarioString[scenario],path, irradiance);
+            WriteSolarProfiles(scenarioString[scenario],path, irradiance, solarAreas.ToArray());
             Console.WriteLine("Done. Hit any key to close");
         }
 
@@ -212,7 +212,7 @@ namespace CISBAT21
         }
 
 
-        static void WriteSolarProfiles(string scenario, string path, double [][] solarPotentials)
+        static void WriteSolarProfiles(string scenario, string path, double [][] solarPotentials, double [] solarAreas)
         {
             // i need kWh/m2a per sensor point (from full 8760, coz typical profiles are scaled thus "unphysical". 
             // and sized area per scenario
@@ -223,18 +223,21 @@ namespace CISBAT21
 
             List<string> header = new List<string>();
             List<string> firstLine = new List<string>();
+            List<string> secondLine = new List<string>();
             int counter = 0;
             foreach (var sensorPoint in solarPotentials)
             {
-                header.Add("SP" + Convert.ToString(counter) + " [kWh/m²a]");
+                header.Add("SP" + Convert.ToString(counter));
                 double sum = sensorPoint.Sum()/1000.0; // in kWh
                 firstLine.Add(Convert.ToString(sum));
+                secondLine.Add(Convert.ToString(solarAreas[counter]));
                 counter++;
             }
 
             List<List<string>> outputString = new List<List<string>>();
             outputString.Add(header);
             outputString.Add(firstLine);
+            outputString.Add(secondLine);
             using var sw = new StreamWriter(outputPath + scenario + "_annualSolar.csv");
             foreach (List<string> line in outputString)
             {
