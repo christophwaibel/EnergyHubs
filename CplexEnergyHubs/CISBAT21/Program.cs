@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 
+
 namespace CISBAT21
 {
     class Program
@@ -10,15 +11,23 @@ namespace CISBAT21
 
         static void Main(string[] args)
         {
-            Console.WriteLine("Run ehub (0) or write annual solar potentials (1)");
-            string eHubOrSolar = Console.ReadLine();
-            int scenario;
-            if (!Int32.TryParse(eHubOrSolar, out scenario)) scenario = 0;
+            int scenario; // 0 = solar potentials, 1 = run ehub console app, 2 = run ehub for grasshopper
+            if (args != null && args.Length > 0)
+            {
+                if (!Int32.TryParse(args[0], out scenario)) scenario = 0;
+            }
+            else
+            {
+                Console.WriteLine("Run ehub (0) or write annual solar potentials (1)");
+                string eHubOrSolar = Console.ReadLine();
+                if (!Int32.TryParse(eHubOrSolar, out scenario)) scenario = 0;
+            }
 
             try
             {
                 if (scenario==0) ehubRun();
-                else RunWriteAnnualSolarPotentials();
+                else if (scenario == 1) RunWriteAnnualSolarPotentials();
+                else ehubRunGrasshopper();
             }
             catch (Exception e)
             {
@@ -31,6 +40,20 @@ namespace CISBAT21
             }
             Console.ReadKey();
         }
+
+
+        static void ehubRunGrasshopper()
+        {
+            Console.WriteLine("this worked");
+
+            // OK because I'm too lazy to find a better way of parsing data between GH and this program:
+            // read in csv files from same folder of where this program sits
+
+            // run ehub with those inputs
+
+            // write results into csvs
+        }
+
 
         static void RunWriteAnnualSolarPotentials()
         {
