@@ -26,8 +26,7 @@ namespace CISBAT21
             try
             {
                 if (scenario==0) ehubRun();
-                else if (scenario == 1) RunWriteAnnualSolarPotentials();
-                else ehubRunGrasshopper();
+                else RunWriteAnnualSolarPotentials();
             }
             catch (Exception e)
             {
@@ -40,20 +39,7 @@ namespace CISBAT21
             }
             Console.ReadKey();
         }
-
-
-        static void ehubRunGrasshopper()
-        {
-            Console.WriteLine("this worked");
-
-            // OK because I'm too lazy to find a better way of parsing data between GH and this program:
-            // read in csv files from same folder of where this program sits
-
-            // run ehub with those inputs
-
-            // write results into csvs
-        }
-
+        
 
         static void RunWriteAnnualSolarPotentials()
         {
@@ -83,6 +69,7 @@ namespace CISBAT21
             WriteSolarProfiles(scenarioString[scenario],path, irradiance, solarAreas.ToArray());
             Console.WriteLine("Done. Hit any key to close");
         }
+
 
         static void ehubRun()
         {
