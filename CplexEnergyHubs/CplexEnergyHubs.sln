@@ -11,7 +11,7 @@ Project("{D954291E-2A0B-460D-934E-DC6B0785DB48}") = "EhubMisc", "EhubMisc\EhubMi
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "CISBAT21", "CISBAT21\CISBAT21.csproj", "{90D49203-2EF1-46D2-AC55-025C3CCBB99D}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "EhubExamples", "EhubExamples\EhubExamples.csproj", "{049A92A0-7C08-4EB0-BF6B-93B921C7F8DD}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "EhubExamples", "EhubExamples\EhubExamples.csproj", "{049A92A0-7C08-4EB0-BF6B-93B921C7F8DD}"
 EndProject
 Global
 	GlobalSection(SharedMSBuildProjectFiles) = preSolution
