@@ -1,6 +1,6 @@
 # Multi-Energy Systems Design Optimization Model for CISBAT 21 Study
 
-CISBAT 2021 conference paper *&quot;BIPV in District Multi-Energy Systems with Demand Response under Current and Future Climate Scenarios&quot;* aims to study the impact of demand response (DR) policy (heating, cooling, electricity) on the design of BIPV systems. In other words, does DR change the feasibility of BIPV sizing, e.g. does it make it more or less attractive? Scenarios considered are Singapore and Switzerland (Suurstoffi), current and future climate. Geometry is from Suurstoffi. Demand modelled in CEA. Solar Potentials modelled in GH_Solar.
+CISBAT 2021 conference paper *&quot;Impact of demand response on BIPV and district multi-energy systems design in Singapore and Switzerland&quot;* aims to study the impact of demand response (DR) policy (heating, cooling, electricity) on the design of BIPV systems. In other words, does DR change the feasibility of BIPV sizing, e.g. does it make it more or less attractive? Scenarios considered are Singapore and Switzerland (Suurstoffi), current and future climate. Geometry is from Suurstoffi. Demand modelled in CEA. Solar Potentials modelled in GH_Solar.
 
 The repository here provides the Mixed Integer Linear Programming optimization model for the design of the multi-energy system for a building / neighbourhood (in short: Energyhub). The Energyhub is packaged as an `.exe` and needs several `.csv` files that describe technology parameters, building loads, solar potentials and climate data.
 
