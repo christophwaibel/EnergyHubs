@@ -18,7 +18,12 @@ The Energyhub uses the Typical Days approach for dimension reduction. Technologi
 District heating and cooling is used, requiring the installation of heat exchangers (capacity based on peak loads per building) for the heating and cooling network respectively. The neworks are simplifid and do not include losses or flow rates etc. Also, only one thermal temperature level is considered, which means space heating and domestic hot water are aggregated.
 
 ## How to use
-to do
+There are 3 modes of the .exe program `Cisbat21.exe`: 0, 1, 2:
+
+In the console, switch between modes:
+- 0 = run CISBAT2021 energy hub. You will further be asked, which scenario to run: Singapore, Zurich, current climate or future climate. Results are written into a results folder0
+- 1 = (postprocessing for CISBAT21) write annual solar potentials of 4 sensor points for each of the original 193 surfaces into a csv file. That results in 772 actual PV surfaces (193 surfaces are basically split into 4 each). Each column of the csv has: 1st row: SP ID; 2nd row: kWh/m2a ; 3rd row: surface area in m2
+- 2 = (For SBE 22 paper with Yufei Zhang). Runs the same CISBAT21 energy hub, but multiple times, using stochastich solar profiles. Building loads and other inputs remain deterministic
 
 ### Inputs
 Per sample, the program needs a csv file pair:
