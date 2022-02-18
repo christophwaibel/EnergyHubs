@@ -9,24 +9,32 @@ namespace CISBAT21
     class Program
     {
 
+        /// <summary>
+        /// Main program, use console to switch between modes
+        /// 0 = run CISBAT2021 energy hub. You will further be asked, which scenario to run: Singapore, Zurich, current climate or future climate. Results are written into a results folder
+        /// 1 = (postprocessing) write annual solar potentials of 4 sensor points for each of the original 193 surfaces into a csv file. That results in 772 actual PV surfaces (193 surfaces are basically split into 4 each). Each column of the csv has: 1st row: SP ID; 2nd row: kWh/m2a ; 3rd row: surface area in m2
+        /// 2 = run the same CISBAT21 energy hub, but multiple times, using stochastich solar profiles. Building loads and other inputs remain deterministic. Used for SBE22 Yufei Zhang's paper
+        /// </summary>
+        /// <param name="args"></param>
         static void Main(string[] args)
         {
-            int scenario; // 0 = solar potentials, 1 = run ehub console app, 2 = run ehub for grasshopper
+            int scenario; // 0 = run ehub console app, 1 = solar potentials, 2 = run ehub with deterministic load inputs but stochastich solar profiles
             if (args != null && args.Length > 0)
             {
-                if (!Int32.TryParse(args[0], out scenario)) scenario = 0;
+                if (!Int32.TryParse(args[0], out scenario)) scenario = 0; //run cisbat21 ehub by default
             }
             else
             {
-                Console.WriteLine("Run ehub (0) or write annual solar potentials (1)");
+                Console.WriteLine("Run ehub (0), write annual solar potentials (1), or run ehub with stochastic solar profiles (2)");
                 string eHubOrSolar = Console.ReadLine();
                 if (!Int32.TryParse(eHubOrSolar, out scenario)) scenario = 0;
             }
 
             try
             {
-                if (scenario==0) ehubRun();
-                else RunWriteAnnualSolarPotentials();
+                if (scenario == 0) ehubRun();
+                else if (scenario == 1) RunWriteAnnualSolarPotentials();
+                else if (scenario == 2) ehubRunStochasticSolar();
             }
             catch (Exception e)
             {
@@ -39,7 +47,35 @@ namespace CISBAT21
             }
             Console.ReadKey();
         }
-        
+
+
+        static void ehubRunStochasticSolar()
+        {
+            Console.WriteLine("___________________________________________________________________ \n ");
+            Console.WriteLine("SBE22 EnergyHub for Yufei Zhang, with stochastic solar profiles. \nCode based on CISBAT 21 paper (Waibel, Hsieh, Schlüter)");
+            Console.WriteLine("___________________________________________________________________ \n");
+
+            // get current directory. There should be sub-folders containing input data, deterministic and stochastic
+            Console.WriteLine(@"Please enter the path of your inputs folder in the following format: 'c:\inputs\'");
+            Console.WriteLine("Or just hit ENTER and it will use the current file directory \n");
+            string path = Console.ReadLine();
+            if (path.Length == 0)
+                path = System.AppDomain.CurrentDomain.BaseDirectory;
+            if (!path.EndsWith(@"\"))
+                path = path + @"\";
+            Console.WriteLine("Cheers, using path: {0}\n", path);
+            Console.WriteLine("Make sure there are subfolders '\\input_deterministic'  and '\\input_stochastic'");
+            Console.WriteLine("'\\input_deterministic' contains all building loads, technology parameters and available surface area per sensor point. You'll get those files from me.");
+            Console.WriteLine("'\\input_stochastic' will need to contain all the stochastic solar potentials in a specific naming convention. I'll provide you with some example files.");
+            Console.WriteLine();
+            Console.WriteLine("The program will run the energy hub for each of the uncertain scenarios that it finds in the \"input_stochastic\" folder. So if you have 50 stochastic scenarios, we will have 50 * epsilon_cuts result files, epsilon_cuts being the carbon cuts (from min to max carbon), and hardcoded to 5 here. \n");
+            Console.WriteLine("___________________________________________________________________ \n");
+            Console.WriteLine("\n Hit any key to start...");
+            Console.ReadKey();
+
+
+        }
+
 
         static void RunWriteAnnualSolarPotentials()
         {
@@ -96,6 +132,7 @@ namespace CISBAT21
             Console.WriteLine("Cheers, using scenario {0}", scenarioString[scenario]);
 
             // read in solar data
+            // SurfaceAreas.csv containts 193 areas, but we have 4 SPs per area (_SP0, _SP1, _SP4, _SP5). Thus, we basically split each area into 4 sub-surfaces and assign one SP to each. As a result we have 772 PV surfaces
             string fileName = path + scenarioString[scenario];
             LoadSolarInput(path + "SurfaceAreas.csv",
                 new string[4] {fileName+ "_solar_SP0.csv", fileName + "_solar_SP1.csv",
