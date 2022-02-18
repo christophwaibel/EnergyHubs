@@ -25,6 +25,22 @@ In the console, switch between modes:
 - 1 = (postprocessing for CISBAT21) write annual solar potentials of 4 sensor points for each of the original 193 surfaces into a csv file. That results in 772 actual PV surfaces (193 surfaces are basically split into 4 each). Each column of the csv has: 1st row: SP ID; 2nd row: kWh/m2a ; 3rd row: surface area in m2
 - 2 = (For SBE 22 paper with Yufei Zhang). Runs the same CISBAT21 energy hub, but multiple times, using stochastich solar profiles. Building loads and other inputs remain deterministic
 
+**For mode 2 (SBE22 paper):**
+
+**Before running the program**
+
+Replace files in "\\input_stochastic" with your stochastic solar profiles. Use the same naming convention as the example files provided there (`Risch_2020_solar_scenario_<index>'` . So if you have generated 40 stochastic scenarios, please have one csv file per scenario. If there are roof surface profiles that are deterministic, just have those sensorpoints identical in each of the scenario csv files. (Actually, maybe we want to run this code ONLY with Facade points, so the effect of the stochastic profiles is stronger. We can argue, it is an urban scenario where the roof surfaces are utilized by roof terraces and urban agrictulture, or so.)
+* Modify the `SurfaceAreas.csv` in the "input_deterministic" to match with your solar profile files. So if you have 772 sensor points, the `SurfaceAreas.csv` should also contain 772 areas. In the example files, there are only 193.
+* In `SurfaceAreas.csv`, you can ignore the first two columns (`Building` and `SurfaceIndex`), just put any name in there. What is important is the 4th columne (`Roof`) that indicates whether it is a roof surface, because that will determine the cost of the PV sizing. Also important is the last column `usefularea` in m², because that tells the energyhub how much area we have available per surface
+
+**When running the program**
+
+* double click the .exe file. Make sure it sits in a folder that contains sub-folders `input_stochastic` and `input_deterministic`
+* enter `2` ; that's telling the program to run the script for your inputs.
+* It will ask for a path, but you can hit Enter and it will take the currend file path of the .exe
+* It will loop through all your stochastic scenarios and create 5 results files (per epsilon cut) for each of them
+* Done
+
 ### Inputs
 Per sample, the program needs a csv file pair:
 1. `<City>_<year>_demand.csv`
