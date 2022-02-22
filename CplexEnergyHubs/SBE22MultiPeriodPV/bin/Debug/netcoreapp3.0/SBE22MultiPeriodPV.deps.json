@@ -1,0 +1,53 @@
+{
+  "runtimeTarget": {
+    "name": ".NETCoreApp,Version=v3.0",
+    "signature": ""
+  },
+  "compilationOptions": {},
+  "targets": {
+    ".NETCoreApp,Version=v3.0": {
+      "SBE22MultiPeriodPV/1.0.0": {
+        "dependencies": {
+          "ILOG.Concert": "12.8.0.0",
+          "ILOG.CPLEX": "12.8.0.0"
+        },
+        "runtime": {
+          "SBE22MultiPeriodPV.dll": {}
+        }
+      },
+      "ILOG.Concert/12.8.0.0": {
+        "runtime": {
+          "ILOG.Concert.dll": {
+            "assemblyVersion": "12.8.0.0",
+            "fileVersion": "12.8.0.0"
+          }
+        }
+      },
+      "ILOG.CPLEX/12.8.0.0": {
+        "runtime": {
+          "ILOG.CPLEX.dll": {
+            "assemblyVersion": "12.8.0.0",
+            "fileVersion": "12.8.0.0"
+          }
+        }
+      }
+    }
+  },
+  "libraries": {
+    "SBE22MultiPeriodPV/1.0.0": {
+      "type": "project",
+      "serviceable": false,
+      "sha512": ""
+    },
+    "ILOG.Concert/12.8.0.0": {
+      "type": "reference",
+      "serviceable": false,
+      "sha512": ""
+    },
+    "ILOG.CPLEX/12.8.0.0": {
+      "type": "reference",
+      "serviceable": false,
+      "sha512": ""
+    }
+  }
+}
