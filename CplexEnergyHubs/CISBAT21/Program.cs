@@ -9,24 +9,32 @@ namespace CISBAT21
     class Program
     {
 
+        /// <summary>
+        /// Main program, use console to switch between modes
+        /// 0 = run CISBAT2021 energy hub. You will further be asked, which scenario to run: Singapore, Zurich, current climate or future climate. Results are written into a results folder
+        /// 1 = (postprocessing) write annual solar potentials of 4 sensor points for each of the original 193 surfaces into a csv file. That results in 772 actual PV surfaces (193 surfaces are basically split into 4 each). Each column of the csv has: 1st row: SP ID; 2nd row: kWh/m2a ; 3rd row: surface area in m2
+        /// 2 = run the same CISBAT21 energy hub, but multiple times, using stochastich solar profiles. Building loads and other inputs remain deterministic. Used for SBE22 Yufei Zhang's paper
+        /// </summary>
+        /// <param name="args"></param>
         static void Main(string[] args)
         {
-            int scenario; // 0 = solar potentials, 1 = run ehub console app, 2 = run ehub for grasshopper
+            int scenario; // 0 = run ehub console app, 1 = solar potentials, 2 = run ehub with deterministic load inputs but stochastich solar profiles
             if (args != null && args.Length > 0)
             {
-                if (!Int32.TryParse(args[0], out scenario)) scenario = 0;
+                if (!Int32.TryParse(args[0], out scenario)) scenario = 0; //run cisbat21 ehub by default
             }
             else
             {
-                Console.WriteLine("Run ehub (0) or write annual solar potentials (1)");
+                Console.WriteLine("Run ehub (0), write annual solar potentials (1), or run ehub with stochastic solar profiles (2)");
                 string eHubOrSolar = Console.ReadLine();
                 if (!Int32.TryParse(eHubOrSolar, out scenario)) scenario = 0;
             }
 
             try
             {
-                if (scenario==0) ehubRun();
-                else RunWriteAnnualSolarPotentials();
+                if (scenario == 0) ehubRun();
+                else if (scenario == 1) RunWriteAnnualSolarPotentials();
+                else if (scenario == 2) ehubRunStochasticSolar();
             }
             catch (Exception e)
             {
@@ -39,7 +47,189 @@ namespace CISBAT21
             }
             Console.ReadKey();
         }
-        
+
+
+        static void ehubRunStochasticSolar()
+        {
+            int epsilonCuts = 3;
+
+            Console.WriteLine("___________________________________________________________________ \n ");
+            Console.WriteLine("SBE22 EnergyHub for Yufei Zhang, with stochastic solar profiles. \nCode based on CISBAT 21 paper (Waibel, Hsieh, Schlüter)");
+            Console.WriteLine("___________________________________________________________________ \n");
+
+            // get current directory. There should be sub-folders containing input data, deterministic and stochastic
+            Console.WriteLine(@"Please enter the path of your inputs folder in the following format: 'c:\inputs\'");
+            Console.WriteLine("Or just hit ENTER and it will use the current file directory \n");
+            string path = Console.ReadLine();
+            if (path.Length == 0)
+                path = System.AppDomain.CurrentDomain.BaseDirectory;
+            if (!path.EndsWith(@"\"))
+                path = path + @"\";
+
+            string pathStochastic = path + @"input_stochastic\";
+            string pathDeterministic = path + @"input_deterministic\";
+
+            if (!Directory.Exists(pathStochastic) || !Directory.Exists(pathDeterministic))
+            {
+                Console.WriteLine("*********************\nWARNING: {0} and / or {1} folder(s) missing!!! Hit any key to quit program", pathStochastic, pathDeterministic);
+                Console.ReadKey();
+                return;
+            }
+
+            Console.WriteLine("Cheers, using path: {0}\n", path);
+            Console.WriteLine("Make sure your subfolders '\\input_deterministic'  and '\\input_stochastic' contain all necessary input files...");
+            Console.WriteLine("'\\input_deterministic' contains all building loads, technology parameters and available surface area per sensor point. You'll get those files from me. Hardcoded to 'Risch_2020'.");
+            Console.WriteLine("'\\input_stochastic' will need to contain all the stochastic solar potentials in a specific naming convention. I'll provide you with some example files.");
+            Console.WriteLine();
+            Console.WriteLine("The program will run the energy hub for 5 epsilon cuts for each of the uncertain scenarios that it finds in the \"input_stochastic\" folder. \n");
+            Console.WriteLine("___________________________________________________________________ \n");
+            Console.WriteLine("\n Hit any key to start...");
+            Console.ReadKey();
+
+            // load deterministic inputs
+            // load demand
+            LoadBuildingInput(pathDeterministic + "Risch_2020_demand.csv",
+                out var heating, out var dhw, out var cooling, out var electricity);
+
+            // load peak loads per building, filter for 'Bxxx_Qh_40_kWh', 'Bxxx_Qh_60_kWh' and aggregate dhw and sh
+            LoadPeakLoads(pathDeterministic + "Risch_2020_PeakLoads.csv",
+                out var numBuildings, out var peakHeatingLoads, out var peakCoolingLoads);
+
+            // load GHI
+            LoadTimeSeries(pathDeterministic + "Risch_2020_GHI.csv", out var ghi);
+
+            // load dry bulb
+            LoadTimeSeries(pathDeterministic + "Risch_2020_DryBulb.csv", out var dryBulb);
+
+            //Building Tech
+            LoadTechParameters(pathDeterministic + "Risch_2020_technology.csv", out var technologyParameters);
+            technologyParameters.Add("NumberOfBuildingsInEHub", Convert.ToDouble(numBuildings));
+            for (int i = 0; i < numBuildings; i++)
+            {
+                technologyParameters.Add("Peak_Htg_" + Convert.ToString(i), peakHeatingLoads[i]);
+                technologyParameters.Add("Peak_Clg_" + Convert.ToString(i), peakCoolingLoads[i]);
+            }
+
+            //load surface areas
+            LoadSurfaceAreasInput(pathDeterministic + "SurfaceAreas.csv", out var solarAreas);
+
+
+
+
+
+            /// data preparation, clustering and typical days
+            int numberOfSolarAreas = solarAreas.Count;
+            int numBaseLoads = 5;                               // heating, cooling, electricity, ghi, tamb
+            int numLoads = numBaseLoads + numberOfSolarAreas;   // heating, cooling, electricity, ghi, tamb, solar. however, solar will include several profiles.
+            const int hoursPerYear = 8760;
+            double[][] fullProfiles = new double[numLoads][];
+            string[] loadTypes = new string[numLoads];
+            bool[] peakDays = new bool[numLoads];
+            bool[] correctionLoad = new bool[numLoads];
+            for (int u = 0; u < numLoads; u++)
+                fullProfiles[u] = new double[hoursPerYear];
+            loadTypes[0] = "heating";
+            loadTypes[1] = "cooling";
+            loadTypes[2] = "electricity";
+            loadTypes[3] = "ghi";
+            loadTypes[4] = "Tamb";
+            peakDays[0] = true;
+            peakDays[1] = true;
+            peakDays[2] = true;
+            peakDays[3] = false;
+            peakDays[4] = false;
+            correctionLoad[0] = true;
+            correctionLoad[1] = true;
+            correctionLoad[2] = true;
+            correctionLoad[3] = false;
+            correctionLoad[4] = false;
+
+            bool[] useForClustering = new bool[fullProfiles.Length]; // specificy here, which load is used for clustering. the others are just reshaped
+            for (int t = 0; t < hoursPerYear; t++)
+            {
+                fullProfiles[0][t] = heating[t] + dhw[t];
+                fullProfiles[1][t] = cooling[t];
+                fullProfiles[2][t] = electricity[t];
+                fullProfiles[3][t] = ghi[t];
+                fullProfiles[4][t] = dryBulb[t];
+                useForClustering[0] = true;
+                useForClustering[1] = true;
+                useForClustering[2] = true;
+                useForClustering[3] = true;
+                useForClustering[4] = false;
+            }
+
+
+
+
+
+
+
+
+
+            // load stochastic inputs and run ehub for each
+            string[] fileEntires = Directory.GetFiles(pathStochastic);
+            int scenarios = fileEntires.Length;
+            Console.WriteLine("Found {0} stochastic solar scenarios in {1}\n", scenarios, pathStochastic);
+            for (int s=0; s<scenarios; s++) 
+            {
+                LoadSolarPotentialsInput(fileEntires[s], out var solarPotentials);
+                for (int u = 0; u < numberOfSolarAreas; u++)
+                {
+                    useForClustering[u + numBaseLoads] = false;
+                    peakDays[u + numBaseLoads] = false;
+                    correctionLoad[u + numBaseLoads] = true;
+                    loadTypes[u + numBaseLoads] = "solar";
+                    for (int t = 0; t < hoursPerYear; t++)
+                        fullProfiles[u + numBaseLoads][t] = solarPotentials[u][t];
+                }
+
+                // TO DO: load in GHI time series, add it to full profiles (right after heating, cooling, elec), and use it for clustering. exclude other solar profiles from clustering, but they need to be reshaped too
+                EhubMisc.HorizonReduction.TypicalDays typicalDays = EhubMisc.HorizonReduction.GenerateTypicalDays(fullProfiles, loadTypes,
+                    12, peakDays, useForClustering, correctionLoad, true);
+
+
+
+
+                /// Running Energy Hub
+                Console.WriteLine("Solving MILP optimization model...");
+                double[][] typicalSolarLoads = new double[numberOfSolarAreas][];
+
+                // solar profiles negative or very small numbers. rounding floating numbers thing?
+                for (int u = 0; u < numberOfSolarAreas; u++)
+                {
+                    typicalSolarLoads[u] = typicalDays.DayProfiles[numBaseLoads + u];
+                    for (int t = 0; t < typicalSolarLoads[u].Length; t++)
+                    {
+                        if (typicalSolarLoads[u][t] < 0.1)
+                            typicalSolarLoads[u][t] = 0.0;
+                    }
+                }
+                // same for heating, cooling, elec demand... round very small numbers
+                for (int t = 0; t < typicalDays.DayProfiles[0].Length; t++)
+                    for (int i = 0; i < 3; i++)
+                        if (typicalDays.DayProfiles[i][t] < 0.001) typicalDays.DayProfiles[i][t] = 0.0;
+
+
+                int[] clustersizePerTimestep = typicalDays.NumberOfDaysPerTimestep;
+                Ehub ehub = new Ehub(typicalDays.DayProfiles[0], typicalDays.DayProfiles[1], typicalDays.DayProfiles[2],
+                    typicalSolarLoads, solarAreas.ToArray(),
+                    typicalDays.DayProfiles[4], technologyParameters,
+                    clustersizePerTimestep);
+                ehub.Solve(epsilonCuts, false);
+
+                WriteOutput("result_scenario_"+s.ToString(), path, numberOfSolarAreas, ehub, typicalDays, numBaseLoads);
+                Console.WriteLine("\nScenario {0} done", s);
+            }
+
+
+
+
+
+            Console.WriteLine("ALL SCENARIOS DONE. HIT ANY KEY TO EXIT");
+            Console.ReadKey();
+        }
+
 
         static void RunWriteAnnualSolarPotentials()
         {
@@ -61,7 +251,7 @@ namespace CISBAT21
 
             // read in solar data
             string fileName = path + scenarioString[scenario];
-            LoadSolarInput(path + "SurfaceAreas.csv",
+            LoadSolarPotentialsAndAreasInput(path + "SurfaceAreas.csv",
                 new string[4] {fileName+ "_solar_SP0.csv", fileName + "_solar_SP1.csv",
                     fileName + "_solar_SP4.csv", fileName + "_solar_SP5.csv"},
                 out var irradiance, out var solarAreas);
@@ -96,8 +286,9 @@ namespace CISBAT21
             Console.WriteLine("Cheers, using scenario {0}", scenarioString[scenario]);
 
             // read in solar data
+            // SurfaceAreas.csv containts 193 areas, but we have 4 SPs per area (_SP0, _SP1, _SP4, _SP5). Thus, we basically split each area into 4 sub-surfaces and assign one SP to each. As a result we have 772 PV surfaces
             string fileName = path + scenarioString[scenario];
-            LoadSolarInput(path + "SurfaceAreas.csv",
+            LoadSolarPotentialsAndAreasInput(path + "SurfaceAreas.csv",
                 new string[4] {fileName+ "_solar_SP0.csv", fileName + "_solar_SP1.csv",
                     fileName + "_solar_SP4.csv", fileName + "_solar_SP5.csv"},
                 out var irradiance, out var solarAreas);
@@ -257,7 +448,6 @@ namespace CISBAT21
             }
             sw.Close();
         }
-
 
 
         static void WriteOutput(string scenario, string path, int numberOfSolarAreas, Ehub ehub, EhubMisc.HorizonReduction.TypicalDays typicalDays, int numBaseLoads)
@@ -513,9 +703,56 @@ namespace CISBAT21
         }
 
 
+        /// <summary>
+        /// one surface area per sensor point
+        /// </summary>
+        /// <param name="inputFile"></param>
+        /// <param name="solarArea"></param>
+        static void LoadSurfaceAreasInput(string inputFile, out List<double> solarArea)
+        {
+            solarArea = new List<double>();
+
+            string[] solarAreaLines = File.ReadAllLines(inputFile);
+            for (int i = 1; i < solarAreaLines.Length; i++)
+            {
+                string[] line = solarAreaLines[i].Split(new char[2] { ',', ';' });
+                double area = Convert.ToDouble(line[^1]);  // ^1 get's me the last index of an array. That's the 'usefulearea' column in the input csv
+                solarArea.Add(area);
+            }
+        }
 
 
-        static void LoadSolarInput(string inputFileArea, string[] inputFilesPotentials, out double[][] solarPotentials, out List<double> solarArea)
+        /// <summary>
+        /// one sensor point per profile
+        /// </summary>
+        static void LoadSolarPotentialsInput(string inputFile, out double [][] solarPotentials)
+        {
+            int horizon = 8760;
+
+
+            string[] linesSp = File.ReadAllLines(inputFile);
+            string[] firstLine = linesSp[0].Split(new char[2] { ',', ';' });
+            solarPotentials = new double[firstLine.Length - 1][];
+            for (int i = 0; i < solarPotentials.Length; i++) 
+                solarPotentials[i] = new double[horizon];
+                
+            for(int t=1; t<linesSp.Length; t++) // first line is header, so skip
+            {
+                string[] currentHour = linesSp[t].Split(new char[2] { ',', ';' });
+                for (int i = 0; i < solarPotentials.Length; i++)
+                    solarPotentials[i][t-1] = Convert.ToDouble(currentHour[i]);
+            }
+        }
+
+
+        /// <summary>
+        /// it takes 4 sensor points per surface patch 
+        /// </summary>
+        /// <param name="inputFileArea"></param>
+        /// <param name="inputFilesPotentials"></param>
+        /// <param name="solarPotentials"></param>
+        /// <param name="solarArea"></param>
+        static void LoadSolarPotentialsAndAreasInput(string inputFileArea, string[] inputFilesPotentials, out double[][] solarPotentials, out List<double> solarArea)
         {
             //string[] inputFilesPotentials,
             // load solar potentials on building facades
@@ -580,7 +817,6 @@ namespace CISBAT21
 
 
         }
-
 
 
         static void LoadBuildingInput(string inputFile,
