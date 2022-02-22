@@ -29,9 +29,9 @@ In the console, switch between modes:
 
 **Before running the program**
 
-Replace files in "\\input_stochastic" with your stochastic solar profiles. Use the same naming convention as the example files provided there (`Risch_2020_solar_scenario_<index>'` . So if you have generated 40 stochastic scenarios, please have one csv file per scenario. If there are roof surface profiles that are deterministic, just have those sensorpoints identical in each of the scenario csv files. (Actually, maybe we want to run this code ONLY with Facade points, so the effect of the stochastic profiles is stronger. We can argue, it is an urban scenario where the roof surfaces are utilized by roof terraces and urban agrictulture, or so.)
+Replace files in "\\input_stochastic" with your stochastic solar profiles. Use the same naming convention as the example files provided there (`Risch_2020_solar_scenario_<index>'` . So if you have generated 40 stochastic scenarios, please have one csv file per scenario. If there are roof surface profiles that are deterministic, just have those sensorpoints identical in each of the scenario csv files. 
 * Modify the `SurfaceAreas.csv` in the "input_deterministic" to match with your solar profile files. So if you have 772 sensor points, the `SurfaceAreas.csv` should also contain 772 areas. In the example files, there are only 193.
-* In `SurfaceAreas.csv`, you can ignore the first two columns (`Building` and `SurfaceIndex`), just put any name in there. What is important is the 4th columne (`Roof`) that indicates whether it is a roof surface, because that will determine the cost of the PV sizing. Also important is the last column `usefularea` in m², because that tells the energyhub how much area we have available per surface
+* In `SurfaceAreas.csv`, you can ignore all columns except the last one. There is a columne (`Roof`) that indicates whether it is a roof surface, but it is not used in the model, i.e. all prices and coefficients are the same for roof or facade PV. Important is the last column `usefularea` in m², because that tells the energyhub how much area we have available per surface
 
 **When running the program**
 
@@ -42,6 +42,9 @@ Replace files in "\\input_stochastic" with your stochastic solar profiles. Use t
 * Done
 
 ### Inputs
+
+**For mode 0 (CISBAT 21 paper):**
+
 Per sample, the program needs a csv file pair:
 1. `<City>_<year>_demand.csv`
 2. `<City>_<year>_DryBulb.csv`
