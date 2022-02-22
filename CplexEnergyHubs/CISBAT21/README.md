@@ -55,7 +55,7 @@ Per sample, the program needs a csv file pair:
 7. `<City>_<year>_solar_SP4.csv`
 8. `<City>_<year>_solar_SP5.csv`
 9. `<City>_<year>_tehcnology.csv`
-10. SurfaceAreas.csv`
+10. `SurfaceAreas.csv`
 
 ### Dependencies
 - IBM CPLEX 12.8 full academic version
