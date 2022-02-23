@@ -38,6 +38,9 @@ namespace SBE22MultiPeriodPV
             const int intervals = 5;
             const int periods = yearHorizon / intervals;
             const int numPVs = 4;
+            const int hours = 24;
+            const int days = 15; // e.g., typical days
+
 
             // adapt to 4 different PV technologies!
             double[] lifetimePV = new double[numPVs];
@@ -46,12 +49,55 @@ namespace SBE22MultiPeriodPV
 
             INumVar[] x_PV = new INumVar[numPVs];
             INumVar[][] x_newPV = new INumVar[numPVs][];
-            for(int i=0; i<numPVs; i++)
+            for (int i = 0; i < numPVs; i++)
                 x_newPV[i] = new INumVar[periods];
 
             double[] maxCapPV = new double[numPVs];
-            for(int i=0; i<x_PV.Length; i++)
+            for (int i = 0; i < x_PV.Length; i++)
                 x_PV[i] = cpl.NumVar(0, maxCapPV[i]);
+
+
+            // sqm of Monocristalline PV installed at period p. Needs constraint later to check max surface area, accounting for lifetime
+            INumVar[][] x_PV_mono = new INumVar[periods][];
+            for (int p = 0; p < periods; p++)
+                x_PV_mono[p] = new INumVar[numPVs];
+
+            // same for cdte
+
+
+            // all other tech also needs an index for each period
+            INumVar[] x_CHP = new INumVar[periods];
+            for (int p = 0; p < periods; p++)
+                x_CHP[p] = cpl.NumVar(0, double.MaxValue);
+
+
+            // indices: period, day, hour
+            INumVar[][][] x_CHP_op = new INumVar[periods][][];
+            INumVar[][][] x_ASHP_op = new INumVar[periods][][];
+            INumVar[][][] x_Boiler_op = new INumVar[periods][][];
+            INumVar[][][] x_BioBoiler_op = new INumVar[periods][][];
+
+
+            for (int p=0; p<periods; p++)
+            {
+                x_CHP_op[p] = new INumVar[days][];
+                for(int d=0; d<days; d++)
+                {
+                    x_CHP_op[p][d] = new INumVar[hours];
+                    x_ASHP_op[p][d] = new INumVar[hours];
+                    // ...
+                    for (int h=0; h<hours; h++)
+                    {
+                        x_CHP_op[p][d][h] = cpl.NumVar(0, double.MaxValue);
+                        x_ASHP_op[p][d][h] = cpl.NumVar(0, double.MaxValue);
+                        // ...
+                    }
+                }
+            }
+
+
+
+
 
 
 
@@ -59,7 +105,8 @@ namespace SBE22MultiPeriodPV
             ILinearNumExpr[][] totalCapPV = new ILinearNumExpr[numPVs][];
             for (int i = 0; i < numPVs; i++)
             {
-                totalCapPV[i] = new ILinearNumExpr[periods]; // I have to sum up in one totalCapPV to check for max space usage. But I can't use totalCapPV for yield calculation, coz I'll have differente efficiencies per period
+                // I have to sum up in one totalCapPV to check for max space usage. But I can't use totalCapPV for yield calculation, coz I'll have differente efficiencies per period
+                totalCapPV[i] = new ILinearNumExpr[periods]; 
                 for (int p = 0; p < periods; p++)
                     totalCapPV[i][p] = cpl.LinearNumExpr();
             }
