@@ -13,13 +13,14 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "CISBAT21", "CISBAT21\CISBAT
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "EhubExamples", "EhubExamples\EhubExamples.csproj", "{049A92A0-7C08-4EB0-BF6B-93B921C7F8DD}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SBE22MultiPeriodPV", "SBE22MultiPeriodPV\SBE22MultiPeriodPV.csproj", "{C1D850A6-AE27-46DB-BD76-F183264B147D}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "SBE22MultiPeriodPV", "SBE22MultiPeriodPV\SBE22MultiPeriodPV.csproj", "{C1D850A6-AE27-46DB-BD76-F183264B147D}"
 EndProject
 Global
 	GlobalSection(SharedMSBuildProjectFiles) = preSolution
 		EhubMisc\EhubMisc.projitems*{049a92a0-7c08-4eb0-bf6b-93b921c7f8dd}*SharedItemsImports = 5
 		EhubMisc\EhubMisc.projitems*{5dc0c1d9-a856-47d4-ae40-8eddac393d3e}*SharedItemsImports = 5
 		EhubMisc\EhubMisc.projitems*{90d49203-2ef1-46d2-ac55-025c3ccbb99d}*SharedItemsImports = 5
+		EhubMisc\EhubMisc.projitems*{c1d850a6-ae27-46db-bd76-f183264b147d}*SharedItemsImports = 5
 		EhubMisc\EhubMisc.projitems*{cdd8e35a-fbe9-4e56-991f-12dd33803882}*SharedItemsImports = 13
 		EhubMisc\EhubMisc.projitems*{d6cbd4de-8cae-4220-ae0e-7b61694f9622}*SharedItemsImports = 4
 	EndGlobalSection
