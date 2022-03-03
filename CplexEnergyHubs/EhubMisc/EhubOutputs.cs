@@ -74,15 +74,16 @@
     {
         internal bool infeasible;           // true, if no solution exists
 
-        internal double Carbon;
-        internal double Cost;               // cost. levelized.
-        internal double Opex;               // annual operation cost.
-        internal double Capex;              // capital cost. levelized.
+        internal double Carbon;             // total carbon emissions (kgCO2)
+        internal double Cost;               // Total Cost OPEX+CAPEX (CHF)
+        internal double Opex;               // Total operation cost (CHF)
+        internal double Capex;              // Total capital cost (CHF)
 
 
         // Technology sizing
-        internal double[][] XTotalPvMono;             // pv sizing [m2]. period, surface
-        internal double[][] XTotalPvCdte;             // pv sizing [m2]. period, surface
+        internal double[] XNewBattery;              // battery [kWh]. period
+        internal double[][] XTotalPvMono;           // pv sizing [m2]. period, surface
+        internal double[][] XTotalPvCdte;           // pv sizing [m2]. period, surface
         internal double[][] XNewPvMono;             // pv sizing [m2]. period, surface
         internal double[][] XNewPvCdte;             // pv sizing [m2]. period, surface
 

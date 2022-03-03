@@ -16,9 +16,12 @@ namespace SBE22MultiPeriodPV
 
         static void RunMultiPeriodEHub()
         {
-            const int minusIndex = 1; //1 for the smaller dataset...
+            // !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+            const int minusIndex = 1; //1 for the smaller dataset... 0 for Justins new data
+
             const int epsilonCuts = 3;
-            const int periodInterval = 5;
+
+            const int periodInterval = 10;
             int[] periods = new int[(2050 - 2020) / periodInterval];
             for (int p = 0; p < periods.Length; p++)
                 periods[p] = 2020 + p * periodInterval;
@@ -51,14 +54,9 @@ namespace SBE22MultiPeriodPV
 
             // load loads
             // load peak loads
-
-            //var dhwAllPeriods = new List<List<double>>();
-            //var htgAllPeriods = new List<List<double>>();
-            //var clgAllPeriods = new List<List<double>>();
+            var dhwAllPeriods = new List<List<double>>();
+            var htgAllPeriods = new List<List<double>>();
             var elecAllPeriods = new List<List<double>>();
-
-            //var peakHtgAllPeriods = new List<List<double>>();
-            //var peakClgAllPeriods = new List<List<double>>();
 
             var ghiAllPeriods = new List<List<double>>();
             var dryBulbAllPeriods = new List<List<double>>();
@@ -69,14 +67,12 @@ namespace SBE22MultiPeriodPV
             {
                 string period = periods[p].ToString();
                 LoadBuildingInput(pathInputs + "ZH_" + period + "_BAU_demand.csv", out var htg, out var dhw, out var clg, out var elec);
-                //htgAllPeriods.Add(htg);
-                //dhwAllPeriods.Add(dhw);
-                //clgAllPeriods.Add(clg);
-                elecAllPeriods.Add(elec);
 
-                //LoadPeakLoads(pathInputs + "ZH_" + period + "_BAU_PeakLoads.csv", out var numBuildings, out var peakHtg, out var peakClg);
-                //peakHtgAllPeriods.Add(peakHtg);
-                //peakClgAllPeriods.Add(peakClg);
+                // !!!!!!!!!! Kick this out later with new loads from Justin
+                htgAllPeriods.Add(htg);
+                dhwAllPeriods.Add(dhw);
+                // !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+                elecAllPeriods.Add(elec);
 
                 Misc.LoadTimeSeries(pathInputs + "ZH_" + period + "_BAU_GHI.csv", out var ghi);
                 Misc.LoadTimeSeries(pathInputs + "ZH_" + period + "_BAU_DryBulb.csv", out var dryBulb);
@@ -84,12 +80,6 @@ namespace SBE22MultiPeriodPV
                 dryBulbAllPeriods.Add(dryBulb);
 
                 LoadTechParameters(pathInputs + "ZH_" + period + "_BAU_technology.csv", out var technologyParameters);
-                //technologyParameters.Add("NumberOfBuildingsInEHub", Convert.ToDouble(numBuildings));
-                //for (int i = 0; i < numBuildings; i++)
-                //{
-                //    technologyParameters.Add("Peak_Htg_" + Convert.ToString(i), peakHtg[i]);
-                //    technologyParameters.Add("Peak_Clg_" + Convert.ToString(i), peakClg[i]);
-                //}
                 techParamsAllPeriods.Add(technologyParameters);
             }
 
@@ -103,8 +93,6 @@ namespace SBE22MultiPeriodPV
 
 
 
-
-
             /// data preparation, clustering and typical days
             int numberOfSolarAreas = solarAreas.Count;
             int numBaseLoads = 3;                               // electricity, ghi, tamb
@@ -114,18 +102,14 @@ namespace SBE22MultiPeriodPV
             bool[] peakDays = new bool[numLoads];
             bool[] correctionLoad = new bool[numLoads];
 
-            //loadTypes[0] = "heating";
-            //loadTypes[1] = "cooling";
             loadTypes[0] = "electricity";
             loadTypes[1] = "ghi";
             loadTypes[2] = "Tamb";
-            //peakDays[0] = true;
-            //peakDays[1] = true;
+
             peakDays[0] = true;
-            peakDays[1] = false;
-            peakDays[2] = false;
-            //correctionLoad[0] = true;
-            //correctionLoad[1] = true;
+            peakDays[1] = true;
+            peakDays[2] = true;
+
             correctionLoad[0] = true;   // scaling by cluster size (how many days belong to each typical day. important so the sum over the year remains the same)
             correctionLoad[1] = false;
             correctionLoad[2] = false;
@@ -134,11 +118,9 @@ namespace SBE22MultiPeriodPV
             bool[] useForClustering = new bool[numLoads];
             for (int t = 0; t < hoursPerYear; t++)
             {
-                //useForClustering[0] = true;
-                //useForClustering[1] = true;
                 useForClustering[0] = true;
                 useForClustering[1] = true;
-                useForClustering[2] = false;
+                useForClustering[2] = true;
             }
 
             for (int u = 0; u < numberOfSolarAreas; u++)
@@ -151,10 +133,9 @@ namespace SBE22MultiPeriodPV
 
 
             // looping through all periods and create typical days for each
-            //var allTypicalHtgDays = new List<double[]>();
-            //var allTypicalClgDays = new List<double[]>();
             var allTypicalElecDays = new List<double[]>();
             var allTypicalAmbientTemp = new List<double[]>();
+            var allTypicalGhi = new List<double[]>();
             var allTypicalSolarLoads = new List<double[][]>();
             var allClusterSizes = new List<int[]>();
             for (int p = 0; p < periods.Length; p++)
@@ -166,9 +147,10 @@ namespace SBE22MultiPeriodPV
                     fullProfiles[u] = new double[hoursPerYear];
                 for (int t = 0; t < hoursPerYear; t++)
                 {
-                    //fullProfiles[0][t] = htgAllPeriods[p][t] + dhwAllPeriods[p][t];
-                    //fullProfiles[1][t] = clgAllPeriods[p][t];
-                    fullProfiles[0][t] = elecAllPeriods[p][t];
+                    // !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! replace later with line below, once I have new loads from Justin
+                    fullProfiles[0][t] = elecAllPeriods[p][t] + htgAllPeriods[p][t] / 3 + dhwAllPeriods[p][t] / 3;
+                    //fullProfiles[0][t] = elecAllPeriods[p][t];
+
                     fullProfiles[1][t] = ghiAllPeriods[p][t];
                     fullProfiles[2][t] = dryBulbAllPeriods[p][t];
                     for (int u = 0; u < numberOfSolarAreas; u++)
@@ -189,39 +171,129 @@ namespace SBE22MultiPeriodPV
                             typicalSolarLoads[u][t] = 0.0;
                     }
                 }
-                // same for heating, cooling, elec demand... round very small numbers
+                // same for elec demand and GHI. NOT for ambient temp tho [i=2]... round very small numbers
                 for (int t = 0; t < typicalDays.DayProfiles[0].Length; t++)
-                    for (int i = 0; i < 3; i++)
+                    for (int i = 0; i < 2; i++)
                         if (typicalDays.DayProfiles[i][t] < 0.001) typicalDays.DayProfiles[i][t] = 0.0;
 
 
                 allTypicalSolarLoads.Add(typicalSolarLoads);
-                //allTypicalHtgDays.Add(typicalDays.DayProfiles[0]);
-                //allTypicalClgDays.Add(typicalDays.DayProfiles[1]);
                 allTypicalElecDays.Add(typicalDays.DayProfiles[0]);
+                allTypicalGhi.Add(typicalDays.DayProfiles[1]);
                 allTypicalAmbientTemp.Add(typicalDays.DayProfiles[2]);
             }
 
             // Solve Multi-Period Ehub
             Console.WriteLine("___________________________________________________________________ \n ");
             Console.WriteLine("Solving MILP optimization model...");
-            //MultiPeriodEHub ehub = new MultiPeriodEHub(allTypicalHtgDays, allTypicalClgDays, allTypicalElecDays,
-            //    allTypicalSolarLoads,solarAreas.ToArray(),allTypicalAmbientTemp,
-            //    techParamsAllPeriods, allClusterSizes, periodInterval);
-            //ehub.Solve(epsilonCuts, false);
+            MultiPeriodEHub ehub = new MultiPeriodEHub(allTypicalElecDays,
+                allTypicalSolarLoads, solarAreas.ToArray(), allTypicalAmbientTemp,
+                techParamsAllPeriods, allClusterSizes, periodInterval);
+            ehub.Solve(epsilonCuts, true);
 
 
-            WriteTypicalLoads(path, allTypicalElecDays, allTypicalAmbientTemp, allTypicalAmbientTemp, allTypicalSolarLoads, numBaseLoads);
-            //WriteOutput("result_scenario_" + s.ToString(), path, numberOfSolarAreas, ehub, typicalDays, numBaseLoads);
+            WriteTypicalLoads(path, allTypicalElecDays, allTypicalGhi, allTypicalAmbientTemp, allTypicalSolarLoads);
+            for (int i = 0; i < ehub.Outputs.Length; i++)
+            {
+                if(!ehub.Outputs[i].infeasible)
+                    WriteCapacitiesAndObjectiveValues(path, ehub.Outputs[i], i);
+                //WriteOutput("result_scenario_" + s.ToString(), path, numberOfSolarAreas, ehub, typicalDays, numBaseLoads);
+            }
 
             Console.ReadKey();
         }
 
 
+
+
+        // for each epsilon
+        static void WriteCapacitiesAndObjectiveValues(string path, MultiPeriodEhubOutput ehubResults, int epsilonCut)
+        {
+            //internal double Carbon;
+            //internal double Cost;               // cost. levelized.
+            //internal double Opex;               // annual operation cost.
+            //internal double Capex;              // capital cost. levelized.
+
+            //// Technology sizing
+            //internal double[][] XTotalPvMono;             // pv sizing [m2]. period, surface
+            //internal double[][] XTotalPvCdte;             // pv sizing [m2]. period, surface
+            //internal double[][] XNewPvMono;             // pv sizing [m2]. period, surface
+            //internal double[][] XNewPvCdte;             // pv sizing [m2]. period, surface
+
+            int numberOfSolarAreas = ehubResults.XTotalPvMono[0].Length;    // number of solar profiles in period 0. should be the same in all periods.
+            int NumPeriods = ehubResults.XTotalPvMono.Length;                // number of periods
+
+            // check, if results folder exists in inputs folder
+            string outputPath = path + @"results\";
+            Directory.CreateDirectory(outputPath);
+
+            var header = new List<string>();
+            var header_units = new List<string>();
+
+            // objectives
+            header.Add("Total Cost");
+            header_units.Add("CHF");
+            header.Add("CAPEX");
+            header_units.Add("CHF");
+            header.Add("OPEX");
+            header_units.Add("CHF");
+            header.Add("Emissions");
+            header_units.Add("kg CO2");
+
+            // capacities
+            header.Add("New Battery");
+            header_units.Add("kWh");
+
+            for (int i = 0; i <numberOfSolarAreas; i++)
+            {
+                header.Add("New PV Mono_" + Convert.ToString(i));
+                header.Add("New PV Cdte_" + Convert.ToString(i));
+                header_units.Add("m^2");
+                header_units.Add("m^2");
+            }
+
+            var outputString = new List<List<string>>();
+            outputString.Add(header);
+            outputString.Add(header_units);
+
+            for (int p=0; p<NumPeriods; p++)
+            {
+                var newLine = new List<string>();
+                if (p == 0)
+                {
+                    newLine.Add(Convert.ToString(ehubResults.Cost));
+                    newLine.Add(Convert.ToString(ehubResults.Capex));
+                    newLine.Add(Convert.ToString(ehubResults.Opex));
+                    newLine.Add(Convert.ToString(ehubResults.Carbon));
+                }
+                else
+                {
+                    for (int l = 0; l < 4; l++)
+                        newLine.Add("-");
+                }
+
+                newLine.Add(Convert.ToString(ehubResults.XNewBattery[p]));
+                for (int i=0; i<numberOfSolarAreas; i++)
+                {
+                    newLine.Add(Convert.ToString(ehubResults.XNewPvMono[p][i]));
+                    newLine.Add(Convert.ToString(ehubResults.XNewPvCdte[p][i]));
+                }
+            }
+
+
+            Misc.WriteTextFile(outputPath, "_ObjectiveValuesAndCapacities_epsilon_" + Convert.ToString(epsilonCut) + ".csv", outputString);
+        }
+
+        // for each epsilon
+        static void WriteOperation()
+        {
+
+        }
+
         // only once
         static void WriteTypicalLoads(string path,
             List<double[]> allTypicalElecDays, List<double[]> allTypicalGhi, List<double[]> allTypicalAmbientTemp,
-            List<double[][]> allTypicalSolarLoads, int numBaseLoads)
+            List<double[][]> allTypicalSolarLoads)
         {
             int numberOfSolarAreas = allTypicalSolarLoads[0].Length;    // number of solar profiles in period 0. should be the same in all periods.
             int NumPeriods = allTypicalSolarLoads.Count;                // number of periods
@@ -231,9 +303,9 @@ namespace SBE22MultiPeriodPV
             string outputPath = path + @"results\";
             Directory.CreateDirectory(outputPath);
 
-            List<string> header = new List<string>();
+            var header = new List<string>();
             // write units to 2nd row
-            List<string> header_units = new List<string>();
+            var header_units = new List<string>();
 
             header.Add("Period");
             header_units.Add("(Year)");
@@ -262,34 +334,17 @@ namespace SBE22MultiPeriodPV
                 for (int t = 0; t < horizon; t++)
                 {
                     var newLine = new List<string>();
+                    newLine.Add(Convert.ToString(p));
                     newLine.Add(Convert.ToString(allTypicalElecDays[p][t]));
-                    for(int i=0; i<numberOfSolarAreas; i++)
+                    newLine.Add(Convert.ToString(allTypicalGhi[p][t]));
+                    newLine.Add(Convert.ToString(allTypicalAmbientTemp[p][t]));
+                    for (int i = 0; i < numberOfSolarAreas; i++)
                         newLine.Add(Convert.ToString(allTypicalSolarLoads[p][i][t]));
                     outputString.Add(newLine);
                 }
             }
 
-            using var sw = new StreamWriter(outputPath + "_TypicalLoads.csv");
-            foreach (List<string> line in outputString)
-            {
-                foreach (string cell in line)
-                    sw.Write(cell + ";");
-                sw.Write(Environment.NewLine);
-            }
-            sw.Close();
-        }
-
-
-        // for each epsilon
-        static void WriteCapacitiesAndObjectiveValues()
-        {
-
-        }
-
-        // for each epsilon
-        static void WriteOperation()
-        {
-
+            Misc.WriteTextFile(outputPath, "_TypicalLoads.csv", outputString);
         }
 
 
@@ -434,23 +489,6 @@ namespace SBE22MultiPeriodPV
                 heating.Add(Convert.ToDouble(line[1]));
                 electricity.Add(Convert.ToDouble(line[4]));
             }
-        }
-
-
-        static void LoadPeakLoads(string inputFile,
-            out int numBuildings, out List<double> peakHeatingLoads, out List<double> peakCoolingLoads)
-        {
-            peakHeatingLoads = new List<double>();
-            peakCoolingLoads = new List<double>();
-            var lines = File.ReadAllLines(inputFile);
-            for (int i = 1; i < lines.Length; i++)
-            {
-                var line = lines[i].Split(new char[2] { ',', ';' });
-                peakHeatingLoads.Add(Convert.ToDouble(line[3])); // sh_and_dhw at [3]
-                peakCoolingLoads.Add(Convert.ToDouble(line[4]));
-            }
-
-            numBuildings = peakHeatingLoads.Count;
         }
 
 

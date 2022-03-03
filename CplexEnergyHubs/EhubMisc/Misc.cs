@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 
 namespace EhubMisc
 {
@@ -112,6 +113,21 @@ namespace EhubMisc
             {
                 var lineSplit = line.Split(new char[2] { ',', ';' });
                 timeSeries.Add(Convert.ToDouble(lineSplit[0]));
+            }
+        }
+
+
+        public static void WriteTextFile(string outputPath, string fileName, List<List<string>> outputString)
+        {
+            using (var sw = new StreamWriter(outputPath + fileName))
+            {
+                foreach (List<string> line in outputString)
+                {
+                    foreach (string cell in line)
+                        sw.Write(cell + ";");
+                    sw.Write(Environment.NewLine);
+                }
+                sw.Close();
             }
         }
     }
