@@ -90,7 +90,10 @@
         // Operation. Time resolved.
         internal double[][] XOperationElecPurchase;        // purchase from grid. period, timestep
         internal double[][] XOperationFeedIn;         // feedin. period, timestep
-        internal double[][] XOperationPvElectricity;         // feedin. period, timestep
+        internal double[][] XOperationBatterySoc;       // Battery state of charge. kWh
+        internal double[][] XOperationBatteryCharge;
+        internal double[][] XOperationBatteryDischarge;
+        internal double[][] XOperationPvElectricity;         // total PV electricity generation. period, timestep
 
         // typical days related 
         internal int[][] Clustersize;         // cluster size per period and timestep. used as scalar

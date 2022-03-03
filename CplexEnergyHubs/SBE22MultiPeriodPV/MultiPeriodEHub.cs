@@ -742,16 +742,33 @@ namespace SBE22MultiPeriodPV
                 solution.Capex = 0;
                 solution.Cost = 0;
 
-                solution.XOperationElecPurchase = new double[NumPeriods][];
                 solution.Clustersize = new int[NumPeriods][];
+                solution.XOperationElecPurchase = new double[NumPeriods][];
+                solution.XOperationFeedIn = new double[NumPeriods][];
+                solution.XOperationBatterySoc = new double[NumPeriods][];
+                solution.XOperationBatteryCharge = new double[NumPeriods][];
+                solution.XOperationBatteryDischarge = new double[NumPeriods][];
+                solution.XOperationPvElectricity = new double[NumPeriods][];
+
                 for (int p = 0; p < NumPeriods; p++)
                 {
-                    solution.XOperationElecPurchase[p] = new double[Horizon];
                     solution.Clustersize[p] = new int[Horizon];
+                    solution.XOperationElecPurchase[p] = new double[Horizon];
+                    solution.XOperationFeedIn[p] = new double[Horizon];
+                    solution.XOperationBatterySoc[p] = new double[Horizon];
+                    solution.XOperationBatteryCharge[p] = new double[Horizon];
+                    solution.XOperationBatteryDischarge[p] = new double[Horizon];
+                    solution.XOperationPvElectricity[p] = new double[Horizon];
+
                     for (int t = 0; t < this.Horizon; t++)
-                    {
-                        solution.XOperationElecPurchase[p][t] = cpl.GetValue(xOperationGridPurchase[p][t]);
+                    {                        
                         solution.Clustersize[p][t] = ClustersizePerTimestep[p][t];
+                        solution.XOperationElecPurchase[p][t] = cpl.GetValue(xOperationGridPurchase[p][t]);
+                        solution.XOperationFeedIn[p][t] = 0;
+                        solution.XOperationBatterySoc[p][t] = 0;
+                        solution.XOperationBatteryCharge[p][t] = 0;
+                        solution.XOperationBatteryDischarge[p][t] = 0;
+                        solution.XOperationPvElectricity[p][t] = 0;
                     }
                 }
 
