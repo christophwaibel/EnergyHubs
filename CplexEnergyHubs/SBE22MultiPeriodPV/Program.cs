@@ -16,8 +16,8 @@ namespace SBE22MultiPeriodPV
 
         static void RunMultiPeriodEHub()
         {
-            // !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-            const int minusIndex = 1; //1 for the smaller dataset... 0 for Justins new data
+            // !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! TO DO what is dis...
+            const int minusIndex = 14000; //put a number >0 to reduce number of sensor points... put in 0 for whole dataset
 
             const int epsilonCuts = 3;
 
@@ -68,10 +68,10 @@ namespace SBE22MultiPeriodPV
                 string period = periods[p].ToString();
                 LoadBuildingInput(pathInputs + "ZH_" + period + "_BAU_demand.csv", out var htg, out var dhw, out var clg, out var elec);
 
-                // !!!!!!!!!! Kick this out later with new loads from Justin
+                // TO DO !!!!!!!!!! Kick this out later with new loads from Justin. why?
                 htgAllPeriods.Add(htg);
                 dhwAllPeriods.Add(dhw);
-                // !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+                // TO DO !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
                 elecAllPeriods.Add(elec);
 
                 Misc.LoadTimeSeries(pathInputs + "ZH_" + period + "_BAU_GHI.csv", out var ghi);
@@ -84,7 +84,7 @@ namespace SBE22MultiPeriodPV
             }
 
             //load surface areas - the same for all periods
-            LoadSurfaceAreasInput(pathInputs + "ZH_SurfaceAreas.csv", out var solarAreas);
+            LoadSurfaceAreasInput(pathInputs + "ZH_SurfaceAreas.csv", out var solarAreas, minusIndex);
             // load sensor points - the same for all periods in this model
             LoadSolarPotentialsInput(pathInputs + "ZH_solar_SP0.csv", out var irradiance, minusIndex);
 
@@ -147,7 +147,7 @@ namespace SBE22MultiPeriodPV
                     fullProfiles[u] = new double[hoursPerYear];
                 for (int t = 0; t < hoursPerYear; t++)
                 {
-                    // !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! replace later with line below, once I have new loads from Justin
+                    // TO DO !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! replace later with line below, once I have new loads from Justin
                     fullProfiles[0][t] = elecAllPeriods[p][t] + htgAllPeriods[p][t] / 3 + dhwAllPeriods[p][t] / 3;
                     //fullProfiles[0][t] = elecAllPeriods[p][t];
 
@@ -202,6 +202,7 @@ namespace SBE22MultiPeriodPV
                 }
             }
 
+            Console.WriteLine("Done. hit any key to close...");
             Console.ReadKey();
         }
 
@@ -449,12 +450,12 @@ namespace SBE22MultiPeriodPV
         /// </summary>
         /// <param name="inputFile"></param>
         /// <param name="solarArea"></param>
-        static void LoadSurfaceAreasInput(string inputFile, out List<double> solarArea)
+        static void LoadSurfaceAreasInput(string inputFile, out List<double> solarArea, int minusIndex)
         {
             solarArea = new List<double>();
 
             string[] solarAreaLines = File.ReadAllLines(inputFile);
-            for (int i = 1; i < solarAreaLines.Length; i++)
+            for (int i = 1; i < solarAreaLines.Length - minusIndex; i++)
             {
                 string[] line = solarAreaLines[i].Split(new char[2] { ',', ';' });
                 double area = Convert.ToDouble(line[^2]);  // ^2 get's me the 2nd last index of an array. That's the 'usefulearea' column in the input csv
@@ -472,6 +473,7 @@ namespace SBE22MultiPeriodPV
 
             string[] linesSp = File.ReadAllLines(inputFile);
             string[] firstLine = linesSp[0].Split(new char[2] { ',', ';' });
+            firstLine = firstLine.Where(x => !string.IsNullOrEmpty(x)).ToArray();
             solarPotentials = new double[firstLine.Length - minusIndex][];
             for (int i = 0; i < solarPotentials.Length; i++)
                 solarPotentials[i] = new double[horizon];
