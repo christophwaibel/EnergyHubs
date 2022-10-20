@@ -17,7 +17,7 @@ namespace SBE22MultiPeriodPV
         static void RunMultiPeriodEHub()
         {
             // !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! TO DO what is dis...
-            const int minusIndex = 14000; //put a number >0 to reduce number of sensor points... put in 0 for whole dataset
+            const int minusIndex = 1; //put a number >0 to reduce number of sensor points... put in 0 for whole dataset
 
             const int epsilonCuts = 3;
 

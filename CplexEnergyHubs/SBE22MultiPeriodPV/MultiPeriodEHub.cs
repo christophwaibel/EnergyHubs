@@ -294,10 +294,10 @@ namespace SBE22MultiPeriodPV
                     this.LinearCostBattery.Add(technologyParameters[p]["CostBattery"]);
                 else
                     this.LinearCostBattery.Add(600.0);
-                
 
-                //// Fix Investment Cost
-                //// too high for PV?
+
+                // Fix Investment Cost
+                // TO DO: only 1 fix cost per building, not per surface. coz 1 building may have 100 surfaces- doesnt make sense to have such high fix cost for each little patch
                 //if (technologyParameters[p].ContainsKey("FixCostPV_mono"))
                 //    this.FixCostPvMono.Add(technologyParameters[p]["FixCostPV_mono"]);
                 //else
@@ -306,8 +306,10 @@ namespace SBE22MultiPeriodPV
                 //    this.FixCostPVCdte.Add(technologyParameters[p]["FixCostPV_cdte"]);
                 //else
                 //    this.FixCostPVCdte.Add(250.0);
-                this.FixCostPvMono.Add(900);
-                this.FixCostPVCdte.Add(900);
+                this.FixCostPVCdte.Add(0.0);
+                this.FixCostPvMono.Add(0.0);
+
+              
                 if (technologyParameters[p].ContainsKey("FixCostBattery"))
                     this.FixCostBattery.Add(technologyParameters[p]["FixCostBattery"]);
                 else
@@ -371,18 +373,20 @@ namespace SBE22MultiPeriodPV
 
         internal void Solve(int epsilonCuts, bool verbose = false)
         {
-            double costTolerance = 100.0;
-            double carbonTolerance = 0.1;
-            //Outputs = new MultiPeriodEhubOutput[epsilonCuts + 2];
-
-
-            // prototyping
+            // prototyping only elec
             MultiPeriodEhubOutput minCost = EHubSimple(verbose);
             Outputs = new MultiPeriodEhubOutput[1];
             Outputs[0] = minCost;
 
+
+
+            //double costTolerance = 100.0;
+            //double carbonTolerance = 0.1;
+            //Outputs = new MultiPeriodEhubOutput[epsilonCuts + 2];
+
             //// prototyping PV
             //MultiPeriodEhubOutput minCost = EnergyHub("cost", null, null, verbose);
+            //Outputs = new MultiPeriodEhubOutput[1];
             //Outputs[0] = minCost;
 
 
@@ -671,13 +675,26 @@ namespace SBE22MultiPeriodPV
         {
             var solution = new MultiPeriodEhubOutput();
             Cplex cpl = new Cplex();
-            ILinearNumExpr[][] totalPvElectricity = new ILinearNumExpr[NumPeriods][];
+
+            // declare variables
+            INumVar[][] xPvMono = new INumVar[NumPeriods][];
             INumVar[][] xOperationGridPurchase = new INumVar[NumPeriods][];
-           
+            INumVar[][] xOperationFeedIn = new INumVar[NumPeriods][];
+
+            // declare terms
+            ILinearNumExpr[][] totalPvElectricity = new ILinearNumExpr[NumPeriods][];
+
+            // Init variables & terms
             for (int p = 0; p < NumPeriods; p++)
             {
-                totalPvElectricity[p] = new ILinearNumExpr[Horizon];
+                xPvMono[p] = new INumVar[NumberOfSolarAreas];
+                for (int s=0; s<NumberOfSolarAreas; s++)
+                    xPvMono[p][s] = cpl.NumVar(0.0, SolarAreas[s]);
+
                 xOperationGridPurchase[p] = new INumVar[Horizon];
+                xOperationFeedIn[p] = new INumVar[Horizon];
+
+                totalPvElectricity[p] = new ILinearNumExpr[Horizon];
                 for (int t = 0; t < Horizon; t++)
                 {
                     totalPvElectricity[p][t] = cpl.LinearNumExpr();
@@ -686,7 +703,7 @@ namespace SBE22MultiPeriodPV
             }
 
 
-
+            // constraints
             // meeting demands
             for (int p = 0; p < NumPeriods; p++)
             {
@@ -694,6 +711,8 @@ namespace SBE22MultiPeriodPV
                 {
                     ILinearNumExpr elecGeneration = cpl.LinearNumExpr();
                     elecGeneration.AddTerm(1, xOperationGridPurchase[p][t]);
+                    elecGeneration.AddTerm(-1, xOperationFeedIn[p][t]);
+
   
                     /// Energy Balance
                     cpl.AddGe(elecGeneration, this.ElectricityDemand[p][t]);
