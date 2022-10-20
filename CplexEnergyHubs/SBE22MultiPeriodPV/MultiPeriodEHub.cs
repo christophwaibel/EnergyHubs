@@ -677,9 +677,10 @@ namespace SBE22MultiPeriodPV
             Cplex cpl = new Cplex();
 
             // declare variables
-            INumVar[][] xPvMono = new INumVar[NumPeriods][];
+            INumVar[][] xPvMonoNew = new INumVar[NumPeriods][]; //how much new PV sized at that period and on that surface
             INumVar[][] xOperationGridPurchase = new INumVar[NumPeriods][];
             INumVar[][] xOperationFeedIn = new INumVar[NumPeriods][];
+            INumVar[][] yFeedIn = new INumVar[NumPeriods][];
 
             // declare terms
             ILinearNumExpr[][] totalPvElectricity = new ILinearNumExpr[NumPeriods][];
@@ -687,37 +688,80 @@ namespace SBE22MultiPeriodPV
             // Init variables & terms
             for (int p = 0; p < NumPeriods; p++)
             {
-                xPvMono[p] = new INumVar[NumberOfSolarAreas];
+                xPvMonoNew[p] = new INumVar[NumberOfSolarAreas];
                 for (int s=0; s<NumberOfSolarAreas; s++)
-                    xPvMono[p][s] = cpl.NumVar(0.0, SolarAreas[s]);
+                    xPvMonoNew[p][s] = cpl.NumVar(0.0, SolarAreas[s]);
 
                 xOperationGridPurchase[p] = new INumVar[Horizon];
                 xOperationFeedIn[p] = new INumVar[Horizon];
+                yFeedIn[p] = new INumVar[Horizon];
 
                 totalPvElectricity[p] = new ILinearNumExpr[Horizon];
                 for (int t = 0; t < Horizon; t++)
                 {
                     totalPvElectricity[p][t] = cpl.LinearNumExpr();
                     xOperationGridPurchase[p][t] = cpl.NumVar(0, double.MaxValue);
+                    xOperationFeedIn[p][t] = cpl.NumVar(0, double.MaxValue);
+                    yFeedIn[p][t] = cpl.BoolVar();
                 }
             }
 
 
-            // constraints
+            /// constraints
+
             // meeting demands
+
+            ILinearNumExpr[] sumPvAreas = new ILinearNumExpr[NumberOfSolarAreas];
+            for (int s = 0; s < NumberOfSolarAreas; s++)
+                sumPvAreas[s] = cpl.LinearNumExpr();
+
             for (int p = 0; p < NumPeriods; p++)
             {
+                // summing all PvMono of all periods together
+                for (int s = 0; s < NumberOfSolarAreas; s++) 
+                { 
+                    sumPvAreas[s].AddTerm(1, xPvMonoNew[p][s]);
+                }
+
+
+
                 for (int t = 0; t < this.Horizon; t++)
                 {
-                    ILinearNumExpr elecGeneration = cpl.LinearNumExpr();
-                    elecGeneration.AddTerm(1, xOperationGridPurchase[p][t]);
-                    elecGeneration.AddTerm(-1, xOperationFeedIn[p][t]);
+                    //    ILinearNumExpr elecOutgoing = cpl.LinearNumExpr();
+                    //    elecOutgoing.AddTerm(1, xOperationFeedIn[p][t]);
 
-  
+
+                    //ILinearNumExpr elecGeneration = cpl.LinearNumExpr();
+                    //    elecGeneration.AddTerm(1, xOperationGridPurchase[p][t]);
+                    for (int s = 0; s < NumberOfSolarAreas; s++)
+                    {
+                        //elecGeneration.AddTerm(xPvMono[p][s], pvElec);
+
+                        // need to go through all PVs sized from all periods. use efficiency from respective period, but solar load from current period
+                        for (int pp = 0; pp <= p; pp++)
+                        {
+                            double pvElec = this.SolarLoads[p][s][t] * 0.001 * this.PvEfficiencyMono[pp][s][t];
+                            totalPvElectricity[p][t].AddTerm(xPvMonoNew[pp][s], pvElec); 
+                        }
+                    }
+                    
+
+                    // pv production must be greater equal feedin
+                    cpl.AddGe(totalPvElectricity[p][t], xOperationFeedIn[p][t]);
+                    //    // donnot allow feedin and purchase at the same time. y = 1 means elec is produced
+                    //    cpl.AddLe(xOperationGridPurchase[p][t], cpl.Prod(M, yFeedIn[p][t]));
+                    //    cpl.AddLe(xOperationFeedIn[p][t], cpl.Prod(M, cpl.Diff(1, yFeedIn[p][t])));
+
                     /// Energy Balance
-                    cpl.AddGe(elecGeneration, this.ElectricityDemand[p][t]);
+                    //cpl.AddGe(cpl.Diff(elecGeneration, elecOutgoing), this.ElectricityDemand[p][t]);
+                    cpl.AddGe(xOperationGridPurchase[p][t], this.ElectricityDemand[p][t]);
                 }
             }
+
+            // PV over all perdiods cant be bigger than the surface
+            // TO DO: lifetime ending
+            for (int s = 0; s < NumberOfSolarAreas; s++)
+                cpl.AddLe(sumPvAreas[s], SolarAreas[s]);
 
 
 
@@ -725,16 +769,25 @@ namespace SBE22MultiPeriodPV
             /// Cost coefficients formulation
             /// ////////////////////////////////////////////////////////////////////////
             ILinearNumExpr opex = cpl.LinearNumExpr();
+            ILinearNumExpr capex = cpl.LinearNumExpr();
             for (int p = 0; p < NumPeriods; p++)
+            {
                 for (int t = 0; t < Horizon; t++)
+                {
                     opex.AddTerm((ClustersizePerTimestep[p][t] * OperationCostGrid[p][t] * YearsPerPeriod) / Math.Pow(1 + InterestRate[p], p * YearsPerPeriod), xOperationGridPurchase[p][t]);
- 
+                    opex.AddTerm(((ClustersizePerTimestep[p][t] * OperationRevenueFeedIn[p][t] * YearsPerPeriod) / Math.Pow(1 + InterestRate[p], p * YearsPerPeriod)), xOperationFeedIn[p][t]); //revenue already negative value. dont need *-1
+                }
+
+                //for (int s = 0; s < NumberOfSolarAreas; s++)
+                //    capex.AddTerm(xPvMono[p][s], this.LinearCostPvMono[p]);
+            }
+
 
 
             /// ////////////////////////////////////////////////////////////////////////
             /// Objective function
             /// ////////////////////////////////////////////////////////////////////////
-            cpl.AddMinimize(opex);
+            cpl.AddMinimize(cpl.Sum(opex, capex));
 
 
             /// ////////////////////////////////////////////////////////////////////////
@@ -769,6 +822,8 @@ namespace SBE22MultiPeriodPV
                 solution.XOperationBatteryDischarge = new double[NumPeriods][];
                 solution.XOperationPvElectricity = new double[NumPeriods][];
 
+                solution.XNewPvMono = new double[NumPeriods][];
+
                 for (int p = 0; p < NumPeriods; p++)
                 {
                     solution.Clustersize[p] = new int[Horizon];
@@ -783,11 +838,17 @@ namespace SBE22MultiPeriodPV
                     {                        
                         solution.Clustersize[p][t] = ClustersizePerTimestep[p][t];
                         solution.XOperationElecPurchase[p][t] = cpl.GetValue(xOperationGridPurchase[p][t]);
-                        solution.XOperationFeedIn[p][t] = 0;
+                        solution.XOperationFeedIn[p][t] = cpl.GetValue(xOperationFeedIn[p][t]);
                         solution.XOperationBatterySoc[p][t] = 0;
                         solution.XOperationBatteryCharge[p][t] = 0;
                         solution.XOperationBatteryDischarge[p][t] = 0;
-                        solution.XOperationPvElectricity[p][t] = 0;
+                        solution.XOperationPvElectricity[p][t] = cpl.GetValue(totalPvElectricity[p][t]);
+                    }
+
+                    solution.XNewPvMono[p] = new double[NumberOfSolarAreas];
+                    for (int s=0; s< NumberOfSolarAreas; s++)
+                    {
+                        solution.XNewPvMono[p][s] = cpl.GetValue(xPvMonoNew[p][s]);
                     }
                 }
 
