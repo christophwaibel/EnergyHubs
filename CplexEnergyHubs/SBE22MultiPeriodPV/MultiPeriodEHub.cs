@@ -120,7 +120,7 @@ namespace SBE22MultiPeriodPV
         /// ////////////////////////////////////////////////////////////////////////
         /// MILP
         /// ////////////////////////////////////////////////////////////////////////
-        private const double M = 99999;   // Big M method
+        private const double M = 99999999;   // Big M method
         #endregion
 
 
@@ -373,21 +373,21 @@ namespace SBE22MultiPeriodPV
 
         internal void Solve(int epsilonCuts, bool verbose = false)
         {
-            // prototyping only elec
-            MultiPeriodEhubOutput minCost = EHubSimple(verbose);
-            Outputs = new MultiPeriodEhubOutput[1];
-            Outputs[0] = minCost;
-
-
-
-            //double costTolerance = 100.0;
-            //double carbonTolerance = 0.1;
-            //Outputs = new MultiPeriodEhubOutput[epsilonCuts + 2];
-
-            //// prototyping PV
-            //MultiPeriodEhubOutput minCost = EnergyHub("cost", null, null, verbose);
+            //// prototyping only elec
+            //MultiPeriodEhubOutput minCost = EHubSimple(verbose);
             //Outputs = new MultiPeriodEhubOutput[1];
             //Outputs[0] = minCost;
+
+
+
+            double costTolerance = 100.0;
+            double carbonTolerance = 0.1;
+            Outputs = new MultiPeriodEhubOutput[epsilonCuts + 2];
+
+            // prototyping PV
+            MultiPeriodEhubOutput minCost = EnergyHub("cost", null, null, verbose);
+            Outputs = new MultiPeriodEhubOutput[1];
+            Outputs[0] = minCost;
 
 
             //// 1. solve for minCarbon, ignoring cost. solve again, but mincost, with minCarbon constraint
@@ -630,6 +630,7 @@ namespace SBE22MultiPeriodPV
                 solution.XTotalPvCdte = new double[NumPeriods][];
                 solution.XNewPvMono = new double[NumPeriods][];
                 solution.XNewPvCdte = new double[NumPeriods][];
+                solution.XNewBattery = new double[NumPeriods];
                 for (int p = 0; p < NumPeriods; p++)
                 {
                     solution.XTotalPvMono[p] = new double[NumberOfSolarAreas];
@@ -643,27 +644,41 @@ namespace SBE22MultiPeriodPV
                         solution.XNewPvMono[p][i] = cpl.GetValue(xNewPvMono[p][i]);
                         solution.XNewPvCdte[p][i] = cpl.GetValue(xNewPvCdte[p][i]);
                     }
+                    solution.XNewBattery[p] = 0.0; // TO DO
                 }
 
 
                 solution.XOperationPvElectricity = new double[NumPeriods][];
                 solution.XOperationElecPurchase = new double[NumPeriods][];
                 solution.XOperationFeedIn = new double[NumPeriods][];
+                solution.XOperationBatterySoc = new double[NumPeriods][];
+                solution.XOperationBatteryCharge = new double[NumPeriods][];
+                solution.XOperationBatteryDischarge = new double[NumPeriods][];
+
                 solution.Clustersize = new int[NumPeriods][];
                 for (int p = 0; p < NumPeriods; p++)
                 {
                     solution.XOperationPvElectricity[p] = new double[Horizon];
                     solution.XOperationElecPurchase[p] = new double[Horizon];
                     solution.XOperationFeedIn[p] = new double[Horizon];
+                    solution.XOperationBatterySoc[p] = new double[Horizon];
+                    solution.XOperationBatteryCharge[p] = new double[Horizon];
+                    solution.XOperationBatteryDischarge[p] = new double[Horizon];
                     solution.Clustersize[p] = new int[Horizon];
                     for (int t = 0; t < this.Horizon; t++)
                     {
                         solution.XOperationPvElectricity[p][t] = cpl.GetValue(xPvElectricity[p][t]);
                         solution.XOperationElecPurchase[p][t] = cpl.GetValue(xOperationGridPurchase[p][t]);
                         solution.XOperationFeedIn[p][t] = cpl.GetValue(xOperationFeedIn[p][t]);
+                        solution.XOperationBatterySoc[p][t] = 0.0;
+                        solution.XOperationBatteryCharge[p][t] = 0.0;
+                        solution.XOperationBatteryDischarge[p][t] = 0.0;
+
                         solution.Clustersize[p][t] = ClustersizePerTimestep[p][t];
                     }
                 }
+
+               
 
 
                 return solution;
@@ -744,34 +759,33 @@ namespace SBE22MultiPeriodPV
 
                 for (int t = 0; t < this.Horizon; t++)
                 {
-                    //    ILinearNumExpr elecOutgoing = cpl.LinearNumExpr();
-                    //    elecOutgoing.AddTerm(1, xOperationFeedIn[p][t]);
+                    ILinearNumExpr elecOutgoing = cpl.LinearNumExpr();
+                    elecOutgoing.AddTerm(1, xOperationFeedIn[p][t]);
 
 
-                    //ILinearNumExpr elecGeneration = cpl.LinearNumExpr();
-                    //    elecGeneration.AddTerm(1, xOperationGridPurchase[p][t]);
+                    ILinearNumExpr elecGeneration = cpl.LinearNumExpr();
+                    elecGeneration.AddTerm(1, xOperationGridPurchase[p][t]);
                     for (int s = 0; s < NumberOfSolarAreas; s++)
                     {
-                        //elecGeneration.AddTerm(xPvMono[p][s], pvElec);
-
                         // need to go through all PVs sized from all periods. use efficiency from respective period, but solar load from current period
                         for (int pp = 0; pp <= p; pp++)
                         {
                             double pvElec = this.SolarLoads[p][s][t] * 0.001 * this.PvEfficiencyMono[pp][s][t];
-                            totalPvElectricity[p][t].AddTerm(xPvMonoNew[pp][s], pvElec); 
+                            totalPvElectricity[p][t].AddTerm(xPvMonoNew[pp][s], pvElec);
+                            elecGeneration.AddTerm(xPvMonoNew[pp][s], pvElec);
                         }
                     }
                     
 
                     // pv production must be greater equal feedin
                     constraints.Add(cpl.AddGe(totalPvElectricity[p][t], xOperationFeedIn[p][t]));
-                    //    // donnot allow feedin and purchase at the same time. y = 1 means elec is produced
-                    //    cpl.AddLe(xOperationGridPurchase[p][t], cpl.Prod(M, yFeedIn[p][t]));
-                    //    cpl.AddLe(xOperationFeedIn[p][t], cpl.Prod(M, cpl.Diff(1, yFeedIn[p][t])));
+                    // donnot allow feedin and purchase at the same time. y = 1 means elec is produced. NOTE: Infeasible before because big M too small
+                    cpl.AddLe(xOperationGridPurchase[p][t], cpl.Prod(M, yFeedIn[p][t]));
+                    cpl.AddLe(xOperationFeedIn[p][t], cpl.Prod(M, cpl.Diff(1, yFeedIn[p][t])));
 
                     /// Energy Balance
-                    //cpl.AddGe(cpl.Diff(elecGeneration, elecOutgoing), this.ElectricityDemand[p][t]);
-                    constraints.Add(cpl.AddGe(xOperationGridPurchase[p][t], this.ElectricityDemand[p][t]));
+                    constraints.Add(cpl.AddGe(cpl.Diff(elecGeneration, elecOutgoing), this.ElectricityDemand[p][t]));
+                    //constraints.Add(cpl.AddGe(xOperationGridPurchase[p][t], this.ElectricityDemand[p][t]));
                 }
             }
 
@@ -833,7 +847,7 @@ namespace SBE22MultiPeriodPV
                 /// ////////////////////////////////////////////////////////////////////////
                 /// Outputs
                 /// ////////////////////////////////////////////////////////////////////////
-
+       
                 solution.Opex = cpl.GetValue(opex);
                 solution.Capex = 0;
                 solution.Cost = 0;
@@ -859,7 +873,7 @@ namespace SBE22MultiPeriodPV
                     solution.XOperationPvElectricity[p] = new double[Horizon];
 
                     for (int t = 0; t < this.Horizon; t++)
-                    {                        
+                    {
                         solution.Clustersize[p][t] = ClustersizePerTimestep[p][t];
                         solution.XOperationElecPurchase[p][t] = cpl.GetValue(xOperationGridPurchase[p][t]);
                         solution.XOperationFeedIn[p][t] = cpl.GetValue(xOperationFeedIn[p][t]);
@@ -870,12 +884,11 @@ namespace SBE22MultiPeriodPV
                     }
 
                     solution.XNewPvMono[p] = new double[NumberOfSolarAreas];
-                    for (int s=0; s< NumberOfSolarAreas; s++)
+                    for (int s = 0; s < NumberOfSolarAreas; s++)
                     {
                         solution.XNewPvMono[p][s] = cpl.GetValue(xPvMonoNew[p][s]);
                     }
                 }
-
                 return solution;
             }
             catch (ILOG.Concert.Exception ex)
@@ -886,6 +899,8 @@ namespace SBE22MultiPeriodPV
                 return solution;
             }
         }
+
+
 
 
     }

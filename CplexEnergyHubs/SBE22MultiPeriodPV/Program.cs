@@ -21,7 +21,7 @@ namespace SBE22MultiPeriodPV
 
             const int epsilonCuts = 3;
 
-            const int periodInterval = 5;
+            const int periodInterval = 10;
             int[] periods = new int[(2050 - 2020) / periodInterval];
             for (int p = 0; p < periods.Length; p++)
                 periods[p] = 2020 + p * periodInterval;
@@ -197,7 +197,7 @@ namespace SBE22MultiPeriodPV
             {
                 if (!ehub.Outputs[i].infeasible)
                 {
-                    //WriteCapacitiesAndObjectiveValues(path, ehub.Outputs[i], i);
+                    WriteCapacitiesAndObjectiveValues(path, ehub.Outputs[i], i);
                     WriteOperation(path, ehub.Outputs[i], i);
                 }
             }
@@ -241,8 +241,8 @@ namespace SBE22MultiPeriodPV
 
             for (int i = 0; i <numberOfSolarAreas; i++)
             {
-                header.Add("New PV Mono_" + Convert.ToString(i));
-                header.Add("New PV Cdte_" + Convert.ToString(i));
+                header.Add("Total PV Mono_" + Convert.ToString(i));
+                header.Add("Total PV Cdte_" + Convert.ToString(i));
                 header_units.Add("m^2");
                 header_units.Add("m^2");
             }
@@ -269,9 +269,11 @@ namespace SBE22MultiPeriodPV
                 newLine.Add(Convert.ToString(ehubResults.XNewBattery[p]));
                 for (int i=0; i<numberOfSolarAreas; i++)
                 {
-                    newLine.Add(Convert.ToString(ehubResults.XNewPvMono[p][i]));
-                    newLine.Add(Convert.ToString(ehubResults.XNewPvCdte[p][i]));
+                    newLine.Add(Convert.ToString(ehubResults.XTotalPvMono[p][i]));
+                    newLine.Add(Convert.ToString(ehubResults.XTotalPvCdte[p][i]));
                 }
+
+                outputString.Add(newLine);
             }
 
 
