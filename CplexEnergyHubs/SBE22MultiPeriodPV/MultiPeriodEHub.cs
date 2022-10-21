@@ -411,6 +411,8 @@ namespace SBE22MultiPeriodPV
         {
             var solution = new MultiPeriodEhubOutput();
             Cplex cpl = new Cplex();
+            var constraints = new List<IConstraint>();
+
 
             // hardcoding 3 investment periods: 2020, 2030, 2040
             // that means, we need 3 separate variables for each tech, because each tech per period will have different efficiencies, embodied emissions and cost parameters
@@ -492,14 +494,14 @@ namespace SBE22MultiPeriodPV
                         sumNewMono.AddTerm(1, xNewPvMono[pp][i]);
                     for (int pp = (int)Math.Max(0, p - Math.Floor(LifetimePvCdte[p] / YearsPerPeriod) + 1); pp <= p; pp++)
                         sumNewCdte.AddTerm(1, xNewPvCdte[pp][i]);
-                    cpl.AddEq(totalCapacityPvMono[p][i], sumNewMono);
-                    cpl.AddEq(totalCapacityPvCdte[p][i], sumNewCdte);
+                    constraints.Add(cpl.AddEq(totalCapacityPvMono[p][i], sumNewMono));
+                    constraints.Add(cpl.AddEq(totalCapacityPvCdte[p][i], sumNewCdte));
                 }
             }
 
             for (int p = 0; p < NumPeriods; p++)
                 for (int i = 0; i < NumberOfSolarAreas; i++)
-                    cpl.AddGe(SolarAreas[i], cpl.Sum(totalCapacityPvMono[p][i], totalCapacityPvCdte[p][i]));
+                    constraints.Add(cpl.AddGe(SolarAreas[i], cpl.Sum(totalCapacityPvMono[p][i], totalCapacityPvCdte[p][i])));
 
             // meeting demands
             for (int p = 0; p < NumPeriods; p++)
@@ -528,17 +530,17 @@ namespace SBE22MultiPeriodPV
 
                     /// PV Technical Constraints
                     // getting total pv generation. need it for OM cost
-                    cpl.AddEq(totalPvElectricity[p][t], xPvElectricity[p][t]);
+                    constraints.Add(cpl.AddEq(totalPvElectricity[p][t], xPvElectricity[p][t]));
                     // pv production must be greater equal feedin
-                    cpl.AddGe(totalPvElectricity[p][t], xOperationFeedIn[p][t]);
+                    constraints.Add(cpl.AddGe(totalPvElectricity[p][t], xOperationFeedIn[p][t]));
                     // donnot allow feedin and purchase at the same time. y = 1 means elec is produced
-                    cpl.AddLe(xOperationGridPurchase[p][t], cpl.Prod(M, yOperationFeedIn[p][t]));
-                    cpl.AddLe(xOperationFeedIn[p][t], cpl.Prod(M, cpl.Diff(1, yOperationFeedIn[p][t])));
+                    constraints.Add(cpl.AddLe(xOperationGridPurchase[p][t], cpl.Prod(M, yOperationFeedIn[p][t])));
+                    constraints.Add(cpl.AddLe(xOperationFeedIn[p][t], cpl.Prod(M, cpl.Diff(1, yOperationFeedIn[p][t]))));
 
-                    
+
 
                     /// Energy Balance
-                    cpl.AddGe(cpl.Diff(elecGeneration, elecAdditionalDemand), this.ElectricityDemand[p][t]);
+                    constraints.Add(cpl.AddGe(cpl.Diff(elecGeneration, elecAdditionalDemand), this.ElectricityDemand[p][t]));
                 }
             }
 
@@ -553,8 +555,8 @@ namespace SBE22MultiPeriodPV
             {
                 for (int i = 0; i < this.NumberOfSolarAreas; i++)
                 {
-                    cpl.AddLe(xNewPvMono[p][i], cpl.Prod(M, yNewPvMono[p][i]));
-                    cpl.AddLe(xNewPvCdte[p][i], cpl.Prod(M, yNewPvCdte[p][i]));
+                    constraints.Add(cpl.AddLe(xNewPvMono[p][i], cpl.Prod(M, yNewPvMono[p][i])));
+                    constraints.Add(cpl.AddLe(xNewPvCdte[p][i], cpl.Prod(M, yNewPvCdte[p][i])));
                 }
             }
 
@@ -606,6 +608,11 @@ namespace SBE22MultiPeriodPV
             try
             {
                 bool success = cpl.Solve();
+                //var conflict = cpl.GetConflict(constraints.ToArray());
+                //foreach (var con in conflict) 
+                //{
+                //    Console.WriteLine(con.ToString());
+                //}
                 if (!success)
                 {
                     solution.infeasible = true;
@@ -675,6 +682,8 @@ namespace SBE22MultiPeriodPV
         {
             var solution = new MultiPeriodEhubOutput();
             Cplex cpl = new Cplex();
+            var constraints = new List<IConstraint>();
+
 
             // declare variables
             INumVar[][] xPvMonoNew = new INumVar[NumPeriods][]; //how much new PV sized at that period and on that surface
@@ -711,18 +720,26 @@ namespace SBE22MultiPeriodPV
 
             // meeting demands
 
-            ILinearNumExpr[] sumPvAreas = new ILinearNumExpr[NumberOfSolarAreas];
-            for (int s = 0; s < NumberOfSolarAreas; s++)
-                sumPvAreas[s] = cpl.LinearNumExpr();
+            // total pv at each period cannot exceed total available area
+            ILinearNumExpr[][] sumPvAreas = new ILinearNumExpr[NumPeriods][];
+            for (int p = 0; p < NumPeriods; p++)
+            {
+                sumPvAreas[p] = new ILinearNumExpr[NumberOfSolarAreas];
+                for (int s = 0; s < NumberOfSolarAreas; s++)
+                    sumPvAreas[p][s] = cpl.LinearNumExpr();
+            }
 
             for (int p = 0; p < NumPeriods; p++)
             {
                 // summing all PvMono of all periods together
+                // PV over all perdiods cant be bigger than the surface
+                // TO DO: lifetime ending
                 for (int s = 0; s < NumberOfSolarAreas; s++) 
                 { 
-                    sumPvAreas[s].AddTerm(1, xPvMonoNew[p][s]);
+                    for (int pp = 0; pp <= p; pp++)
+                        sumPvAreas[p][s].AddTerm(1, xPvMonoNew[pp][s]);
+                    constraints.Add(cpl.AddLe(sumPvAreas[p][s], SolarAreas[s]));
                 }
-
 
 
                 for (int t = 0; t < this.Horizon; t++)
@@ -747,21 +764,18 @@ namespace SBE22MultiPeriodPV
                     
 
                     // pv production must be greater equal feedin
-                    cpl.AddGe(totalPvElectricity[p][t], xOperationFeedIn[p][t]);
+                    constraints.Add(cpl.AddGe(totalPvElectricity[p][t], xOperationFeedIn[p][t]));
                     //    // donnot allow feedin and purchase at the same time. y = 1 means elec is produced
                     //    cpl.AddLe(xOperationGridPurchase[p][t], cpl.Prod(M, yFeedIn[p][t]));
                     //    cpl.AddLe(xOperationFeedIn[p][t], cpl.Prod(M, cpl.Diff(1, yFeedIn[p][t])));
 
                     /// Energy Balance
                     //cpl.AddGe(cpl.Diff(elecGeneration, elecOutgoing), this.ElectricityDemand[p][t]);
-                    cpl.AddGe(xOperationGridPurchase[p][t], this.ElectricityDemand[p][t]);
+                    constraints.Add(cpl.AddGe(xOperationGridPurchase[p][t], this.ElectricityDemand[p][t]));
                 }
             }
 
-            // PV over all perdiods cant be bigger than the surface
-            // TO DO: lifetime ending
-            for (int s = 0; s < NumberOfSolarAreas; s++)
-                cpl.AddLe(sumPvAreas[s], SolarAreas[s]);
+
 
 
 
@@ -801,6 +815,16 @@ namespace SBE22MultiPeriodPV
             try
             {
                 bool success = cpl.Solve();
+                //Cplex.ConflictStatus[] conflict = cpl.GetConflict(constraints.ToArray());
+                //foreach(var cons in constraints)
+                //{
+                //    Console.WriteLine(cons.ToString());
+                //}
+                //foreach(var conf in conflict)
+                //{
+                //    Console.WriteLine(conf.ToString());
+                //}
+
                 if (!success)
                 {
                     solution.infeasible = true;

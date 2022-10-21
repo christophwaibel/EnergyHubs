@@ -21,7 +21,7 @@ namespace SBE22MultiPeriodPV
 
             const int epsilonCuts = 3;
 
-            const int periodInterval = 10;
+            const int periodInterval = 5;
             int[] periods = new int[(2050 - 2020) / periodInterval];
             for (int p = 0; p < periods.Length; p++)
                 periods[p] = 2020 + p * periodInterval;
