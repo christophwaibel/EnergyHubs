@@ -34,13 +34,15 @@ namespace SBE22MultiPeriodPV
             Console.WriteLine("\n___________________________________________________________________ \n");
 
             Console.WriteLine(@"Specify file path, e.g.: 'c:\sbe22\'");
-            Console.WriteLine(@"Or just hit ENTER and it will use the current file directory \n");
+            Console.WriteLine("Or just hit ENTER and it will use the current file directory \n");
             Console.WriteLine(@"That folder needs to contain a subfolder called '\inputs'");
             string path = Console.ReadLine();
             if (path.Length == 0)
                 path = System.AppDomain.CurrentDomain.BaseDirectory;
             if (!path.EndsWith(@"\"))
                 path = path + @"\";
+
+            Console.WriteLine("using path: {0}", path);
 
             string pathInputs = path + @"inputs\";
 
