@@ -24,7 +24,7 @@ namespace SBE22MultiPeriodPV
         internal List<double[][]> SolarLoads { get; private set; }
         internal double[] SolarAreas { get; private set; }
 
-        internal List<int[]> ClustersizePerTimestep { get; private set; }
+        internal List<int[]> ClusterSizePerTimestep { get; private set; }
 
         internal int NumberOfSolarAreas { get; private set; }
 
@@ -135,7 +135,7 @@ namespace SBE22MultiPeriodPV
             this.SolarAreas = solarTechSurfaceAreas;
 
             this.NumberOfSolarAreas = solarTechSurfaceAreas.Length;
-            this.ClustersizePerTimestep = clustersizePerTimestep;
+            this.ClusterSizePerTimestep = clustersizePerTimestep;
             this.NumPeriods = ElectricityDemand.Count;
             this.Horizon = ElectricityDemand[0].Length; // this assumes each year has the same number of typical days
             this.YearsPerPeriod = yearsPerPeriod;
@@ -147,11 +147,12 @@ namespace SBE22MultiPeriodPV
 
         private void SetParameters(List<Dictionary<string, double>> technologyParameters)
         {
+            // looping through all periods
             for (int p = 0; p < technologyParameters.Count; p++)
             {
-                /// ////////////////////////////////////////////////////////////////////////
+                //_____________________________________________________________________________________
+                //_____________________________________________________________________________________
                 /// Technical Parameters
-                /// ////////////////////////////////////////////////////////////////////////
 
                 // floor area
                 double _floorarea;
@@ -205,45 +206,21 @@ namespace SBE22MultiPeriodPV
                 else
                     this.bat_min_state.Add(0.3);
 
-              
-                /// ////////////////////////////////////////////////////////////////////////
+
+                //_____________________________________________________________________________________
+                //_____________________________________________________________________________________
                 /// Minimal Capacities
-                /// ////////////////////////////////////////////////////////////////////////
+
                 if (technologyParameters[p].ContainsKey("minCapBattery"))
                     this.minCapBattery.Add(technologyParameters[p]["minCapBattery"]);
                 else
                     this.minCapBattery.Add(10);
-                
 
 
-                /// ////////////////////////////////////////////////////////////////////////
-                /// LCA
-                /// ////////////////////////////////////////////////////////////////////////
-                if (technologyParameters[p].ContainsKey("lca_GridElectricity"))
-                    this.LcaGridElectricity.Add(technologyParameters[p]["lca_GridElectricity"]);
-                else
-                    this.LcaGridElectricity.Add(0.14840); // from Wu et al. 2017
-               
-                // Total LCA of technologies
-                if (technologyParameters[p].ContainsKey("lca_PV_mono"))
-                    this.LcaTotalPvMono.Add(technologyParameters[p]["lca_PV_mono"]);
-                else
-                    this.LcaTotalPvMono.Add(0.0);
-                if (technologyParameters[p].ContainsKey("lca_PV_cdte"))
-                    this.LcaTotalPvCdte.Add(technologyParameters[p]["lca_PV_cdte"]);
-                else
-                    this.LcaTotalPvCdte.Add(0.0);
-                if (technologyParameters[p].ContainsKey("lca_Battery"))
-                    this.LcaTotalBattery.Add(technologyParameters[p]["lca_Battery"]);
-                else
-                    this.LcaTotalBattery.Add(0.0);
-                
-
-
-
-                /// ////////////////////////////////////////////////////////////////////////
+                //_____________________________________________________________________________________
+                //_____________________________________________________________________________________
                 /// Cost
-                /// ////////////////////////////////////////////////////////////////////////
+
                 if (technologyParameters[p].ContainsKey("InterestRate"))
                     this.InterestRate.Add(technologyParameters[p]["InterestRate"]);
                 else
@@ -344,7 +321,7 @@ namespace SBE22MultiPeriodPV
                 
 
                 // CALCULATE NET PRESENT VALUE FOR FUTURE PERIODS
-                // will be done in the energy hub obejctive function later
+                // will be done in the energy hub obejctive function later, because there is also salvage (?)
 
 
                 // PV efficiency
@@ -361,11 +338,39 @@ namespace SBE22MultiPeriodPV
                 }
 
 
+
+
+                //_____________________________________________________________________________________
+                //_____________________________________________________________________________________
+                /// LCA
+
+                if (technologyParameters[p].ContainsKey("lca_GridElectricity"))
+                    this.LcaGridElectricity.Add(technologyParameters[p]["lca_GridElectricity"]);
+                else
+                    this.LcaGridElectricity.Add(0.14840); // from Wu et al. 2017
+
+                // Total LCA of technologies
+                if (technologyParameters[p].ContainsKey("lca_PV_mono"))
+                    this.LcaTotalPvMono.Add(technologyParameters[p]["lca_PV_mono"]);
+                else
+                    this.LcaTotalPvMono.Add(0.0);
+                if (technologyParameters[p].ContainsKey("lca_PV_cdte"))
+                    this.LcaTotalPvCdte.Add(technologyParameters[p]["lca_PV_cdte"]);
+                else
+                    this.LcaTotalPvCdte.Add(0.0);
+                if (technologyParameters[p].ContainsKey("lca_Battery"))
+                    this.LcaTotalBattery.Add(technologyParameters[p]["lca_Battery"]);
+                else
+                    this.LcaTotalBattery.Add(0.0);
+
+
+
+                //_____________________________________________________________________________________
+                //_____________________________________________________________________________________
                 // annual embodied LCA of technologies
                 this.LcaAnnualBattery.Add(this.LcaTotalBattery[p] / this.LifetimeBattery[p]);
                 this.LcaAnnualPvMono.Add(this.LcaTotalPvMono[p] / this.LifetimePvMono[p]);
                 this.LcaAnnualPvCdte.Add(this.LcaTotalPvCdte[p] / this.LifetimePvCdte[p]);
-                
             }
 
         }
@@ -421,58 +426,49 @@ namespace SBE22MultiPeriodPV
             // however, if I have 5 years intervals, I have to work with arrays. Can't have them manually anymore, would be too messy
 
 
-            // PV mono and cdte, period, surface
+            //_________________________________________________________________________________________
+            //_________________________________________________________________________________________
+            //_________________________________________________________________________________________
+            // Declaring and initializing variables and terms
+
+            // CAPACITIES
+            // Battery per period
+            // PV mono and cdte per period and surface
+            INumVar[] xNewBattery = new INumVar[NumPeriods]; // ignore binary for min battery capacity, I am aggregating over whole district anyway
             INumVar[][] xNewPvMono = new INumVar[NumPeriods][];
             INumVar[][] yNewPvMono = new INumVar[NumPeriods][];
             INumVar[][] xNewPvCdte = new INumVar[NumPeriods][];
             INumVar[][] yNewPvCdte = new INumVar[NumPeriods][];
             for (int p = 0; p < NumPeriods; p++)
             {
+                // also check for total battery, not just newly installed
+                xNewBattery[p] = cpl.NumVar(0, this.b_MaxBattery[p]);
+                // pv
                 xNewPvMono[p] = new INumVar[NumberOfSolarAreas];
                 xNewPvCdte[p] = new INumVar[NumberOfSolarAreas];
                 yNewPvMono[p] = new INumVar[NumberOfSolarAreas];
                 yNewPvCdte[p] = new INumVar[NumberOfSolarAreas];
                 for (int i = 0; i < NumberOfSolarAreas; i++)
                 {
-                    xNewPvMono[p][i] = cpl.NumVar(0, SolarAreas[i]); // for each period, same surface area. later, special constraint to ensure total pv mono + cdte <= surfaceArea
+                    // for each period, same surface area
+                    // later, special constraint to ensure total pv mono + cdte <= surfaceArea
+                    xNewPvMono[p][i] = cpl.NumVar(0, SolarAreas[i]); 
                     xNewPvCdte[p][i] = cpl.NumVar(0, SolarAreas[i]);
                     yNewPvMono[p][i] = cpl.BoolVar();
                     yNewPvCdte[p][i] = cpl.BoolVar();
                 }
             }
 
-
-
-            ILinearNumExpr[][] totalPvElectricity = new ILinearNumExpr[NumPeriods][];
-            INumVar[][] xPvElectricity = new INumVar[NumPeriods][];
-            INumVar[][] xOperationGridPurchase = new INumVar[NumPeriods][];
-            INumVar[][] xOperationFeedIn = new INumVar[NumPeriods][];
-            INumVar[][] yOperationFeedIn = new INumVar[NumPeriods][];
-            for (int p = 0; p < NumPeriods; p++)
-            {
-                totalPvElectricity[p] = new ILinearNumExpr[Horizon];
-                xPvElectricity[p] = new INumVar[Horizon];
-                xOperationGridPurchase[p] = new INumVar[Horizon];
-                xOperationFeedIn[p] = new INumVar[Horizon];
-                yOperationFeedIn[p] = new INumVar[Horizon];
-                for (int t = 0; t < Horizon; t++)
-                {
-                    totalPvElectricity[p][t] = cpl.LinearNumExpr();
-                    xOperationGridPurchase[p][t] = cpl.NumVar(0, double.MaxValue);
-                    xOperationFeedIn[p][t] = cpl.NumVar(0, double.MaxValue);
-                    yOperationFeedIn[p][t] = cpl.BoolVar();
-                    xPvElectricity[p][t] = cpl.NumVar(0, double.MaxValue);
-                }
-            }
-
-
-   
-
+            // Total Capacities: over all periods
+            INumVar[] totalCapacityBattery = new INumVar[NumPeriods];
             INumVar[][] totalCapacityPvMono = new INumVar[NumPeriods][]; // period, surface
             INumVar[][] totalCapacityPvCdte = new INumVar[NumPeriods][];
             for (int p = 0; p < NumPeriods; p++)
             {
-                // I have to sum up in one totalCapPV to check for max space usage. But I can't use totalCapPV for yield calculation, coz I'll have different efficiencies per period
+                totalCapacityBattery[p] = cpl.NumVar(0.0, this.b_MaxBattery[p]);
+
+                // I have to sum up in one totalCapPV to check for max space usage.
+                // But I can't use totalCapPV for yield calculation, coz I'll have different efficiencies per period
                 totalCapacityPvMono[p] = new INumVar[NumberOfSolarAreas];
                 totalCapacityPvCdte[p] = new INumVar[NumberOfSolarAreas];
                 for (int i = 0; i < NumberOfSolarAreas; i++)
@@ -482,28 +478,79 @@ namespace SBE22MultiPeriodPV
                 }
             }
 
-            // Lifetime constraint
-            // at each period, total pv cant be larger than available surface
+            // OPERATION
+            ILinearNumExpr[][] totalPvElectricity = new ILinearNumExpr[NumPeriods][];
+            INumVar[][] xPvElectricity = new INumVar[NumPeriods][];
+            INumVar[][] xOperationGridPurchase = new INumVar[NumPeriods][];
+            INumVar[][] xOperationFeedIn = new INumVar[NumPeriods][];
+            INumVar[][] yOperationFeedIn = new INumVar[NumPeriods][];
+            INumVar[][] xOperationBatteryCharge = new INumVar[NumPeriods][];
+            INumVar[][] xOperationBatteryDischarge = new INumVar[NumPeriods][];
+            INumVar[][] xOperationBatteryStateOfCharge = new INumVar[NumPeriods][];
             for (int p = 0; p < NumPeriods; p++)
             {
-                for (int i = 0; i < NumberOfSolarAreas; i++)
+                totalPvElectricity[p] = new ILinearNumExpr[Horizon];
+                xPvElectricity[p] = new INumVar[Horizon];
+                xOperationGridPurchase[p] = new INumVar[Horizon];
+                xOperationFeedIn[p] = new INumVar[Horizon];
+                yOperationFeedIn[p] = new INumVar[Horizon];
+                xOperationBatteryCharge[p] = new INumVar[Horizon];
+                xOperationBatteryDischarge[p] = new INumVar[Horizon];
+                xOperationBatteryStateOfCharge[p] = new INumVar[Horizon];
+                for (int t = 0; t < Horizon; t++)
                 {
-                    ILinearNumExpr sumNewMono = cpl.LinearNumExpr();
-                    ILinearNumExpr sumNewCdte = cpl.LinearNumExpr();
-                    for (int pp = (int)Math.Max(0, p - Math.Floor(LifetimePvMono[p] / YearsPerPeriod) + 1); pp <= p; pp++)
-                        sumNewMono.AddTerm(1, xNewPvMono[pp][i]);
-                    for (int pp = (int)Math.Max(0, p - Math.Floor(LifetimePvCdte[p] / YearsPerPeriod) + 1); pp <= p; pp++)
-                        sumNewCdte.AddTerm(1, xNewPvCdte[pp][i]);
-                    constraints.Add(cpl.AddEq(totalCapacityPvMono[p][i], sumNewMono));
-                    constraints.Add(cpl.AddEq(totalCapacityPvCdte[p][i], sumNewCdte));
+                    totalPvElectricity[p][t] = cpl.LinearNumExpr();
+                    xOperationGridPurchase[p][t] = cpl.NumVar(0, double.MaxValue);
+                    xOperationFeedIn[p][t] = cpl.NumVar(0, double.MaxValue);
+                    yOperationFeedIn[p][t] = cpl.BoolVar();
+                    xPvElectricity[p][t] = cpl.NumVar(0, double.MaxValue);
+                    xOperationBatteryCharge[p][t] = cpl.NumVar(0, double.MaxValue);
+                    xOperationBatteryDischarge[p][t] = cpl.NumVar(0, double.MaxValue);
+                    xOperationBatteryStateOfCharge[p][t] = cpl.NumVar(0, double.MaxValue);
                 }
             }
 
+
+
+
+            //_________________________________________________________________________________________
+            //_________________________________________________________________________________________
+            //_________________________________________________________________________________________
+            // Constraints
+
+            // Lifetime constraint
+            // at each period, total PVs cant be larger than available surface
+            // at each period, total batteries cant be larger than available space (based on floor area)
+            for (int p = 0; p < NumPeriods; p++)
+            {
+                // battery max cap
+                ILinearNumExpr sumExistingAndNewBattery = cpl.LinearNumExpr();
+                for (int pp = (int) Math.Max(0, p - Math.Floor(LifetimeBattery[p] / YearsPerPeriod) + 1); pp <= p; pp++)
+                    sumExistingAndNewBattery.AddTerm(1, xNewBattery[pp]);
+                constraints.Add(cpl.AddEq(totalCapacityBattery[p], sumExistingAndNewBattery));
+
+                // PV max cap
+                for (int i = 0; i < NumberOfSolarAreas; i++)
+                {
+                    ILinearNumExpr sumExistingAndNewMono = cpl.LinearNumExpr();
+                    ILinearNumExpr sumExistingAndNewCdte = cpl.LinearNumExpr();
+                    for (int pp = (int)Math.Max(0, p - Math.Floor(LifetimePvMono[p] / YearsPerPeriod) + 1); pp <= p; pp++)
+                        sumExistingAndNewMono.AddTerm(1, xNewPvMono[pp][i]);
+                    for (int pp = (int)Math.Max(0, p - Math.Floor(LifetimePvCdte[p] / YearsPerPeriod) + 1); pp <= p; pp++)
+                        sumExistingAndNewCdte.AddTerm(1, xNewPvCdte[pp][i]);
+                    constraints.Add(cpl.AddEq(totalCapacityPvMono[p][i], sumExistingAndNewMono));
+                    constraints.Add(cpl.AddEq(totalCapacityPvCdte[p][i], sumExistingAndNewCdte));
+                }
+            }
+            // because mono and cdte are competing for same surface
             for (int p = 0; p < NumPeriods; p++)
                 for (int i = 0; i < NumberOfSolarAreas; i++)
                     constraints.Add(cpl.AddGe(SolarAreas[i], cpl.Sum(totalCapacityPvMono[p][i], totalCapacityPvCdte[p][i])));
 
-            // meeting demands
+
+            // Energy Balance: meeting demands
+
+            // TO DO: Battery
             for (int p = 0; p < NumPeriods; p++)
             {
                 for (int t = 0; t < this.Horizon; t++)
@@ -546,11 +593,7 @@ namespace SBE22MultiPeriodPV
 
 
 
-
-
-            /// ////////////////////////////////////////////////////////////////////////
             /// Binary selection variables
-            /// ////////////////////////////////////////////////////////////////////////
             for (int p = 0; p < NumPeriods; p++)
             {
                 for (int i = 0; i < this.NumberOfSolarAreas; i++)
@@ -561,9 +604,7 @@ namespace SBE22MultiPeriodPV
             }
 
 
-            /// ////////////////////////////////////////////////////////////////////////
             /// Cost coefficients formulation
-            /// ////////////////////////////////////////////////////////////////////////
             ILinearNumExpr opex = cpl.LinearNumExpr();
             ILinearNumExpr capex = cpl.LinearNumExpr();
             for (int p = 0; p < NumPeriods; p++)
@@ -578,28 +619,33 @@ namespace SBE22MultiPeriodPV
 
                 for (int t = 0; t < Horizon; t++)
                 {
-                    opex.AddTerm((ClustersizePerTimestep[p][t] * OperationCostGrid[p][t] * YearsPerPeriod) / Math.Pow(1 + InterestRate[p], p * YearsPerPeriod), xOperationGridPurchase[p][t]);
-                    opex.AddTerm((ClustersizePerTimestep[p][t] * OperationRevenueFeedIn[p][t] * YearsPerPeriod) / Math.Pow(1 + InterestRate[p], p * YearsPerPeriod), xOperationFeedIn[p][t]);
-                    opex.AddTerm((ClustersizePerTimestep[p][t] * OmCostPV[p] * YearsPerPeriod) / Math.Pow(1 + InterestRate[p], p * YearsPerPeriod), xPvElectricity[p][t]);
+                    opex.AddTerm((ClusterSizePerTimestep[p][t] * OperationCostGrid[p][t] * YearsPerPeriod) / Math.Pow(1 + InterestRate[p], p * YearsPerPeriod), xOperationGridPurchase[p][t]);
+                    opex.AddTerm((ClusterSizePerTimestep[p][t] * OperationRevenueFeedIn[p][t] * YearsPerPeriod) / Math.Pow(1 + InterestRate[p], p * YearsPerPeriod), xOperationFeedIn[p][t]);
+                    opex.AddTerm((ClusterSizePerTimestep[p][t] * OmCostPV[p] * YearsPerPeriod) / Math.Pow(1 + InterestRate[p], p * YearsPerPeriod), xPvElectricity[p][t]);
                 }
             }
 
-            // salvage?
+
+            //_________________________________________________________________________________________
+            //_________________________________________________________________________________________
+            //_________________________________________________________________________________________
+            // TO DO: Salvage
+            // only account for cost until end of horizon -> annualized cost for PV and battery -> whatever lives beyond: subtract from capex
 
 
 
-
-            /// ////////////////////////////////////////////////////////////////////////
+            //_________________________________________________________________________________________
+            //_________________________________________________________________________________________
+            //_________________________________________________________________________________________
             /// Objective function
-            /// ////////////////////////////////////////////////////////////////////////
             cpl.AddMinimize(cpl.Sum(capex, opex));
+            // TO DO: CO2
 
-          
 
-
-            /// ////////////////////////////////////////////////////////////////////////
+            //_________________________________________________________________________________________
+            //_________________________________________________________________________________________
+            //_________________________________________________________________________________________
             /// Solve
-            /// ////////////////////////////////////////////////////////////////////////
             if (!verbose) cpl.SetOut(null);
             cpl.SetParam(Cplex.Param.MIP.Tolerances.MIPGap, 0.005);
             cpl.SetParam(Cplex.IntParam.MIPDisplay, 4);
@@ -618,13 +664,12 @@ namespace SBE22MultiPeriodPV
                     solution.infeasible = true;
                     return solution;
                 }
-                /// ////////////////////////////////////////////////////////////////////////
-                /// Outputs
-                /// ////////////////////////////////////////////////////////////////////////
 
+                /// Outputs
                 solution.Opex = cpl.GetValue(opex);
                 solution.Capex = cpl.GetValue(capex);
                 solution.Cost = solution.Opex + solution.Capex;
+                // TO DO: CO2
 
                 solution.XTotalPvMono = new double[NumPeriods][];
                 solution.XTotalPvCdte = new double[NumPeriods][];
@@ -670,16 +715,13 @@ namespace SBE22MultiPeriodPV
                         solution.XOperationPvElectricity[p][t] = cpl.GetValue(xPvElectricity[p][t]);
                         solution.XOperationElecPurchase[p][t] = cpl.GetValue(xOperationGridPurchase[p][t]);
                         solution.XOperationFeedIn[p][t] = cpl.GetValue(xOperationFeedIn[p][t]);
-                        solution.XOperationBatterySoc[p][t] = 0.0;
-                        solution.XOperationBatteryCharge[p][t] = 0.0;
-                        solution.XOperationBatteryDischarge[p][t] = 0.0;
+                        solution.XOperationBatterySoc[p][t] = 0.0; // TO DO
+                        solution.XOperationBatteryCharge[p][t] = 0.0; // TO DO
+                        solution.XOperationBatteryDischarge[p][t] = 0.0; // TO DO
 
-                        solution.Clustersize[p][t] = ClustersizePerTimestep[p][t];
+                        solution.Clustersize[p][t] = ClusterSizePerTimestep[p][t];
                     }
                 }
-
-               
-
 
                 return solution;
             }
@@ -747,7 +789,7 @@ namespace SBE22MultiPeriodPV
             for (int p = 0; p < NumPeriods; p++)
             {
                 // summing all PvMono of all periods together
-                // PV over all perdiods cant be bigger than the surface
+                // PV over all periods cant be bigger than the surface
                 // TO DO: lifetime ending
                 for (int s = 0; s < NumberOfSolarAreas; s++) 
                 { 
@@ -802,8 +844,8 @@ namespace SBE22MultiPeriodPV
             {
                 for (int t = 0; t < Horizon; t++)
                 {
-                    opex.AddTerm((ClustersizePerTimestep[p][t] * OperationCostGrid[p][t] * YearsPerPeriod) / Math.Pow(1 + InterestRate[p], p * YearsPerPeriod), xOperationGridPurchase[p][t]);
-                    opex.AddTerm(((ClustersizePerTimestep[p][t] * OperationRevenueFeedIn[p][t] * YearsPerPeriod) / Math.Pow(1 + InterestRate[p], p * YearsPerPeriod)), xOperationFeedIn[p][t]); //revenue already negative value. dont need *-1
+                    opex.AddTerm((ClusterSizePerTimestep[p][t] * OperationCostGrid[p][t] * YearsPerPeriod) / Math.Pow(1 + InterestRate[p], p * YearsPerPeriod), xOperationGridPurchase[p][t]);
+                    opex.AddTerm(((ClusterSizePerTimestep[p][t] * OperationRevenueFeedIn[p][t] * YearsPerPeriod) / Math.Pow(1 + InterestRate[p], p * YearsPerPeriod)), xOperationFeedIn[p][t]); //revenue already negative value. dont need *-1
                 }
 
                 //for (int s = 0; s < NumberOfSolarAreas; s++)
@@ -874,7 +916,7 @@ namespace SBE22MultiPeriodPV
 
                     for (int t = 0; t < this.Horizon; t++)
                     {
-                        solution.Clustersize[p][t] = ClustersizePerTimestep[p][t];
+                        solution.Clustersize[p][t] = ClusterSizePerTimestep[p][t];
                         solution.XOperationElecPurchase[p][t] = cpl.GetValue(xOperationGridPurchase[p][t]);
                         solution.XOperationFeedIn[p][t] = cpl.GetValue(xOperationFeedIn[p][t]);
                         solution.XOperationBatterySoc[p][t] = 0;
