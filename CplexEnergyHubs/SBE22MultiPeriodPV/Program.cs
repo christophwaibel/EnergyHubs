@@ -38,7 +38,7 @@ namespace SBE22MultiPeriodPV
                 var periodConsoleInt = Convert.ToInt16(periodConsole);
                 if (periodConsoleInt != 1 && periodConsoleInt != 2)
                 {
-                    Console.WriteLine("Enter either '1' or '2'! Hit any key to exit program");
+                    Console.WriteLine("WARNING --- Enter either '1' or '2'! Hit any key to exit program");
                     Console.ReadKey();
                     return;
                 }
@@ -60,7 +60,7 @@ namespace SBE22MultiPeriodPV
                 var epsilonConsoleInt = Convert.ToInt16(epsilonConsole);
                 if (epsilonConsoleInt < 1)
                 {
-                    Console.WriteLine("Epsilon cuts must be >= 1! Hit any key to exit program");
+                    Console.WriteLine("WARNING --- Epsilon cuts must be >= 1! Hit any key to exit program");
                     Console.ReadKey();
                     return;
                 }
@@ -82,6 +82,12 @@ namespace SBE22MultiPeriodPV
             try
             {
                 minusIndex = Convert.ToInt16(minusIndexConsole);
+                if(minusIndex < 0)
+                {
+                    Console.WriteLine("WARNING --- Value must be >= 0! Hit any key to exit program");
+                    Console.ReadKey();
+                    return;
+                }
             }
             catch (Exception e)
             {
