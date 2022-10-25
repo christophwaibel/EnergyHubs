@@ -44,15 +44,23 @@ namespace SBE22MultiPeriodPV
                 }
 
                 periodInterval = periodConsoleInt == 1 ? 10 : 5;
+
             }
             catch (Exception e)
             {
                 Console.WriteLine(e);
                 throw;
             }
+            int[] periods = new int[(2050 - 2020) / periodInterval];
+            for (int p = 0; p < periods.Length; p++)
+                periods[p] = 2020 + p * periodInterval;
+            Console.WriteLine("Running the model for stages...");
+            foreach (int period in periods)
+                Console.Write("{0}  ", period);
 
 
-            Console.WriteLine("___________________________________________________________________ \n ");
+
+            Console.WriteLine("\n___________________________________________________________________ \n ");
             Console.WriteLine("Select epsilon cuts. '3' is a good value (you'll get 5 solutions). min '1', and max about '8' \n");
             string epsilonConsole = Console.ReadLine();
             try
@@ -97,14 +105,9 @@ namespace SBE22MultiPeriodPV
 
 
 
-            int[] periods = new int[(2050 - 2020) / periodInterval];
-            for (int p = 0; p < periods.Length; p++)
-                periods[p] = 2020 + p * periodInterval;
 
 
-            Console.WriteLine("Running the model for stages...");
-            foreach (int period in periods)
-                Console.Write("{0}  ", period);
+
             Console.WriteLine("\n___________________________________________________________________ \n");
 
             Console.WriteLine(@"Specify file path, e.g.: 'c:\sbe22\'");
