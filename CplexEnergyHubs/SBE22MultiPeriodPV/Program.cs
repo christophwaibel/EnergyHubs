@@ -2,6 +2,7 @@
 using System.IO;
 using System.Collections.Generic;
 using System.Linq;
+using System.Runtime.InteropServices.ComTypes;
 using EhubMisc;
 
 
@@ -54,13 +55,13 @@ namespace SBE22MultiPeriodPV
             int[] periods = new int[(2050 - 2020) / periodInterval];
             for (int p = 0; p < periods.Length; p++)
                 periods[p] = 2020 + p * periodInterval;
-            Console.WriteLine("Running the model for stages...");
+            Console.WriteLine("\nOK! Mode [{0}] selected... Running the model for stages...", periodConsole);
             foreach (int period in periods)
                 Console.Write("{0}  ", period);
 
 
 
-            Console.WriteLine("\n___________________________________________________________________ \n ");
+            Console.WriteLine("\n\n\n___________________________________________________________________ \n ");
             Console.WriteLine("Select epsilon cuts. '3' is a good value (you'll get 5 solutions). min '1', and max about '8' \n");
             string epsilonConsole = Console.ReadLine();
             try
@@ -72,7 +73,7 @@ namespace SBE22MultiPeriodPV
                     Console.ReadKey();
                     return;
                 }
-
+                Console.WriteLine("\nOK! Epsilon [{0}] selected... Creating in total 2+{0} solutions (carbon min, cost min, and {0} cuts)...\n", epsilonConsole);
                 epsilonCuts = epsilonConsoleInt;
             }
             catch (Exception e)
@@ -82,7 +83,7 @@ namespace SBE22MultiPeriodPV
             }
 
 
-            Console.WriteLine("___________________________________________________________________ \n ");
+            Console.WriteLine("\n___________________________________________________________________ \n ");
             Console.WriteLine("Reduce length of considered PV surfaces by 'x' (for debugging). \n " +
                               "I.e., if your solar file has 15000 surfaces & profiles, enter 14000 to only use 1000 surfaces. \n" +
                               "Enter '0' to consider whole dataset");
@@ -96,6 +97,10 @@ namespace SBE22MultiPeriodPV
                     Console.ReadKey();
                     return;
                 }
+                if(minusIndex == 0)
+                    Console.WriteLine("\nOK! [{0}] entered. Running with the full dataset...\n", minusIndexConsole);
+                else
+                    Console.WriteLine("\nOK! [{0}] entered. Reducing the solar dataset by {0} entries...\n", minusIndexConsole);
             }
             catch (Exception e)
             {
@@ -103,6 +108,29 @@ namespace SBE22MultiPeriodPV
                 throw;
             }
 
+
+            Console.WriteLine("\n___________________________________________________________________ \n ");
+            Console.WriteLine("Run with [0] or without [1] batteries?\n");
+            string batteryConsole = Console.ReadLine();
+            var batteryConsoleInt = Convert.ToInt16(batteryConsole);
+            try
+            {
+                if (batteryConsoleInt != 0 && batteryConsoleInt != 1)
+                {
+                    Console.WriteLine("WARNING --- Enter either [0] or [1]! Hit any key to exit program");
+                    Console.ReadKey();
+                    return;
+                }
+                if (batteryConsoleInt == 0)
+                    Console.WriteLine("\nOK! [{0}] entered. Running model WITH batteries...\n", batteryConsole);
+                else
+                    Console.WriteLine("\nOK! [{0}] entered. Running model WITHOUT batteries...\n", batteryConsole);
+            }
+            catch (Exception e)
+            {
+                Console.WriteLine(e);
+                throw;
+            }
 
 
 
@@ -156,6 +184,8 @@ namespace SBE22MultiPeriodPV
                 dryBulbAllPeriods.Add(dryBulb);
 
                 LoadTechParameters(pathInputs + "ZH_" + period + "_BAU_technology.csv", out var technologyParameters);
+                if (batteryConsoleInt == 1)
+                    technologyParameters["b_MaxBattery"] = 0.0;
                 techParamsAllPeriods.Add(technologyParameters);
             }
 

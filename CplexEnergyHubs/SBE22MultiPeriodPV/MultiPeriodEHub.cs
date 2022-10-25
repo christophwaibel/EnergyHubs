@@ -655,7 +655,7 @@ namespace SBE22MultiPeriodPV
                     carbonEmissions.AddTerm(this.LcaAnnualPvMono[p], xNewPvMono[p][i]);
                     carbonEmissions.AddTerm(this.LcaAnnualPvCdte[p], xNewPvCdte[p][i]);
                 }
-                capex.AddTerm(LinearCostBattery[p], xNewBattery[p]);
+                capex.AddTerm(LinearCostBattery[p] / Math.Pow(1 + InterestRate[p], p * YearsPerPeriod), xNewBattery[p]);
                 carbonEmissions.AddTerm(LcaAnnualBattery[p], xNewBattery[p]);
 
                 for (int t = 0; t < Horizon; t++)
@@ -674,6 +674,41 @@ namespace SBE22MultiPeriodPV
             //_________________________________________________________________________________________
             // TO DO: Salvage
             // only account for cost until end of horizon -> annualized cost for PV and battery -> whatever lives beyond: subtract from capex
+            // https://iea-etsap.org/docs/Documentation_for_the_TIMES_Model-PartII.pdf page 173, found in Mango Mavromatidis and Petkov 2021
+
+            // battery, pv mono, pv cdte
+            for (int p = 0; p < NumPeriods; p++)
+            {
+                if (LifetimeBattery[p] > YearsPerPeriod * (NumPeriods - p))
+                {
+                    double overlife = LifetimeBattery[p] - (YearsPerPeriod * (NumPeriods - p));
+                    var deductible = cpl.LinearNumExpr();
+                    deductible.AddTerm((LinearCostBattery[p] / Math.Pow(1 + InterestRate[p], p * YearsPerPeriod)) * (overlife / LifetimeBattery[p]) * -1, xNewBattery[p]);
+                    capex.Add(deductible);
+                }
+
+                if (LifetimePvMono[p] > YearsPerPeriod * (NumPeriods - p))
+                {
+                    for (int i = 0; i < NumberOfSolarAreas; i++)
+                    {
+                        double overlife = LifetimePvMono[p] - (YearsPerPeriod * (NumPeriods - p));
+                        var deductible = cpl.LinearNumExpr();
+                        deductible.AddTerm((LinearCostPvMono[p] / Math.Pow(1 + InterestRate[p], p * YearsPerPeriod)) * (overlife / LifetimePvMono[p]) * -1, xNewPvMono[p][i]);
+                        capex.Add(deductible);
+                    }
+                }
+
+                if (LifetimePvCdte[p] > YearsPerPeriod * (NumPeriods - p))
+                {
+                    for (int i = 0; i < NumberOfSolarAreas; i++)
+                    {
+                        double overlife = LifetimePvCdte[p] - (YearsPerPeriod * (NumPeriods - p));
+                        var deductible = cpl.LinearNumExpr();
+                        deductible.AddTerm((LinearCostPvCdte[p] / Math.Pow(1 + InterestRate[p], p * YearsPerPeriod)) * (overlife / LifetimePvCdte[p]) * -1, xNewPvCdte[p][i]);
+                        capex.Add(deductible);
+                    }
+                }
+            }
 
 
 
