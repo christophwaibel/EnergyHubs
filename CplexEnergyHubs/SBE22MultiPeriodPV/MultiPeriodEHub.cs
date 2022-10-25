@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Runtime.CompilerServices;
 using System.Text;
 using ILOG.Concert;
 using ILOG.CPLEX;
@@ -386,31 +387,33 @@ namespace SBE22MultiPeriodPV
 
 
             double costTolerance = 100.0;
-            double carbonTolerance = 0.1;
+            double carbonTolerance = 1.0;
             Outputs = new MultiPeriodEhubOutput[epsilonCuts + 2];
 
-            // prototyping PV
-            MultiPeriodEhubOutput minCost = EnergyHub("cost", null, null, verbose);
-            Outputs = new MultiPeriodEhubOutput[1];
-            Outputs[0] = minCost;
-
-
-            //// 1. solve for minCarbon, ignoring cost. solve again, but mincost, with minCarbon constraint
-            //MultiPeriodEhubOutput minCarbon = EnergyHub("carbon", null, null, verbose);
-
-            //// 2. solve for minCost, 
+            //// prototyping PV
             //MultiPeriodEhubOutput minCost = EnergyHub("cost", null, null, verbose);
+            //Outputs = new MultiPeriodEhubOutput[1];
+            //Outputs[0] = minCost;
 
-            //// 3. 0 = carbon minimal solution (minCost as objective to avoid crazy cost)
-            //Outputs[0] = EnergyHub("cost", minCarbon.Carbon + carbonTolerance, null, verbose);
-            //Outputs[epsilonCuts + 1] = EnergyHub("carbon", null, minCost.Cost + costTolerance, verbose);
-            //double carbonInterval = (minCost.Carbon - minCarbon.Carbon) / (epsilonCuts + 1);
 
-            //// 4. make epsilonCuts cuts and solve for each minCost s.t. carbon
-            //for (int i = 0; i < epsilonCuts; i++)
-            //    Outputs[i + 1] = EnergyHub("cost", minCarbon.Carbon + carbonInterval * (i + 1), null, verbose);
+            // 1. solve for minCarbon, ignoring cost. solve again, but mincost, with minCarbon constraint
+            MultiPeriodEhubOutput minCarbon = EnergyHub("carbon", null, null, verbose);
+
+            // 2. solve for minCost, 
+            MultiPeriodEhubOutput minCost = EnergyHub("cost", null, null, verbose);
+
+            // 3. 0 = carbon minimal solution (minCost as objective to avoid crazy cost)
+            Outputs[0] = EnergyHub("cost", minCarbon.Carbon + carbonTolerance, null, verbose);
+            Outputs[epsilonCuts + 1] = EnergyHub("carbon", null, minCost.Cost + costTolerance, verbose);
+            double carbonInterval = (minCost.Carbon - minCarbon.Carbon) / (epsilonCuts + 1);
+
+            // 4. make epsilonCuts cuts and solve for each minCost s.t. carbon
+            for (int i = 0; i < epsilonCuts; i++)
+                Outputs[i + 1] = EnergyHub("cost", minCarbon.Carbon + carbonInterval * (i + 1), null, verbose);
         }
 
+
+        //electricity only 
         private MultiPeriodEhubOutput EnergyHub(string objective = "cost", double? carbonConstraint = null,
             double? costConstraint = null, bool verbose = false)
         {
@@ -549,8 +552,6 @@ namespace SBE22MultiPeriodPV
 
 
             // Energy Balance: meeting demands
-
-            // TO DO: Battery
             for (int p = 0; p < NumPeriods; p++)
             {
                 for (int t = 0; t < this.Horizon; t++)
@@ -571,8 +572,9 @@ namespace SBE22MultiPeriodPV
                     }
 
                     elecGeneration.AddTerm(1, xOperationGridPurchase[p][t]);
+                    elecGeneration.AddTerm(1, xOperationBatteryDischarge[p][t]);
+                    elecAdditionalDemand.AddTerm(1, xOperationBatteryCharge[p][t]);
                     elecAdditionalDemand.AddTerm(1, xOperationFeedIn[p][t]);
-
 
 
                     /// PV Technical Constraints
@@ -584,8 +586,6 @@ namespace SBE22MultiPeriodPV
                     constraints.Add(cpl.AddLe(xOperationGridPurchase[p][t], cpl.Prod(M, yOperationFeedIn[p][t])));
                     constraints.Add(cpl.AddLe(xOperationFeedIn[p][t], cpl.Prod(M, cpl.Diff(1, yOperationFeedIn[p][t]))));
 
-
-
                     /// Energy Balance
                     constraints.Add(cpl.AddGe(cpl.Diff(elecGeneration, elecAdditionalDemand), this.ElectricityDemand[p][t]));
                 }
@@ -593,18 +593,54 @@ namespace SBE22MultiPeriodPV
 
 
 
-            /// Binary selection variables
+            /// Battery model
             for (int p = 0; p < NumPeriods; p++)
             {
-                for (int i = 0; i < this.NumberOfSolarAreas; i++)
+                for (int t = 0; t < this.Horizon; t++)
                 {
-                    constraints.Add(cpl.AddLe(xNewPvMono[p][i], cpl.Prod(M, yNewPvMono[p][i])));
-                    constraints.Add(cpl.AddLe(xNewPvCdte[p][i], cpl.Prod(M, yNewPvCdte[p][i])));
+                    ILinearNumExpr batteryState = cpl.LinearNumExpr();
+                    batteryState.AddTerm((1 - this.bat_decay[p]), xOperationBatteryStateOfCharge[p][t]);
+                    batteryState.AddTerm(this.bat_ch_eff[p], xOperationBatteryCharge[p][t]);
+                    batteryState.AddTerm(-1 / this.bat_disch_eff[p], xOperationBatteryDischarge[p][t]);
+                    if (t == this.Horizon - 1)
+                        cpl.AddEq(xOperationBatteryStateOfCharge[p][0], batteryState);
+                    else
+                        cpl.AddEq(xOperationBatteryStateOfCharge[p][t + 1], batteryState);
+
+                    if ((t + 1) % 24 == 0)
+                    {
+                        if (t != this.Horizon - 1)
+                            cpl.AddEq(xOperationBatteryStateOfCharge[p][t + 1], xOperationBatteryStateOfCharge[p][t + 1 - 24]);
+                        cpl.AddEq(xOperationBatteryDischarge[p][t], 0);
+                        cpl.AddEq(xOperationBatteryCharge[p][t], 0);
+                    }
+                }
+                cpl.AddGe(xOperationBatteryStateOfCharge[p][0], cpl.Prod(totalCapacityBattery[p], this.bat_min_state[p]));
+
+                for (int t = 0; t < this.Horizon; t++)
+                {
+                    cpl.AddGe(xOperationBatteryStateOfCharge[p][t], cpl.Prod(totalCapacityBattery[p], this.bat_min_state[p]));     // min state of charge
+                    cpl.AddLe(xOperationBatteryCharge[p][t], cpl.Prod(totalCapacityBattery[p], this.bat_max_ch[p]));        // battery charging
+                    cpl.AddLe(xOperationBatteryDischarge[p][t], cpl.Prod(totalCapacityBattery[p], this.bat_max_disch[p]));  // battery discharging
+                    cpl.AddLe(xOperationBatteryStateOfCharge[p][t], totalCapacityBattery[p]);                                   // battery sizing
                 }
             }
 
 
-            /// Cost coefficients formulation
+
+            // Binary selection variables
+            for (int p = 0; p < NumPeriods; p++)
+            {
+                for (int i = 0; i < this.NumberOfSolarAreas; i++)
+                {
+                    cpl.AddLe(xNewPvMono[p][i], cpl.Prod(M, yNewPvMono[p][i]));
+                    cpl.AddLe(xNewPvCdte[p][i], cpl.Prod(M, yNewPvCdte[p][i]));
+                }
+            }
+
+
+            // Cost coefficients formulation
+            ILinearNumExpr carbonEmissions = cpl.LinearNumExpr();
             ILinearNumExpr opex = cpl.LinearNumExpr();
             ILinearNumExpr capex = cpl.LinearNumExpr();
             for (int p = 0; p < NumPeriods; p++)
@@ -612,16 +648,23 @@ namespace SBE22MultiPeriodPV
                 for (int i = 0; i < NumberOfSolarAreas; i++)
                 {
                     capex.AddTerm(LinearCostPvMono[p] / Math.Pow(1+InterestRate[p], p * YearsPerPeriod), xNewPvMono[p][i]);
-                    capex.AddTerm(FixCostPvMono[p] / Math.Pow(1 + InterestRate[p], p * YearsPerPeriod), yNewPvMono[p][i]);
+                    //capex.AddTerm(FixCostPvMono[p] / Math.Pow(1 + InterestRate[p], p * YearsPerPeriod), yNewPvMono[p][i]);
                     capex.AddTerm(LinearCostPvCdte[p] / Math.Pow(1 + InterestRate[p], p * YearsPerPeriod), xNewPvCdte[p][i]);
-                    capex.AddTerm(FixCostPVCdte[p] / Math.Pow(1 + InterestRate[p], p * YearsPerPeriod), yNewPvCdte[p][i]);
+                    //capex.AddTerm(FixCostPVCdte[p] / Math.Pow(1 + InterestRate[p], p * YearsPerPeriod), yNewPvCdte[p][i]);
+
+                    carbonEmissions.AddTerm(this.LcaAnnualPvMono[p], xNewPvMono[p][i]);
+                    carbonEmissions.AddTerm(this.LcaAnnualPvCdte[p], xNewPvCdte[p][i]);
                 }
+                capex.AddTerm(LinearCostBattery[p], xNewBattery[p]);
+                carbonEmissions.AddTerm(LcaAnnualBattery[p], xNewBattery[p]);
 
                 for (int t = 0; t < Horizon; t++)
                 {
                     opex.AddTerm((ClusterSizePerTimestep[p][t] * OperationCostGrid[p][t] * YearsPerPeriod) / Math.Pow(1 + InterestRate[p], p * YearsPerPeriod), xOperationGridPurchase[p][t]);
                     opex.AddTerm((ClusterSizePerTimestep[p][t] * OperationRevenueFeedIn[p][t] * YearsPerPeriod) / Math.Pow(1 + InterestRate[p], p * YearsPerPeriod), xOperationFeedIn[p][t]);
                     opex.AddTerm((ClusterSizePerTimestep[p][t] * OmCostPV[p] * YearsPerPeriod) / Math.Pow(1 + InterestRate[p], p * YearsPerPeriod), xPvElectricity[p][t]);
+                    opex.AddTerm((ClusterSizePerTimestep[p][t] * OmCostBattery[p] * YearsPerPeriod) / Math.Pow(1 + InterestRate[p], p * YearsPerPeriod), xOperationBatteryDischarge[p][t]); //OM because battery deterioration
+                    carbonEmissions.AddTerm(ClusterSizePerTimestep[p][t] * this.LcaGridElectricity[p], xOperationGridPurchase[p][t]);     // data needs to be kgCO2eq./kWh
                 }
             }
 
@@ -637,9 +680,27 @@ namespace SBE22MultiPeriodPV
             //_________________________________________________________________________________________
             //_________________________________________________________________________________________
             //_________________________________________________________________________________________
+            bool isCostMinimization = false;
+            if (string.Equals(objective, "cost"))
+                isCostMinimization = true;
+
+            bool hasCarbonConstraint = false;
+            bool hasCostConstraint = false;
+            if (!carbonConstraint.IsNullOrDefault())
+                hasCarbonConstraint = true;
+            if (!costConstraint.IsNullOrDefault())
+                hasCostConstraint = true;
+
             /// Objective function
-            cpl.AddMinimize(cpl.Sum(capex, opex));
+            if (isCostMinimization) cpl.AddMinimize(cpl.Sum(capex, opex));
+            else cpl.AddMinimize(carbonEmissions);
             // TO DO: CO2
+            //constraint smaler eq co2 target
+
+            // epsilon constraints for carbon, 
+            // or cost constraint in case of carbon minimization (the same reason why carbon minimization needs a cost constraint)
+            if (hasCarbonConstraint && isCostMinimization) cpl.AddLe(carbonEmissions, (double)carbonConstraint);
+            else if (hasCostConstraint && !isCostMinimization) cpl.AddLe(cpl.Sum(capex, opex), (double)costConstraint);
 
 
             //_________________________________________________________________________________________
@@ -669,6 +730,7 @@ namespace SBE22MultiPeriodPV
                 solution.Opex = cpl.GetValue(opex);
                 solution.Capex = cpl.GetValue(capex);
                 solution.Cost = solution.Opex + solution.Capex;
+                solution.Carbon = cpl.GetValue(carbonEmissions);
                 // TO DO: CO2
 
                 solution.XTotalPvMono = new double[NumPeriods][];
@@ -689,7 +751,7 @@ namespace SBE22MultiPeriodPV
                         solution.XNewPvMono[p][i] = cpl.GetValue(xNewPvMono[p][i]);
                         solution.XNewPvCdte[p][i] = cpl.GetValue(xNewPvCdte[p][i]);
                     }
-                    solution.XNewBattery[p] = 0.0; // TO DO
+                    solution.XNewBattery[p] = cpl.GetValue(xNewBattery[p]); 
                 }
 
 
@@ -715,9 +777,9 @@ namespace SBE22MultiPeriodPV
                         solution.XOperationPvElectricity[p][t] = cpl.GetValue(xPvElectricity[p][t]);
                         solution.XOperationElecPurchase[p][t] = cpl.GetValue(xOperationGridPurchase[p][t]);
                         solution.XOperationFeedIn[p][t] = cpl.GetValue(xOperationFeedIn[p][t]);
-                        solution.XOperationBatterySoc[p][t] = 0.0; // TO DO
-                        solution.XOperationBatteryCharge[p][t] = 0.0; // TO DO
-                        solution.XOperationBatteryDischarge[p][t] = 0.0; // TO DO
+                        solution.XOperationBatterySoc[p][t] = cpl.GetValue(xOperationBatteryStateOfCharge[p][t]);
+                        solution.XOperationBatteryCharge[p][t] = cpl.GetValue(xOperationBatteryCharge[p][t]);
+                        solution.XOperationBatteryDischarge[p][t] = cpl.GetValue(xOperationBatteryDischarge[p][t]);
 
                         solution.Clustersize[p][t] = ClusterSizePerTimestep[p][t];
                     }
@@ -735,6 +797,7 @@ namespace SBE22MultiPeriodPV
         }
 
 
+        // just for debugging...
         private MultiPeriodEhubOutput EHubSimple(bool verbose = false)
         {
             var solution = new MultiPeriodEhubOutput();
