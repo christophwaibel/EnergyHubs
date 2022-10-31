@@ -1,6 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Text;
+using System.IO;
 using System.Linq;
 
 namespace EhubMisc
@@ -97,6 +97,38 @@ namespace EhubMisc
                 distance = Math.Sqrt(distance);
 
             return distance;
+        }
+
+
+        /// <summary>
+        /// Loads a timeseries of a csv file. Separator ',' and ';' and uses the first value per row
+        /// </summary>
+        /// <param name="inputFile"></param>
+        /// <param name="timeSeries"></param>
+        public static void LoadTimeSeries(string inputFile, out List<double> timeSeries)
+        {
+            timeSeries = new List<double>();
+            var lines = File.ReadAllLines(inputFile);
+            foreach (var line in lines)
+            {
+                var lineSplit = line.Split(new char[2] { ',', ';' });
+                timeSeries.Add(Convert.ToDouble(lineSplit[0]));
+            }
+        }
+
+
+        public static void WriteTextFile(string outputPath, string fileName, List<List<string>> outputString)
+        {
+            using (var sw = new StreamWriter(outputPath + fileName))
+            {
+                foreach (List<string> line in outputString)
+                {
+                    foreach (string cell in line)
+                        sw.Write(cell + ";");
+                    sw.Write(Environment.NewLine);
+                }
+                sw.Close();
+            }
         }
     }
 

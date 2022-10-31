@@ -69,4 +69,33 @@
 
         internal double biomassConsumed;        // consumed Biomass in kWh
     }
+
+    public struct MultiPeriodEhubOutput
+    {
+        internal bool infeasible;           // true, if no solution exists
+
+        internal double Carbon;             // total carbon emissions (kgCO2)
+        internal double Cost;               // Total Cost OPEX+CAPEX (CHF)
+        internal double Opex;               // Total operation cost (CHF)
+        internal double Capex;              // Total capital cost (CHF)
+
+
+        // Technology sizing
+        internal double[] XNewBattery;              // battery [kWh]. period
+        internal double[][] XTotalPvMono;           // pv sizing [m2]. period, surface
+        internal double[][] XTotalPvCdte;           // pv sizing [m2]. period, surface
+        internal double[][] XNewPvMono;             // pv sizing [m2]. period, surface
+        internal double[][] XNewPvCdte;             // pv sizing [m2]. period, surface
+
+        // Operation. Time resolved.
+        internal double[][] XOperationElecPurchase;        // purchase from grid. period, timestep
+        internal double[][] XOperationFeedIn;         // feedin. period, timestep
+        internal double[][] XOperationBatterySoc;       // Battery state of charge. kWh
+        internal double[][] XOperationBatteryCharge;
+        internal double[][] XOperationBatteryDischarge;
+        internal double[][] XOperationPvElectricity;         // total PV electricity generation. period, timestep
+
+        // typical days related 
+        internal int[][] Clustersize;         // cluster size per period and timestep. used as scalar
+    }
 }
