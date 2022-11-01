@@ -15,6 +15,8 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "EhubExamples", "EhubExample
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "SBE22MultiPeriodPV", "SBE22MultiPeriodPV\SBE22MultiPeriodPV.csproj", "{C1D850A6-AE27-46DB-BD76-F183264B147D}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SBE22BuildingIntegratedAgriculture", "SBE22BuildingIntegratedAgriculture\SBE22BuildingIntegratedAgriculture.csproj", "{030C2CD1-58DA-4D2B-9C0B-403E6CE03A8F}"
+EndProject
 Global
 	GlobalSection(SharedMSBuildProjectFiles) = preSolution
 		EhubMisc\EhubMisc.projitems*{049a92a0-7c08-4eb0-bf6b-93b921c7f8dd}*SharedItemsImports = 5
@@ -49,6 +51,10 @@ Global
 		{C1D850A6-AE27-46DB-BD76-F183264B147D}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{C1D850A6-AE27-46DB-BD76-F183264B147D}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{C1D850A6-AE27-46DB-BD76-F183264B147D}.Release|Any CPU.Build.0 = Release|Any CPU
+		{030C2CD1-58DA-4D2B-9C0B-403E6CE03A8F}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{030C2CD1-58DA-4D2B-9C0B-403E6CE03A8F}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{030C2CD1-58DA-4D2B-9C0B-403E6CE03A8F}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{030C2CD1-58DA-4D2B-9C0B-403E6CE03A8F}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
