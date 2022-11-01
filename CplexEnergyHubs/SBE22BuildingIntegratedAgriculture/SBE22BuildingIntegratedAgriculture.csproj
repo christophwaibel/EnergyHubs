@@ -9,4 +9,15 @@
     <PackageReference Include="Newtonsoft.Json" Version="13.0.1" />
   </ItemGroup>
 
+  <ItemGroup>
+    <Reference Include="ILOG.Concert">
+      <HintPath>..\..\..\..\..\..\..\Program Files\IBM\ILOG\CPLEX_Studio128\cplex\bin\x64_win64\ILOG.Concert.dll</HintPath>
+    </Reference>
+    <Reference Include="ILOG.CPLEX">
+      <HintPath>..\..\..\..\..\..\..\Program Files\IBM\ILOG\CPLEX_Studio128\cplex\bin\x64_win64\ILOG.CPLEX.dll</HintPath>
+    </Reference>
+  </ItemGroup>
+
+  <Import Project="..\EhubMisc\EhubMisc.projitems" Label="Shared" />
+
 </Project>

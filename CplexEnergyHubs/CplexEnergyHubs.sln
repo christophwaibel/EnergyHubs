@@ -19,6 +19,7 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SBE22BuildingIntegratedAgri
 EndProject
 Global
 	GlobalSection(SharedMSBuildProjectFiles) = preSolution
+		EhubMisc\EhubMisc.projitems*{030c2cd1-58da-4d2b-9c0b-403e6ce03a8f}*SharedItemsImports = 5
 		EhubMisc\EhubMisc.projitems*{049a92a0-7c08-4eb0-bf6b-93b921c7f8dd}*SharedItemsImports = 5
 		EhubMisc\EhubMisc.projitems*{5dc0c1d9-a856-47d4-ae40-8eddac393d3e}*SharedItemsImports = 5
 		EhubMisc\EhubMisc.projitems*{90d49203-2ef1-46d2-ac55-025c3ccbb99d}*SharedItemsImports = 5
