@@ -5,7 +5,7 @@ using ILOG.Concert;
 using ILOG.CPLEX;
 using System.Linq;
 
-namespace SBE22BuildingIntegratedAgriculture
+namespace Cisbat23BuildingIntegratedAgriculture
 {
     internal class EHubBiA
     {
