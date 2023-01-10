@@ -105,16 +105,23 @@ namespace EhubMisc
         /// </summary>
         /// <param name="inputFile"></param>
         /// <param name="timeSeries"></param>
-        public static void LoadTimeSeries(string inputFile, out List<double> timeSeries)
+        public static void LoadTimeSeries(string inputFile, out List<double> timeSeries, int valuePosition = 0, int skipLine = 0)
         {
             timeSeries = new List<double>();
             var lines = File.ReadAllLines(inputFile);
+            int counter = 0;
             foreach (var line in lines)
             {
+                if (skipLine > 0 && counter < skipLine)
+                {
+                    counter++;
+                    continue;
+                }
                 var lineSplit = line.Split(new char[2] { ',', ';' });
-                timeSeries.Add(Convert.ToDouble(lineSplit[0]));
+                timeSeries.Add(Convert.ToDouble(lineSplit[valuePosition]));
             }
         }
+
 
 
         public static void WriteTextFile(string outputPath, string fileName, List<List<string>> outputString)
