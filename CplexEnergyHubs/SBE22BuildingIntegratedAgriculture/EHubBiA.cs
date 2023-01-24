@@ -1,8 +1,8 @@
-﻿using System;
-using System.Collections.Generic;
-using EhubMisc;
+﻿using EhubMisc;
 using ILOG.Concert;
 using ILOG.CPLEX;
+using System;
+using System.Collections.Generic;
 using System.Linq;
 
 namespace Cisbat23BuildingIntegratedAgriculture
@@ -38,6 +38,7 @@ namespace Cisbat23BuildingIntegratedAgriculture
         internal double[] AmbientTemperature { get; private set; }
 
         // Lifetime
+        internal double LifetimeBia { get; private set; }
         internal double LifetimePV { get; private set; }
         internal double LifetimeBattery { get; private set; }
         internal double LifetimeTES { get; private set; }
@@ -123,7 +124,8 @@ namespace Cisbat23BuildingIntegratedAgriculture
         internal double lca_NaturalGas { get; private set; }
         internal double lca_Biomass { get; private set; }
 
-        // levelized LCA of technologies
+        // annualized LCA of technologies
+        internal double lca_Bia { get; private set; }
         internal double lca_PV { get; private set; }
         internal double lca_Battery { get; private set; }
         internal double lca_TES { get; private set; }
@@ -137,7 +139,8 @@ namespace Cisbat23BuildingIntegratedAgriculture
         internal double lca_CoolingTower { get; private set; }
 
 
-        // total (non-levelized) LCA of technologies 
+        // total (non-annualized) LCA of technologies 
+        internal double LcaTotal_Bia { get; private set; }
         internal double LcaTotal_PV { get; private set; }
         internal double LcaTotal_Battery { get; private set; }
         internal double LcaTotal_TES { get; private set; }
@@ -177,6 +180,7 @@ namespace Cisbat23BuildingIntegratedAgriculture
         internal double CostCoolingTower { get; private set; }
 
         // Fix Cost
+        internal double [] FixCostBia { get; private set; } // index for each surface
         internal double FixCostPV { get; private set; }
         internal double FixCostBattery { get; private set; }
         internal double FixCostTES { get; private set; }
@@ -190,6 +194,7 @@ namespace Cisbat23BuildingIntegratedAgriculture
         internal double FixCostCoolingTower { get; private set; }
 
         // Annuity
+        internal double[] AnnuityBia { get; private set; }
         internal double AnnuityPV { get; private set; }
         internal double AnnuityBattery { get; private set; }
         internal double AnnuityTES { get; private set; }
@@ -202,7 +207,8 @@ namespace Cisbat23BuildingIntegratedAgriculture
         internal double AnnuityHeatExchanger { get; private set; }
         internal double AnnuityCoolingTower { get; private set; }
 
-        // levelized investment cost
+        // annualized investment cost
+        internal double [] c_Bia { get; private set; }
         internal double c_PV { get; private set; }
         internal double c_Battery { get; private set; }
         internal double c_TES { get; private set; }
@@ -215,7 +221,8 @@ namespace Cisbat23BuildingIntegratedAgriculture
         internal double c_HeatExchanger { get; private set; }
         internal double c_CoolingTower { get; private set; }
 
-        // levelized fix cost
+        // annualized fix cost
+        internal double [] c_fix_Bia { get; private set; }
         internal double c_fix_PV { get; private set; }
         internal double c_fix_Battery { get; private set; }
         internal double c_fix_TES { get; private set; }
@@ -229,6 +236,7 @@ namespace Cisbat23BuildingIntegratedAgriculture
         internal double c_fix_CoolingTower { get; private set; }
 
         // operation and maintenance cost
+        internal double c_Bia_OM { get; private set; }
         internal double c_PV_OM { get; private set; }
         internal double c_Battery_OM { get; private set; }
         internal double c_TES_OM { get; private set; }
@@ -283,10 +291,14 @@ namespace Cisbat23BuildingIntegratedAgriculture
         /// <param name="ambientTemperature"></param>
         /// <param name="technologyParameters"></param>
         /// <param name="clustersizePerTimestep">how many days a typical day represents</param>
+        /// <param name="BiaCapexIn">BIA (Building Integrated Agriculture) total Capex per surface index []</param>
+        /// <param name="BiaOpexIn">Yearly BIA Opex per surface index [], i.e., the money earnt for selling all the food to the supermarket</param>
+        /// <param name="BiaGhgIn">Yearly BIA Ghg per surface index [], if this amount of food was purchased from Indonesia or Malaysia (in kg CO2 eq). For abating (i.e., if BIA selected), substract this value in the energy hub</param>
         internal EHubBiA(double[] heatingDemand, double[] coolingDemand, double[] electricityDemand,
             double[][] irradiance, double[] solarTechSurfaceAreas,
             double[] ambientTemperature, Dictionary<string, double> technologyParameters,
-            int[] clustersizePerTimestep)
+            int[] clustersizePerTimestep,
+            double [] BiaCapexIn, double [] BiaOpexIn, double [] BiaGhgIn)
         {
             this.CoolingDemand = coolingDemand;
             this.HeatingDemand = heatingDemand;
