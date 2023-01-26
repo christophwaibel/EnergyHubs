@@ -5,6 +5,10 @@ using Newtonsoft.Json.Linq;
 using EhubMisc;
 using System.Linq;
 
+using System.Diagnostics;
+using System.Threading;
+
+
 namespace Cisbat23BuildingIntegratedAgriculture
 {
     class Program
@@ -16,23 +20,32 @@ namespace Cisbat23BuildingIntegratedAgriculture
             //________________________________________________________________________
             // LOADING DATA
             string buildingId = "B1007";
+            string rootFolder = @"\\nas22\arch_ita_schlueter\03-Research\01-Projects\29_FCLGlobal\04_Numerical\BuildingIntegratedAgriculture\";
 
-            // solar potentials
-            // several thousands of surfaces
-            JObject o1 = JObject.Parse(File.ReadAllText(@"\\nas22\arch_ita_schlueter\03-Research\01-Projects\29_FCLGlobal\04_Numerical\BuildingIntegratedAgriculture\Zhongming Data\outputs\data\solar-radiation\" + buildingId + "_insolation_Whm2.json"));
-            //var stuff = o1["srf0"].ToObject<double[]>();
 
-            Dictionary<string, double[]> dictObj = o1.ToObject<Dictionary<string, double[]>>();
-            o1 = null;
-            List<double[]> solarPotentials = new List<double[]>(dictObj.Values);
+            // try loading from a folder "buildingId" first, if it doesnt exist it means it needs to be deserialized first from Zhongming's Jsons
+
+            // Note : Directory.GetCurrentDirectory() can also return the current working directory.
+            if (!Directory.Exists(rootFolder + buildingId))
+            {
+                Console.WriteLine("Folder doesn't exist. Loading from Zhongmings Jsons and writing csvs");
+
+                saveBiaJsonSolarAsCsvFiles(rootFolder, buildingId);
+            }
+            // load from csvs
+
+
+
+
+
+
 
             // surface areas
-            var inputFile = @"\\nas22\arch_ita_schlueter\03-Research\01-Projects\29_FCLGlobal\04_Numerical\BuildingIntegratedAgriculture\Zhongming Data\outputs\data\solar-radiation\" + buildingId + "_geometry.csv";
+            var inputFile = rootFolder + @"Zhongming Data\outputs\data\solar-radiation\" + buildingId + "_geometry.csv";
             Misc.LoadTimeSeries(inputFile, out var surfaceAreas, 10, 1); // it's actually not a timeseries, but whaevva
 
-
             // for this file:
-            inputFile = @"\\nas22\arch_ita_schlueter\03-Research\01-Projects\29_FCLGlobal\04_Numerical\BuildingIntegratedAgriculture\Zhongming Data\outputs\data\potentials\agriculture_yield\surface\" + buildingId + "_BIA_metrics_AmaranthRed.csv";
+            inputFile = rootFolder + @"Zhongming Data\outputs\data\potentials\agriculture_yield\surface\" + buildingId + "_BIA_metrics_AmaranthRed.csv";
 
             //  ghg emissions if same amount bought from Malaysia or Indonesia
             // column D ([3]): "ghg_kg_co2_mys"
@@ -53,18 +66,19 @@ namespace Cisbat23BuildingIntegratedAgriculture
 
 
             // building loads
-            inputFile = @"\\nas22\arch_ita_schlueter\03-Research\01-Projects\29_FCLGlobal\04_Numerical\BuildingIntegratedAgriculture\Zhongming Data\demand_chris\" + buildingId + "_Chris.csv";
+            inputFile = rootFolder + @"Zhongming Data\demand_chris\" + buildingId + "_Chris.csv";
             Misc.LoadTimeSeries(inputFile, out var elec, 4, 1);
             Misc.LoadTimeSeries(inputFile, out var dhw, 5, 1);
             Misc.LoadTimeSeries(inputFile, out var clg, 6, 1);
 
 
             // ghi, ambientTemp
-            inputFile = @"\\nas22\arch_ita_schlueter\03-Research\01-Projects\29_FCLGlobal\04_Numerical\BuildingIntegratedAgriculture\Zhongming Data\inputs\weather\weatherZhongming.csv";
+            inputFile = rootFolder + @"Zhongming Data\inputs\weather\weatherZhongming.csv";
             Misc.LoadTimeSeries(inputFile, out var ghi, 0, 1);
             Misc.LoadTimeSeries(inputFile, out var temp, 1, 1);
 
 
+            #region comments
 
             // technology data from csv
             //    LoadTechParameters(path + scenarioString[scenario] + "_technology.csv", out var technologyParameters);
@@ -178,10 +192,35 @@ namespace Cisbat23BuildingIntegratedAgriculture
             // RESULTS WRITING
 
             //    WriteOutput(scenarioString[scenario], path, numberOfSolarAreas, ehub, typicalDays, numBaseLoads);
-
+            #endregion
         }
 
 
+
+
+
+
+        private static void saveBiaJsonSolarAsCsvFiles(string rootFolder, string buildingId)
+        {
+            // solar potentials
+            // several thousands of surfaces
+            JObject o1 = JObject.Parse(File.ReadAllText(rootFolder + @"Zhongming Data\outputs\data\solar-radiation\" + buildingId + "_insolation_Whm2.json"));
+            //var stuff = o1["srf0"].ToObject<double[]>();
+
+            Dictionary<string, double[]> dictObj = o1.ToObject<Dictionary<string, double[]>>();
+            o1 = null;
+
+            List<double[]> solarPotentials = new List<double[]>(dictObj.Values);
+
+
+            string newFolder = rootFolder + buildingId;
+            Directory.CreateDirectory(newFolder);
+            foreach(var sol in solarPotentials)
+            {
+                //Misc.WriteTextFile(newFolder, buildingId+"")
+            }
+
+        }
 
 
     }
