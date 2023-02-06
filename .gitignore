@@ -2,6 +2,9 @@
 *.ide-shm
 *.ide-wal
 
+.DS_Store
+**/.DS_Store
+
 /.vs
 
 /CplexEnergyHubs/.vs
