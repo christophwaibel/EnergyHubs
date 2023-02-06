@@ -2,6 +2,9 @@
 *.ide-shm
 *.ide-wal
 
+.DS_Store
+**/.DS_Store
+
 /.vs
 
 /CplexEnergyHubs/.vs
@@ -15,5 +18,3 @@
 /CplexEnergyHubs/EhubExamples/obj
 /CplexEnergyHubs/SBE22MultiPeriodPV/bin
 /CplexEnergyHubs/SBE22MultiPeriodPV/obj
-/CplexEnergyHubs/SBE22BuildingIntegratedAgriculture/bin
-/CplexEnergyHubs/SBE22BuildingIntegratedAgriculture/obj
