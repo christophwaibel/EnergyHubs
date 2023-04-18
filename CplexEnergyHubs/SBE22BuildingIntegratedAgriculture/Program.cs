@@ -23,6 +23,8 @@ namespace Cisbat23BuildingIntegratedAgriculture
             string rootFolder = @"\\nas22\arch_ita_schlueter\03-Research\01-Projects\29_FCLGlobal\04_Numerical\BuildingIntegratedAgriculture\";
 
 
+            // Why would I do that??? that aint gon save computing time
+            /*
             // try loading from a folder "buildingId" first, if it doesnt exist it means it needs to be deserialized first from Zhongming's Jsons
 
             // Note : Directory.GetCurrentDirectory() can also return the current working directory.
@@ -33,11 +35,16 @@ namespace Cisbat23BuildingIntegratedAgriculture
                 saveBiaJsonSolarAsCsvFiles(rootFolder, buildingId);
             }
             // load from csvs
+            */
 
 
-
-
-
+            // solar potentials
+            // several thousands of surfaces
+            JObject o1 = JObject.Parse(File.ReadAllText(rootFolder + @"Zhongming Data\outputs\data\solar-radiation\" + buildingId + "_insolation_Whm2.json"));
+            //var stuff = o1["srf0"].ToObject<double[]>();
+            Dictionary<string, double[]> dictObj = o1.ToObject<Dictionary<string, double[]>>();
+            o1 = null;
+            List<double[]> solarPotentials = new List<double[]>(dictObj.Values);
 
 
             // surface areas
