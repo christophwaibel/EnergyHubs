@@ -15,6 +15,7 @@ namespace Cisbat23BuildingIntegratedAgriculture
     {
         static void Main(string[] args)
         {
+            #region loading data
             //________________________________________________________________________
             //________________________________________________________________________
             //________________________________________________________________________
@@ -84,109 +85,105 @@ namespace Cisbat23BuildingIntegratedAgriculture
             Misc.LoadTimeSeries(inputFile, out var ghi, 0, 1);
             Misc.LoadTimeSeries(inputFile, out var temp, 1, 1);
 
-
-            #region comments
-
             // technology data from csv
-            //    LoadTechParameters(path + scenarioString[scenario] + "_technology.csv", out var technologyParameters);
-            //    technologyParameters.Add("NumberOfBuildingsInEHub", Convert.ToDouble(numBuildings));
-            //    for (int i = 0; i < numBuildings; i++)
-            //    {
-            //        technologyParameters.Add("Peak_Htg_" + Convert.ToString(i), peakHeatingLoads[i]);
-            //        technologyParameters.Add("Peak_Clg_" + Convert.ToString(i), peakCoolingLoads[i]);
-            //    }
+            inputFile = rootFolder + "Bia_technology.csv";
+            Misc.LoadTechParameters(inputFile, out var technologyParameters);
+            technologyParameters.Add("NumberOfBuildingsInEHub", 1);
+            #endregion
 
 
 
+
+            #region prepping for ehub
             //________________________________________________________________________
             //________________________________________________________________________
             //________________________________________________________________________
             // CLUSTERING TIME SERIES & SOLVE EHUB
-            //Console.WriteLine("Clustering and generating typical days...");
-            //    int numberOfSolarAreas = solarAreas.Count;
-            //    int numBaseLoads = 5;                               // heating, cooling, electricity, ghi, tamb
-            //    int numLoads = numBaseLoads + numberOfSolarAreas;   // heating, cooling, electricity, ghi, tamb, solar. however, solar will include several profiles.
-            //    const int hoursPerYear = 8760;
-            //    double[][] fullProfiles = new double[numLoads][];
-            //    string[] loadTypes = new string[numLoads];
-            //    bool[] peakDays = new bool[numLoads];
-            //    bool[] correctionLoad = new bool[numLoads];
-            //    for (int u = 0; u < numLoads; u++)
-            //        fullProfiles[u] = new double[hoursPerYear];
-            //    loadTypes[0] = "heating";
-            //    loadTypes[1] = "cooling";
-            //    loadTypes[2] = "electricity";
-            //    loadTypes[3] = "ghi";
-            //    loadTypes[4] = "Tamb";
-            //    peakDays[0] = true;
-            //    peakDays[1] = true;
-            //    peakDays[2] = true;
-            //    peakDays[3] = false;
-            //    peakDays[4] = false;
-            //    correctionLoad[0] = true;
-            //    correctionLoad[1] = true;
-            //    correctionLoad[2] = true;
-            //    correctionLoad[3] = false;
-            //    correctionLoad[4] = false;
+            Console.WriteLine("Clustering and generating typical days...");
+            int numberOfSolarAreas = surfaceAreas.Count;
+            int numBaseLoads = 5;                               // heating, cooling, electricity, ghi, tamb
+            int numLoads = numBaseLoads + numberOfSolarAreas;   // heating, cooling, electricity, ghi, tamb, solar. however, solar will include several profiles.
+            const int hoursPerYear = 8760;
+            double[][] fullProfiles = new double[numLoads][];
+            string[] loadTypes = new string[numLoads];
+            bool[] peakDays = new bool[numLoads];
+            bool[] correctionLoad = new bool[numLoads];
+            for (int u = 0; u < numLoads; u++)
+                fullProfiles[u] = new double[hoursPerYear];
+            loadTypes[0] = "heating";
+            loadTypes[1] = "cooling";
+            loadTypes[2] = "electricity";
+            loadTypes[3] = "ghi";
+            loadTypes[4] = "Tamb";
+            peakDays[0] = true;
+            peakDays[1] = true;
+            peakDays[2] = true;
+            peakDays[3] = false;
+            peakDays[4] = false;
+            correctionLoad[0] = true;
+            correctionLoad[1] = true;
+            correctionLoad[2] = true;
+            correctionLoad[3] = false;
+            correctionLoad[4] = false;
 
-            //    bool[] useForClustering = new bool[fullProfiles.Length]; // specificy here, which load is used for clustering. the others are just reshaped
-            //    for (int t = 0; t < hoursPerYear; t++)
-            //    {
-            //        fullProfiles[0][t] = heating[t] + dhw[t];
-            //        fullProfiles[1][t] = cooling[t];
-            //        fullProfiles[2][t] = electricity[t];
-            //        fullProfiles[3][t] = ghi[t];
-            //        fullProfiles[4][t] = dryBulb[t];
-            //        useForClustering[0] = true;
-            //        useForClustering[1] = true;
-            //        useForClustering[2] = true;
-            //        useForClustering[3] = true;
-            //        useForClustering[4] = false;
-            //    }
+            bool[] useForClustering = new bool[fullProfiles.Length]; // specificy here, which load is used for clustering. the others are just reshaped
+            for (int t = 0; t < hoursPerYear; t++)
+            {
+                fullProfiles[0][t] = dhw[t];
+                fullProfiles[1][t] = clg[t];
+                fullProfiles[2][t] = elec[t];
+                fullProfiles[3][t] = ghi[t];
+                fullProfiles[4][t] = temp[t];
+                useForClustering[0] = true;
+                useForClustering[1] = true;
+                useForClustering[2] = true;
+                useForClustering[3] = true;
+                useForClustering[4] = false;
+            }
 
-            //    for (int u = 0; u < numberOfSolarAreas; u++)
-            //    {
-            //        useForClustering[u + numBaseLoads] = false;
-            //        peakDays[u + numBaseLoads] = false;
-            //        correctionLoad[u + numBaseLoads] = true;
-            //        loadTypes[u + numBaseLoads] = "solar";
-            //        for (int t = 0; t < hoursPerYear; t++)
-            //            fullProfiles[u + numBaseLoads][t] = irradiance[u][t];
-            //    }
+            for (int u = 0; u < numberOfSolarAreas; u++)
+            {
+                useForClustering[u + numBaseLoads] = false;
+                peakDays[u + numBaseLoads] = false;
+                correctionLoad[u + numBaseLoads] = true;
+                loadTypes[u + numBaseLoads] = "solar";
+                for (int t = 0; t < hoursPerYear; t++)
+                    fullProfiles[u + numBaseLoads][t] = solarPotentials[u][t];
+            }
 
-            //    // TO DO: load in GHI time series, add it to full profiles (right after heating, cooling, elec), and use it for clustering. exclude other solar profiles from clustering, but they need to be reshaped too
-            //    EhubMisc.HorizonReduction.TypicalDays typicalDays = EhubMisc.HorizonReduction.GenerateTypicalDays(fullProfiles, loadTypes,
-            //        12, peakDays, useForClustering, correctionLoad, true);
+            // TO DO: load in GHI time series, add it to full profiles (right after heating, cooling, elec), and use it for clustering. exclude other solar profiles from clustering, but they need to be reshaped too
+            EhubMisc.HorizonReduction.TypicalDays typicalDays = EhubMisc.HorizonReduction.GenerateTypicalDays(fullProfiles, loadTypes,
+                12, peakDays, useForClustering, correctionLoad, true);
 
-            //    /// Running Energy Hub
-            //    Console.WriteLine("Solving MILP optimization model...");
-            //    double[][] typicalSolarLoads = new double[numberOfSolarAreas][];
+            /// Running Energy Hub
+            Console.WriteLine("Solving MILP optimization model...");
+            double[][] typicalSolarLoads = new double[numberOfSolarAreas][];
 
-            //    // solar profiles negative or very small numbers. rounding floating numbers thing?
-            //    for (int u = 0; u < numberOfSolarAreas; u++)
-            //    {
-            //        typicalSolarLoads[u] = typicalDays.DayProfiles[numBaseLoads + u];
-            //        for (int t = 0; t < typicalSolarLoads[u].Length; t++)
-            //        {
-            //            if (typicalSolarLoads[u][t] < 0.1)
-            //                typicalSolarLoads[u][t] = 0.0;
-            //        }
-            //    }
-            //    // same for heating, cooling, elec demand... round very small numbers
-            //    for (int t = 0; t < typicalDays.DayProfiles[0].Length; t++)
-            //        for (int i = 0; i < 3; i++)
-            //            if (typicalDays.DayProfiles[i][t] < 0.001) typicalDays.DayProfiles[i][t] = 0.0;
+            // solar profiles negative or very small numbers. rounding floating numbers thing?
+            for (int u = 0; u < numberOfSolarAreas; u++)
+            {
+                typicalSolarLoads[u] = typicalDays.DayProfiles[numBaseLoads + u];
+                for (int t = 0; t < typicalSolarLoads[u].Length; t++)
+                {
+                    if (typicalSolarLoads[u][t] < 0.1)
+                        typicalSolarLoads[u][t] = 0.0;
+                }
+            }
+            // same for heating, cooling, elec demand... round very small numbers
+            for (int t = 0; t < typicalDays.DayProfiles[0].Length; t++)
+                for (int i = 0; i < 3; i++)
+                    if (typicalDays.DayProfiles[i][t] < 0.001) typicalDays.DayProfiles[i][t] = 0.0;
 
 
-            //    int[] clustersizePerTimestep = typicalDays.NumberOfDaysPerTimestep;
-            //    Ehub ehub = new Ehub(typicalDays.DayProfiles[0], typicalDays.DayProfiles[1], typicalDays.DayProfiles[2],
-            //        typicalSolarLoads, solarAreas.ToArray(),
-            //        typicalDays.DayProfiles[4], technologyParameters,
-            //        clustersizePerTimestep);
-            //    ehub.Solve(3, true);
+            //int[] clustersizePerTimestep = typicalDays.NumberOfDaysPerTimestep;
+            //Ehub ehub = new Ehub(typicalDays.DayProfiles[0], typicalDays.DayProfiles[1], typicalDays.DayProfiles[2],
+            //    typicalSolarLoads, solarAreas.ToArray(),
+            //    typicalDays.DayProfiles[4], technologyParameters,
+            //    clustersizePerTimestep);
+            //ehub.Solve(3, true);
 
-            //    Console.WriteLine();
-            //    Console.WriteLine("ENERGY HUB SOLVER COMPLETED");
+            //Console.WriteLine();
+            //Console.WriteLine("ENERGY HUB SOLVER COMPLETED");
 
 
 

@@ -17,7 +17,7 @@ namespace EhubMisc
             string[] dog = new string[28];
             dog[0] = @"                          ..,,,,,,,,,..";
             dog[1] = @"                     .,;%%%%%%%%%%%%%%%%%%%%;,.";
-            dog[2] = @"                   %%%%%%%%%%%%%%%%%%%%////%%%%%%, .,;%%;,"; 
+            dog[2] = @"                   %%%%%%%%%%%%%%%%%%%%////%%%%%%, .,;%%;,";
             dog[3] = @"            .,;%/,%%%%%/////%%%%%%%%%%%%%%////%%%%,%%//%%%, ";
             dog[4] = @"        .,;%%%%/,%%%///%%%%%%%%%%%%%%%%%%%%%%%%%%%%,////%%%%;, ";
             dog[5] = @"     .,%%%%%%//,%%%%%%%%%%%%%%%%@@%a%%%%%%%%%%%%%%%%,%%/%%%%%%%;, ";
@@ -91,9 +91,9 @@ namespace EhubMisc
             if (x2.Length < n) n = x2.Length;
 
             double distance = 0.0;
-            for (int i = 0; i < n; i++) 
+            for (int i = 0; i < n; i++)
                 distance += Math.Pow(x1[i] - x2[i], 2);
-            if(string.Equals(distanceMeasure, "Euclidean"))
+            if (string.Equals(distanceMeasure, "Euclidean"))
                 distance = Math.Sqrt(distance);
 
             return distance;
@@ -137,6 +137,36 @@ namespace EhubMisc
                 sw.Close();
             }
         }
-    }
 
+
+        public static void LoadTechParameters(string inputFile, out Dictionary<string, double> technologyParameters)
+        {
+            // load technology parameters
+            technologyParameters = new Dictionary<string, double>();
+
+
+            string[] lines = File.ReadAllLines(inputFile);
+            for (int li = 0; li < lines.Length; li++)
+            {
+                string[] split = lines[li].Split(new char[2] { ';', ',' });
+                split = split.Where(x => !string.IsNullOrEmpty(x)).ToArray();
+                if (split.Length < 3)
+                {
+                    //WriteError();
+                    Console.WriteLine("Reading line {0}:..... '{1}'", li + 1, lines[li]);
+                    Console.Write("'{0}' contains {1} cells in line {2}, but it should contain at least 3 lines - the first two being strings and the third a number... Hit any key to abort the program: ",
+                        inputFile, split.Length, li + 1);
+                    Console.ReadKey();
+                    return;
+                }
+                else
+                {
+                    if (technologyParameters.ContainsKey(split[0])) continue;
+                    technologyParameters.Add(split[0], Convert.ToDouble(split[2]));
+                }
+            }
+        }
+
+
+    }
 }
