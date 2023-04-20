@@ -175,16 +175,16 @@ namespace Cisbat23BuildingIntegratedAgriculture
                     if (typicalDays.DayProfiles[i][t] < 0.001) typicalDays.DayProfiles[i][t] = 0.0;
 
 
-            //int[] clustersizePerTimestep = typicalDays.NumberOfDaysPerTimestep;
-            //Ehub ehub = new Ehub(typicalDays.DayProfiles[0], typicalDays.DayProfiles[1], typicalDays.DayProfiles[2],
-            //    typicalSolarLoads, solarAreas.ToArray(),
-            //    typicalDays.DayProfiles[4], technologyParameters,
-            //    clustersizePerTimestep);
-            //ehub.Solve(3, true);
+            int[] clustersizePerTimestep = typicalDays.NumberOfDaysPerTimestep;
+            EHubBiA ehub = new EHubBiA(typicalDays.DayProfiles[0], typicalDays.DayProfiles[1], typicalDays.DayProfiles[2],
+                typicalSolarLoads, surfaceAreas.ToArray(),
+                typicalDays.DayProfiles[4], technologyParameters,
+                clustersizePerTimestep,capexBia.ToArray(),opexBia.ToArray(),ghgBia.ToArray());
+            ehub.Solve(3, true);
 
-            //Console.WriteLine();
-            //Console.WriteLine("ENERGY HUB SOLVER COMPLETED");
-
+            Console.WriteLine();
+            Console.WriteLine("ENERGY HUB SOLVER COMPLETED");
+            Console.ReadKey();
 
 
 

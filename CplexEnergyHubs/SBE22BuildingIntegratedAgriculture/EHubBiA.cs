@@ -966,10 +966,18 @@ namespace Cisbat23BuildingIntegratedAgriculture
 
 
 
+            /// ////////////////////////////////////////////////////////////////////////
+            #region Variables
+            /// ////////////////////////////////////////////////////////////////////////
 
-            /// ////////////////////////////////////////////////////////////////////////
-            /// Variables
-            /// ////////////////////////////////////////////////////////////////////////
+            // BIA
+            INumVar[] y_bia = new INumVar[this.NumberOfSolarAreas];
+            for (int i = 0; i < NumberOfSolarAreas; i++)
+                y_bia[i] = cpl.BoolVar();
+            INumVar x_supermarket = cpl.NumVar(0.0, System.Double.MaxValue);
+            INumVar x_bia_sold = cpl.NumVar(0.0, System.Double.MaxValue);
+
+
 
             // Demand Response
             INumVar[] x_DrElecPos = new INumVar[this.Horizon];  // postive shifting variable elec (generating more)
@@ -1107,12 +1115,22 @@ namespace Cisbat23BuildingIntegratedAgriculture
                 x_clgTES_soc[t] = cpl.NumVar(0.0, System.Double.MaxValue);
                 y_clgTES_op[t] = cpl.BoolVar();
             }
+            #endregion
 
 
             /// ////////////////////////////////////////////////////////////////////////
-            /// Constraints
+            #region constraints
             /// ////////////////////////////////////////////////////////////////////////
             /// 
+
+            // Bia related constraints
+            // either pv or bia
+            ILinearNumExpr bia_and_pv = cpl.LinearNumExpr();
+            for (int i = 0; i < NumberOfSolarAreas; i++)
+            {
+                bia_and_pv.AddTerm(1,)
+                // cpl.Le(cpl.ILinearNumExpr().AddTerm(1, y_bia(i)).AddTerm(1, y_PV(i)));
+            }
 
             // meeting demands
             ILinearNumExpr carbonEmissions = cpl.LinearNumExpr();
@@ -1394,6 +1412,8 @@ namespace Cisbat23BuildingIntegratedAgriculture
                 cpl.AddLe(x_PV[i], cpl.Prod(M, y_PV[i]));
                 cpl.AddGe(x_PV[i], cpl.Prod(0.0, y_PV[i]));
             }
+            #endregion
+
 
 
             /// ////////////////////////////////////////////////////////////////////////
