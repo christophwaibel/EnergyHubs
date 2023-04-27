@@ -38,7 +38,6 @@ namespace Cisbat23BuildingIntegratedAgriculture
         internal double[] AmbientTemperature { get; private set; }
 
         // Lifetime
-        internal double LifetimeBia { get; private set; }
         internal double LifetimePV { get; private set; }
         internal double LifetimeBattery { get; private set; }
         internal double LifetimeTES { get; private set; }
@@ -125,7 +124,8 @@ namespace Cisbat23BuildingIntegratedAgriculture
         internal double lca_Biomass { get; private set; }
 
         // annualized LCA of technologies
-        internal double lca_Bia { get; private set; }
+        internal double lca_FoodBia { get; private set; }
+        internal double lca_FoodSupermarket { get; private set; }
         internal double lca_PV { get; private set; }
         internal double lca_Battery { get; private set; }
         internal double lca_TES { get; private set; }
@@ -140,7 +140,6 @@ namespace Cisbat23BuildingIntegratedAgriculture
 
 
         // total (non-annualized) LCA of technologies 
-        internal double LcaTotal_Bia { get; private set; }
         internal double LcaTotal_PV { get; private set; }
         internal double LcaTotal_Battery { get; private set; }
         internal double LcaTotal_TES { get; private set; }
@@ -180,7 +179,6 @@ namespace Cisbat23BuildingIntegratedAgriculture
         internal double CostCoolingTower { get; private set; }
 
         // Fix Cost
-        internal double [] FixCostBia { get; private set; } // index for each surface
         internal double FixCostPV { get; private set; }
         internal double FixCostBattery { get; private set; }
         internal double FixCostTES { get; private set; }
@@ -194,7 +192,6 @@ namespace Cisbat23BuildingIntegratedAgriculture
         internal double FixCostCoolingTower { get; private set; }
 
         // Annuity
-        internal double[] AnnuityBia { get; private set; }
         internal double AnnuityPV { get; private set; }
         internal double AnnuityBattery { get; private set; }
         internal double AnnuityTES { get; private set; }
@@ -208,7 +205,6 @@ namespace Cisbat23BuildingIntegratedAgriculture
         internal double AnnuityCoolingTower { get; private set; }
 
         // annualized investment cost
-        internal double [] c_Bia { get; private set; }
         internal double c_PV { get; private set; }
         internal double c_Battery { get; private set; }
         internal double c_TES { get; private set; }
@@ -222,7 +218,6 @@ namespace Cisbat23BuildingIntegratedAgriculture
         internal double c_CoolingTower { get; private set; }
 
         // annualized fix cost
-        internal double [] c_fix_Bia { get; private set; }
         internal double c_fix_PV { get; private set; }
         internal double c_fix_Battery { get; private set; }
         internal double c_fix_TES { get; private set; }
@@ -236,7 +231,6 @@ namespace Cisbat23BuildingIntegratedAgriculture
         internal double c_fix_CoolingTower { get; private set; }
 
         // operation and maintenance cost
-        internal double c_Bia_OM { get; private set; }
         internal double c_PV_OM { get; private set; }
         internal double c_Battery_OM { get; private set; }
         internal double c_TES_OM { get; private set; }
@@ -257,6 +251,23 @@ namespace Cisbat23BuildingIntegratedAgriculture
         internal double[] PeakHeatingLoadsPerBuilding { get; private set; } // in kW. length of this array corresponds to number of buildings in the district
         internal double[] PeakCoolingLoadsPerBuilding { get; private set; }
         internal double NetworkLengthTotal { get; private set; } // in m
+        #endregion
+
+
+        #region BIA stuff
+
+        double[] b_bia;              // total yearly food produced (red amaranth) in kg per surface
+        double a_bia_eff;      // conversion efficiency from 1 kg of amaranth into cal nutrituin. 23cal/100g. https://www.fatsecret.com/calories-nutrition/usda/amaranth-leaves?portionid=58969&portionamount=100.000
+        double totalDemandFood;      // total food demand in cal per year for all occupants
+        internal double c_Bia_OM { get; private set; }      // operation maintencance cost
+        internal double[] c_fix_Bia { get; private set; }   // fix cost per surface
+        internal double[] c_Bia { get; private set; }       // annualized investment cost
+        internal double[] AnnuityBia { get; private set; }  // annuity
+        internal double[] FixCostBia { get; private set; } // index for each surface
+        internal double CostBia { get; private set; }   // linear cost
+        internal double LcaTotal_FoodBia { get; private set; }      // total lca of bia per cal bia food
+        internal double LcaTotal_FoodSupermarket { get; private set; }  // total lca per cal of supermarket food
+        internal double LifetimeBia { get; private set; }
         #endregion
 
 
@@ -294,17 +305,19 @@ namespace Cisbat23BuildingIntegratedAgriculture
         /// <param name="BiaCapexIn">BIA (Building Integrated Agriculture) total Capex per surface index []</param>
         /// <param name="BiaOpexIn">Yearly BIA Opex per surface index [], i.e., the money earnt for selling all the food to the supermarket</param>
         /// <param name="BiaGhgIn">Yearly BIA Ghg per surface index [], if this amount of food was purchased from Indonesia or Malaysia (in kg CO2 eq). For abating (i.e., if BIA selected), substract this value in the energy hub</param>
+        /// <param name="BiaProducable">how much kg food can be produced per surface per m2 per year. multiply this with m2 of each surface to get total food produced per surface</param>
         internal EHubBiA(double[] heatingDemand, double[] coolingDemand, double[] electricityDemand,
             double[][] irradiance, double[] solarTechSurfaceAreas,
             double[] ambientTemperature, Dictionary<string, double> technologyParameters,
             int[] clustersizePerTimestep,
-            double [] BiaCapexIn, double [] BiaOpexIn, double [] BiaGhgIn)
+            double [] BiaCapexIn, double [] BiaOpexIn, double [] BiaGhgIn, double [] BiaProducable)
         {
             this.CoolingDemand = coolingDemand;
             this.HeatingDemand = heatingDemand;
             this.ElectricityDemand = electricityDemand;
             this.SolarLoads = irradiance;
             this.SolarAreas = solarTechSurfaceAreas;
+            this.b_bia = BiaProducable;
 
             this.NumberOfSolarAreas = solarTechSurfaceAreas.Length;
             this.ClustersizePerTimestep = clustersizePerTimestep;
@@ -348,299 +361,112 @@ namespace Cisbat23BuildingIntegratedAgriculture
 
         private void SetParameters(Dictionary<string, double> technologyParameters)
         {
+            #region everythingButBia
             /// ////////////////////////////////////////////////////////////////////////
             /// Technical Parameters
             /// ////////////////////////////////////////////////////////////////////////
 
             // Demand Response
-            if (technologyParameters.ContainsKey("DemandResponseElec"))
-                this.a_DrElec = technologyParameters["DemandResponseElec"];
-            else
-                this.a_DrElec = 0.1;
-            if (technologyParameters.ContainsKey("DemandResponseCool"))
-                this.a_DrCool = technologyParameters["DemandResponseCool"];
-            else
-                this.a_DrCool = 0.1;
-            if (technologyParameters.ContainsKey("DemandResponseHeat"))
-                this.a_DrHeat = technologyParameters["DemandResponseHeat"];
-            else
-                this.a_DrHeat = 0.1;
+            this.a_DrElec = technologyParameters.ContainsKey("DemandResponseElec") ? technologyParameters["DemandResponseElec"] : 0.1;
+            this.a_DrCool = technologyParameters.ContainsKey("DemandResponseCool") ? technologyParameters["DemandResponseCool"] : 0.1;
+            this.a_DrHeat = technologyParameters.ContainsKey("DemandResponseHeat") ? technologyParameters["DemandResponseHeat"] : 0.1;
 
             // floor area
-            double _floorarea;
-            if (technologyParameters.ContainsKey("TotalFloorArea"))
-                _floorarea = technologyParameters["TotalFloorArea"];
-            else
-                _floorarea = 1000.0;
+            double _floorarea = technologyParameters.ContainsKey("TotalFloorArea")? technologyParameters["TotalFloorArea"] : 1000.0;
 
             // Electric Chiller
-            if (technologyParameters.ContainsKey("c_ElecChiller_eff_clg"))
-                this.c_ElecChiller_eff_clg = technologyParameters["c_ElecChiller_eff_clg"];
-            else
-                this.c_ElecChiller_eff_clg = 4.9;
-            if (technologyParameters.ContainsKey("c_ElecChiller_eff_htg"))
-                this.c_ElecChiller_eff_htg = technologyParameters["c_ElecChiller_eff_htg"];
-            else
-                this.c_ElecChiller_eff_htg = 5.8;
+            this.c_ElecChiller_eff_clg = technologyParameters.ContainsKey("c_ElecChiller_eff_clg") ? technologyParameters["c_ElecChiller_eff_clg"] : 4.9;
+            this.c_ElecChiller_eff_htg = technologyParameters.ContainsKey("c_ElecChiller_eff_htg") ? technologyParameters["c_ElecChiller_eff_htg"] : 5.8;
 
             // PV
-            if (technologyParameters.ContainsKey("pv_NOCT"))
-                this.pv_NOCT = technologyParameters["pv_NOCT"];
-            else
-                this.pv_NOCT = 45.0;
-            if (technologyParameters.ContainsKey("pv_T_aNOCT"))
-                this.pv_T_aNOCT = technologyParameters["pv_T_aNOCT"];
-            else
-                this.pv_T_aNOCT = 20.0;
-            if (technologyParameters.ContainsKey("pv_P_NOCT"))
-                this.pv_P_NOCT = technologyParameters["pv_P_NOCT"];
-            else
-                this.pv_P_NOCT = 800.0;
-            if (technologyParameters.ContainsKey("pv_beta_ref"))
-                this.pv_beta_ref = technologyParameters["pv_beta_ref"];
-            else
-                this.pv_beta_ref = 0.004;
-            if (technologyParameters.ContainsKey("pv_n_ref"))
-                this.pv_n_ref = technologyParameters["pv_n_ref"];
-            else
-                this.pv_n_ref = 0.2;
+            this.pv_NOCT = technologyParameters.ContainsKey("pv_NOCT") ? technologyParameters["pv_NOCT"] : 45.0;
+            this.pv_T_aNOCT = technologyParameters.ContainsKey("pv_T_aNOCT") ? technologyParameters["pv_T_aNOCT"] : 20.0;
+            this.pv_P_NOCT = technologyParameters.ContainsKey("pv_P_NOCT") ? technologyParameters["pv_P_NOCT"]: 800.0;
+            this.pv_beta_ref = technologyParameters.ContainsKey("pv_beta_ref") ? technologyParameters["pv_beta_ref"] : 0.004;
+            this.pv_n_ref = technologyParameters.ContainsKey("pv_n_ref") ? technologyParameters["pv_n_ref"] : 0.2;
 
             // ASHP
-            if (technologyParameters.ContainsKey("hp_pi1"))
-                this.hp_pi1 = technologyParameters["hp_pi1"];
-            else
-                this.hp_pi1 = 13.39;
-            if (technologyParameters.ContainsKey("hp_pi2"))
-                this.hp_pi2 = technologyParameters["hp_pi2"];
-            else
-                this.hp_pi2 = -0.047;
-            if (technologyParameters.ContainsKey("hp_pi3"))
-                this.hp_pi3 = technologyParameters["hp_pi3"];
-            else
-                this.hp_pi3 = 1.109;
-            if (technologyParameters.ContainsKey("hp_pi4"))
-                this.hp_pi4 = technologyParameters["hp_pi4"];
-            else
-                this.hp_pi4 = 0.012;
-            if (technologyParameters.ContainsKey("hp_supplyTemp"))
-                this.hp_supplyTemp = technologyParameters["hp_supplyTemp"];
-            else
-                this.hp_supplyTemp = 65.0;
+            this.hp_pi1 = technologyParameters.ContainsKey("hp_pi1") ? technologyParameters["hp_pi1"]: 13.39;
+            this.hp_pi2 = technologyParameters.ContainsKey("hp_pi2") ? technologyParameters["hp_pi2"] : -0.047;
+            this.hp_pi3 = technologyParameters.ContainsKey("hp_pi3") ? technologyParameters["hp_pi3"] : 1.109;
+            this.hp_pi4 = technologyParameters.ContainsKey("hp_pi4") ? technologyParameters["hp_pi4"] : 0.012;
+            this.hp_supplyTemp = technologyParameters.ContainsKey("hp_supplyTemp") ? technologyParameters["hp_supplyTemp"] : 65.0;
 
             // Naural Gas Boiler
-            if (technologyParameters.ContainsKey("a_boi_eff"))
-                this.a_boi_eff = technologyParameters["a_boi_eff"];
-            else
-                this.a_boi_eff = 0.94;
+            this.a_boi_eff = technologyParameters.ContainsKey("a_boi_eff") ? technologyParameters["a_boi_eff"] : 0.94;
 
             // Biomass Boiler
-            if (technologyParameters.ContainsKey("a_bmboi_eff"))
-                this.a_bmboi_eff = technologyParameters["a_bmboi_eff"];
-            else
-                this.a_bmboi_eff = 0.9;
-            if (technologyParameters.ContainsKey("b_MaxBiomassAvailable"))
-                this.b_maxbiomassperyear = technologyParameters["b_MaxBiomassAvailable"];
-            else
-                this.b_maxbiomassperyear = 10000.0;
+            this.a_bmboi_eff = technologyParameters.ContainsKey("a_bmboi_eff") ? technologyParameters["a_bmboi_eff"] : 0.9;
+            this.b_maxbiomassperyear = technologyParameters.ContainsKey("b_MaxBiomassAvailable") ? technologyParameters["b_MaxBiomassAvailable"] : 10000.0;
 
             // CHP
-            if (technologyParameters.ContainsKey("c_chp_eff"))
-                this.c_chp_eff_el = technologyParameters["c_chp_eff"];
-            else
-                this.c_chp_eff_el = 0.3;
-            if (technologyParameters.ContainsKey("c_chp_htp"))
-                this.c_chp_htp = technologyParameters["c_chp_htp"];
-            else
-                this.c_chp_htp = 1.73;
-            if (technologyParameters.ContainsKey("c_chp_heatdump"))
-                this.c_chp_heatdump = technologyParameters["c_chp_heatdump"];
-            else
-                this.c_chp_heatdump = 1;
+            this.c_chp_eff_el = technologyParameters.ContainsKey("c_chp_eff") ? technologyParameters["c_chp_eff"] : 0.3;
+            this.c_chp_htp = technologyParameters.ContainsKey("c_chp_htp") ? technologyParameters["c_chp_htp"] : 1.73;
+            this.c_chp_heatdump = technologyParameters.ContainsKey("c_chp_heatdump") ? technologyParameters["c_chp_heatdump"] : 1;
 
             // Battery
-            if (technologyParameters.ContainsKey("b_MaxBattery"))
-                this.b_MaxBattery = technologyParameters["b_MaxBattery"] * _floorarea;
-            else
-                this.b_MaxBattery = 800.0; // Tesla car has 80 kWh
-            if (technologyParameters.ContainsKey("bat_ch_eff"))
-                this.bat_ch_eff = technologyParameters["bat_ch_eff"];
-            else
-                bat_ch_eff = 0.92;
-            if (technologyParameters.ContainsKey("bat_disch_eff"))
-                this.bat_disch_eff = technologyParameters["bat_disch_eff"];
-            else
-                bat_disch_eff = 0.92;
-            if (technologyParameters.ContainsKey("bat_decay"))
-                this.bat_decay = technologyParameters["bat_decay"];
-            else
-                this.bat_decay = 0.001;
-            if (technologyParameters.ContainsKey("bat_max_ch"))
-                this.bat_max_ch = technologyParameters["bat_max_ch"];
-            else
-                this.bat_max_ch = 0.3;
-            if (technologyParameters.ContainsKey("bat_max_disch"))
-                this.bat_max_disch = technologyParameters["bat_max_disch"];
-            else
-                this.bat_max_disch = 0.33;
-            if (technologyParameters.ContainsKey("bat_min_state"))
-                this.bat_min_state = technologyParameters["bat_min_state"];
-            else
-                this.bat_min_state = 0.3;
+            this.b_MaxBattery = technologyParameters.ContainsKey("b_MaxBattery") ? (technologyParameters["b_MaxBattery"] * _floorarea) : 800.0; // Tesla car has 80 kWh
+            this.bat_ch_eff = technologyParameters.ContainsKey("bat_ch_eff") ? technologyParameters["bat_ch_eff"] : 0.92;
+            this.bat_disch_eff = technologyParameters.ContainsKey("bat_disch_eff") ? technologyParameters["bat_disch_eff"] : 0.92;
+            this.bat_decay = technologyParameters.ContainsKey("bat_decay") ? technologyParameters["bat_decay"] : 0.001;
+            this.bat_max_ch = technologyParameters.ContainsKey("bat_max_ch") ? technologyParameters["bat_max_ch"] : 0.3;
+            this.bat_max_disch = technologyParameters.ContainsKey("bat_max_disch") ? technologyParameters["bat_max_disch"] : 0.33;
+            this.bat_min_state = technologyParameters.ContainsKey("bat_min_state") ? technologyParameters["bat_min_state"] : 0.3;
 
             // TES
-            if (technologyParameters.ContainsKey("b_MaxTES"))
-                this.b_MaxTES = technologyParameters["b_MaxTES"] * _floorarea;
-            else
-                this.b_MaxTES = 1400.0;
-            if (technologyParameters.ContainsKey("tes_ch_eff"))
-                this.tes_ch_eff = technologyParameters["tes_ch_eff"];
-            else
-                this.tes_ch_eff = 0.9;
-            if (technologyParameters.ContainsKey("tes_disch_eff"))
-                this.tes_disch_eff = technologyParameters["tes_disch_eff"];
-            else
-                this.tes_disch_eff = 0.9;
-            if (technologyParameters.ContainsKey("tes_decay"))
-                this.tes_decay = technologyParameters["tes_decay"];
-            else
-                this.tes_decay = 0.001;
-            if (technologyParameters.ContainsKey("tes_max_ch"))
-                this.tes_max_ch = technologyParameters["tes_max_ch"];
-            else
-                this.tes_max_ch = 0.25;
-            if (technologyParameters.ContainsKey("tes_max_disch"))
-                this.tes_max_disch = technologyParameters["tes_max_disch"];
-            else
-                this.tes_max_disch = 0.25;
+            this.b_MaxTES = technologyParameters.ContainsKey("b_MaxTES") ? (technologyParameters["b_MaxTES"] * _floorarea) : 1400.0;
+            this.tes_ch_eff = technologyParameters.ContainsKey("tes_ch_eff") ? technologyParameters["tes_ch_eff"] : 0.9;
+            this.tes_disch_eff = technologyParameters.ContainsKey("tes_disch_eff") ? technologyParameters["tes_disch_eff"] : 0.9;
+            this.tes_decay = technologyParameters.ContainsKey("tes_decay") ? technologyParameters["tes_decay"] : 0.001;
+            this.tes_max_ch = technologyParameters.ContainsKey("tes_max_ch") ? technologyParameters["tes_max_ch"] : 0.25;
+            this.tes_max_disch = technologyParameters.ContainsKey("tes_max_disch") ? technologyParameters["tes_max_disch"] : 0.25;
 
 
             /// ////////////////////////////////////////////////////////////////////////
             /// Minimal Capacities
             /// ////////////////////////////////////////////////////////////////////////
-            if (technologyParameters.ContainsKey("minCapBattery"))
-                this.minCapBattery = technologyParameters["minCapBattery"];
-            else
-                this.minCapBattery = 10;
-            if (technologyParameters.ContainsKey("minCapTES"))
-                this.minCapTES = technologyParameters["minCapTES"];
-            else
-                this.minCapTES = 10;
-            if (technologyParameters.ContainsKey("minCapBoiler"))
-                this.minCapBoiler = technologyParameters["minCapBoiler"];
-            else
-                this.minCapBoiler = 10;
-            if (technologyParameters.ContainsKey("minCapBioBoiler"))
-                this.minCapBioBoiler = technologyParameters["minCapBioBoiler"];
-            else
-                this.minCapBioBoiler = 10;
-            if (technologyParameters.ContainsKey("minCapCHP"))
-                this.minCapCHP = technologyParameters["minCapCHP"];
-            else
-                this.minCapCHP = 10;
-            if (technologyParameters.ContainsKey("minCapElecChiller"))
-                this.minCapElecChiller = technologyParameters["minCapElecChiller"];
-            else
-                this.minCapElecChiller = 10;
-            if (technologyParameters.ContainsKey("minCapASHP"))
-                this.minCapASHP = technologyParameters["minCapASHP"];
-            else
-                this.minCapASHP = 10;
+            this.minCapBattery = technologyParameters.ContainsKey("minCapBattery") ? technologyParameters["minCapBattery"] : 10;
+            this.minCapTES = technologyParameters.ContainsKey("minCapTES") ? technologyParameters["minCapTES"]: 10;
+            this.minCapBoiler = technologyParameters.ContainsKey("minCapBoiler") ? technologyParameters["minCapBoiler"] : 10;
+            this.minCapBioBoiler = technologyParameters.ContainsKey("minCapBioBoiler") ? technologyParameters["minCapBioBoiler"] : 10;
+            this.minCapCHP = technologyParameters.ContainsKey("minCapCHP")? technologyParameters["minCapCHP"]: 10;
+            this.minCapElecChiller = technologyParameters.ContainsKey("minCapElecChiller") ? technologyParameters["minCapElecChiller"] : 10;
+            this.minCapASHP = technologyParameters.ContainsKey("minCapASHP") ? technologyParameters["minCapASHP"]: 10;
 
 
             /// ////////////////////////////////////////////////////////////////////////
             /// LCA
             /// ////////////////////////////////////////////////////////////////////////
-            if (technologyParameters.ContainsKey("lca_GridElectricity"))
-                this.lca_GridElectricity = technologyParameters["lca_GridElectricity"];
-            else
-                this.lca_GridElectricity = 0.14840; // from Wu et al. 2017
-            if (technologyParameters.ContainsKey("lca_NaturalGas"))
-                this.lca_NaturalGas = technologyParameters["lca_NaturalGas"];
-            else
-                this.lca_NaturalGas = 0.237;        // from Waibel 2019 co-simu paper
+            this.lca_GridElectricity = technologyParameters.ContainsKey("lca_GridElectricity") ? technologyParameters["lca_GridElectricity"]: 0.14840; // from Wu et al. 2017
+            this.lca_NaturalGas = technologyParameters.ContainsKey("lca_NaturalGas") ? technologyParameters["lca_NaturalGas"]: 0.237;        // from Waibel 2019 co-simu paper
 
             // Total LCA of technologies
-            if (technologyParameters.ContainsKey("lca_PV"))
-                this.LcaTotal_PV = technologyParameters["lca_PV"];
-            else
-                this.LcaTotal_PV = 0.0;
-            if (technologyParameters.ContainsKey("lca_Battery"))
-                this.LcaTotal_Battery = technologyParameters["lca_Battery"];
-            else
-                this.LcaTotal_Battery = 0.0;
-            if (technologyParameters.ContainsKey("lca_TES"))
-                this.LcaTotal_TES = technologyParameters["lca_TES"];
-            else
-                this.LcaTotal_TES = 0.0;
-            if (technologyParameters.ContainsKey("lca_ASHP"))
-                this.LcaTotal_ASHP = technologyParameters["lca_ASHP"];
-            else
-                this.LcaTotal_ASHP = 0.0;
-            if (technologyParameters.ContainsKey("lca_CHP"))
-                this.LcaTotal_CHP = technologyParameters["lca_CHP"];
-            else
-                this.LcaTotal_CHP = 0.0;
-            if (technologyParameters.ContainsKey("lca_Boiler"))
-                this.LcaTotal_Boiler = technologyParameters["lca_Boiler"];
-            else
-                this.LcaTotal_Boiler = 0.0;
-            if (technologyParameters.ContainsKey("lca_BiomassBoiler"))
-                this.LcaTotal_BiomassBoiler = technologyParameters["lca_BiomassBoiler"];
-            else
-                this.LcaTotal_BiomassBoiler = 0.0;
-            if (technologyParameters.ContainsKey("lca_ElecChiller"))
-                this.LcaTotal_ElecChiller = technologyParameters["lca_ElecChiller"];
-            else
-                this.LcaTotal_ElecChiller = 0.0;
-            if (technologyParameters.ContainsKey("lca_DistrictHeating"))
-                this.LcaTotal_DistrictHeating = technologyParameters["lca_DistrictHeating"];
-            else
-                this.LcaTotal_DistrictHeating = 0.0;
-            if (technologyParameters.ContainsKey("lca_HeatExchanger"))
-                this.LcaTotal_HeatExchanger = technologyParameters["lca_HeatExchanger"];
-            else
-                this.LcaTotal_HeatExchanger = 0.0;
-            if (technologyParameters.ContainsKey("lca_CoolingTower"))
-                this.LcaTotal_CoolingTower = technologyParameters["lca_CoolingTower"];
-            else
-                this.LcaTotal_CoolingTower = 0.0;
+            this.LcaTotal_PV = technologyParameters.ContainsKey("lca_PV") ? technologyParameters["lca_PV"]: 0.0;
+            this.LcaTotal_Battery = technologyParameters.ContainsKey("lca_Battery") ? technologyParameters["lca_Battery"]: 0.0;
+            this.LcaTotal_TES = technologyParameters.ContainsKey("lca_TES") ? technologyParameters["lca_TES"] : 0.0;
+            this.LcaTotal_ASHP = technologyParameters.ContainsKey("lca_ASHP") ? technologyParameters["lca_ASHP"]: 0.0;
+            this.LcaTotal_CHP = technologyParameters.ContainsKey("lca_CHP") ? technologyParameters["lca_CHP"]: 0.0;
+            this.LcaTotal_Boiler = technologyParameters.ContainsKey("lca_Boiler")?technologyParameters["lca_Boiler"]: 0.0;
+            this.LcaTotal_BiomassBoiler = technologyParameters.ContainsKey("lca_BiomassBoiler")?technologyParameters["lca_BiomassBoiler"]: 0.0;
+            this.LcaTotal_ElecChiller = technologyParameters.ContainsKey("lca_ElecChiller")?technologyParameters["lca_ElecChiller"]: 0.0;
+            this.LcaTotal_DistrictHeating = technologyParameters.ContainsKey("lca_DistrictHeating")?technologyParameters["lca_DistrictHeating"]: 0.0;
+            this.LcaTotal_HeatExchanger = technologyParameters.ContainsKey("lca_HeatExchanger") ? technologyParameters["lca_HeatExchanger"]: 0.0;
+            this.LcaTotal_CoolingTower = technologyParameters.ContainsKey("lca_CoolingTower")?technologyParameters["lca_CoolingTower"]: 0.0;
 
             // levelized lca of building construction
-            if (technologyParameters.ContainsKey("lca_Building"))
-                this.lca_Building = technologyParameters["lca_Building"];
-            else
-                this.lca_Building = 0.0;
+            this.lca_Building = technologyParameters.ContainsKey("lca_Building")?technologyParameters["lca_Building"]: 0.0;
 
 
             /// ////////////////////////////////////////////////////////////////////////
             /// Cost
             /// ////////////////////////////////////////////////////////////////////////
-            if (technologyParameters.ContainsKey("InterestRate"))
-                this.InterestRate = technologyParameters["InterestRate"];
-            else
-                this.InterestRate = 0.08;
-            if (technologyParameters.ContainsKey("c_NaturalGas"))
-                this.c_NaturalGas = technologyParameters["c_NaturalGas"];
-            else
-                this.c_NaturalGas = 0.09;
-            if (technologyParameters.ContainsKey("c_Biomass"))
-                this.c_Biomass = technologyParameters["c_Biomass"];
-            else
-                this.c_Biomass = 0.2;
+            this.InterestRate = technologyParameters.ContainsKey("InterestRate")?technologyParameters["InterestRate"]: 0.08;
+            this.c_NaturalGas = technologyParameters.ContainsKey("c_NaturalGas")?technologyParameters["c_NaturalGas"]: 0.09;
+            this.c_Biomass = technologyParameters.ContainsKey("c_Biomass")?technologyParameters["c_Biomass"]: 0.2;
 
-            double _gridOffPeak, _gridPeak, _feedIn;
-            if (technologyParameters.ContainsKey("c_Grid_OffPeak"))
-                _gridOffPeak = technologyParameters["c_Grid_OffPeak"];
-            else
-                _gridOffPeak = 0.1;
-            if (technologyParameters.ContainsKey("c_Grid"))
-                _gridPeak = technologyParameters["c_Grid"];
-            else
-                _gridPeak = 0.2;
-            if (technologyParameters.ContainsKey("c_FeedIn"))
-                _feedIn = technologyParameters["c_FeedIn"];
-            else
-                _feedIn = -0.15;
+            double _gridOffPeak = technologyParameters.ContainsKey("c_Grid_OffPeak")?technologyParameters["c_Grid_OffPeak"]: 0.1;
+            double _gridPeak = technologyParameters.ContainsKey("c_Grid")?technologyParameters["c_Grid"]: 0.2;
+            double _feedIn = technologyParameters.ContainsKey("c_FeedIn")?technologyParameters["c_FeedIn"]:-0.15;
 
             this.c_FeedIn = new double[this.Horizon];
             this.c_Grid = new double[this.Horizon];
@@ -659,176 +485,53 @@ namespace Cisbat23BuildingIntegratedAgriculture
 
 
             // Linear Investment Cost
-            if (technologyParameters.ContainsKey("CostPV"))
-                this.CostPV = technologyParameters["CostPV"];
-            else
-                this.CostPV = 250.0;
-            if (technologyParameters.ContainsKey("CostBattery"))
-                this.CostBattery = technologyParameters["CostBattery"];
-            else
-                this.CostBattery = 600.0;
-            if (technologyParameters.ContainsKey("CostTES"))
-                this.CostTES = technologyParameters["CostTES"];
-            else
-                this.CostTES = 100.0;
-            if (technologyParameters.ContainsKey("CostBoiler"))
-                this.CostBoiler = technologyParameters["CostBoiler"];
-            else
-                this.CostBoiler = 200.0;
-            if (technologyParameters.ContainsKey("CostBiomassBoiler"))
-                this.CostBiomassBoiler = technologyParameters["CostBiomassBoiler"];
-            else
-                this.CostBiomassBoiler = 300.0;
-            if (technologyParameters.ContainsKey("CostCHP"))
-                this.CostCHPElectric = technologyParameters["CostCHP"];
-            else
-                this.CostCHPElectric = 1500.0;
-            if (technologyParameters.ContainsKey("CostElecChiller"))
-                this.CostElecChiller = technologyParameters["CostElecChiller"];
-            else
-                this.CostElecChiller = 360.0;
-            if (technologyParameters.ContainsKey("CostASHP"))
-                this.CostASHP = technologyParameters["CostASHP"];
-            else
-                this.CostASHP = 1000.0;
-            if (technologyParameters.ContainsKey("CostDistrictHeating"))
-                this.CostDistrictHeating = technologyParameters["CostDistrictHeating"];
-            else
-                this.CostDistrictHeating = 200.0;
-            if (technologyParameters.ContainsKey("CostHeatExchanger"))
-                this.CostHeatExchanger = technologyParameters["CostHeatExchanger"];
-            else
-                this.CostHeatExchanger = 200.0;
-            if (technologyParameters.ContainsKey("CostCoolingTower"))
-                this.CostCoolingTower = technologyParameters["CostCoolingTower"];
-            else
-                this.CostCoolingTower = 200.0;
+            this.CostPV = technologyParameters.ContainsKey("CostPV")?technologyParameters["CostPV"]: 250.0;
+            this.CostBattery = technologyParameters.ContainsKey("CostBattery")?technologyParameters["CostBattery"]: 600.0;
+            this.CostTES = technologyParameters.ContainsKey("CostTES") ? technologyParameters["CostTES"]: 100.0;
+            this.CostBoiler = technologyParameters.ContainsKey("CostBoiler") ? technologyParameters["CostBoiler"]: 200.0;
+            this.CostBiomassBoiler = technologyParameters.ContainsKey("CostBiomassBoiler")?technologyParameters["CostBiomassBoiler"]: 300.0;
+            this.CostCHPElectric = technologyParameters.ContainsKey("CostCHP")?technologyParameters["CostCHP"]:1500.0;
+            this.CostElecChiller = technologyParameters.ContainsKey("CostElecChiller")?technologyParameters["CostElecChiller"]: 360.0;
+            this.CostASHP = technologyParameters.ContainsKey("CostASHP")?technologyParameters["CostASHP"]: 1000.0;
+            this.CostDistrictHeating = technologyParameters.ContainsKey("CostDistrictHeating")?technologyParameters["CostDistrictHeating"]: 200.0;
+            this.CostHeatExchanger = technologyParameters.ContainsKey("CostHeatExchanger") ? technologyParameters["CostHeatExchanger"]: 200.0;
+            this.CostCoolingTower = technologyParameters.ContainsKey("CostCoolingTower")?technologyParameters["CostCoolingTower"]: 200.0;
 
             // Fix Investment Cost
-            if (technologyParameters.ContainsKey("FixCostPV"))
-                this.FixCostPV = technologyParameters["FixCostPV"];
-            else
-                this.FixCostPV = 250.0;
-            if (technologyParameters.ContainsKey("FixCostBattery"))
-                this.FixCostBattery = technologyParameters["FixCostBattery"];
-            else
-                this.FixCostBattery = 250.0;
-            if (technologyParameters.ContainsKey("FixCostTES"))
-                this.FixCostTES = technologyParameters["FixCostTES"];
-            else
-                this.FixCostTES = 250.0;
-            if (technologyParameters.ContainsKey("FixCostBoiler"))
-                this.FixCostBoiler = technologyParameters["FixCostBoiler"];
-            else
-                this.FixCostBoiler = 250.0;
-            if (technologyParameters.ContainsKey("FixCostBiomassBoiler"))
-                this.FixCostBiomassBoiler = technologyParameters["FixCostBiomassBoiler"];
-            else
-                this.FixCostBiomassBoiler = 250.0;
-            if (technologyParameters.ContainsKey("FixCostCHP"))
-                this.FixCostCHP = technologyParameters["FixCostCHP"];
-            else
-                this.FixCostCHP = 250.0;
-            if (technologyParameters.ContainsKey("FixCostElecChiller"))
-                this.FixCostElecChiller = technologyParameters["FixCostElecChiller"];
-            else
-                this.FixCostElecChiller = 250.0;
-            if (technologyParameters.ContainsKey("FixCostASHP"))
-                this.FixCostASHP = technologyParameters["FixCostASHP"];
-            else
-                this.FixCostASHP = 250.0;
-            if (technologyParameters.ContainsKey("FixCostDistrictHeating"))
-                this.FixCostDistrictHeating = technologyParameters["FixCostDistrictHeating"];
-            else
-                this.FixCostDistrictHeating = 250.0;
-            if (technologyParameters.ContainsKey("FixCostHeatExchanger"))
-                this.FixCostHeatExchanger = technologyParameters["FixCostHeatExchanger"];
-            else
-                this.FixCostHeatExchanger = 250.0;
-            if (technologyParameters.ContainsKey("FixCostCoolingTower"))
-                this.FixCostCoolingTower = technologyParameters["FixCostCoolingTower"];
-            else
-                this.FixCostCoolingTower = 250.0;
+            this.FixCostPV = technologyParameters.ContainsKey("FixCostPV")?technologyParameters["FixCostPV"]: 250.0;
+            this.FixCostBattery = technologyParameters.ContainsKey("FixCostBattery")?technologyParameters["FixCostBattery"]: 250.0;
+            this.FixCostTES = technologyParameters.ContainsKey("FixCostTES")?technologyParameters["FixCostTES"]: 250.0;
+            this.FixCostBoiler = technologyParameters.ContainsKey("FixCostBoiler")?technologyParameters["FixCostBoiler"]: 250.0;
+            this.FixCostBiomassBoiler = technologyParameters.ContainsKey("FixCostBiomassBoiler")?technologyParameters["FixCostBiomassBoiler"]: 250.0;
+            this.FixCostCHP = technologyParameters.ContainsKey("FixCostCHP")?technologyParameters["FixCostCHP"]: 250.0;
+            this.FixCostElecChiller = technologyParameters.ContainsKey("FixCostElecChiller")?technologyParameters["FixCostElecChiller"]: 250.0;
+            this.FixCostASHP = technologyParameters.ContainsKey("FixCostASHP")?technologyParameters["FixCostASHP"]: 250.0;
+            this.FixCostDistrictHeating = technologyParameters.ContainsKey("FixCostDistrictHeating")?technologyParameters["FixCostDistrictHeating"]: 250.0;
+            this.FixCostHeatExchanger = technologyParameters.ContainsKey("FixCostHeatExchanger")?technologyParameters["FixCostHeatExchanger"]: 250.0;
+            this.FixCostCoolingTower = technologyParameters.ContainsKey("FixCostCoolingTower")?technologyParameters["FixCostCoolingTower"]: 250.0;
 
             // Operation and Maintenance cost
-            if (technologyParameters.ContainsKey("c_PV_OM"))
-                this.c_PV_OM = technologyParameters["c_PV_OM"];
-            else
-                this.c_PV_OM = 0.0;
-            if (technologyParameters.ContainsKey("c_Battery_OM"))
-                this.c_Battery_OM = technologyParameters["c_Battery_OM"];
-            else
-                this.c_Battery_OM = 0.0;
-            if (technologyParameters.ContainsKey("c_TES_OM"))
-                this.c_TES_OM = technologyParameters["c_TES_OM"];
-            else
-                this.c_TES_OM = 0.0;
-            if (technologyParameters.ContainsKey("c_Boiler_OM"))
-                this.c_Boiler_OM = technologyParameters["c_Boiler_OM"];
-            else
-                this.c_Boiler_OM = 0.01;    // Waibel et al 2017
-            if (technologyParameters.ContainsKey("c_BiomassBoiler_OM"))
-                this.c_BiomassBoiler_OM = technologyParameters["c_BiomassBoiler_OM"];
-            else
-                this.c_BiomassBoiler_OM = 0.01;
-            if (technologyParameters.ContainsKey("c_CHP_OM"))
-                this.c_CHP_OM = technologyParameters["c_CHP_OM"];
-            else
-                this.c_CHP_OM = 0.021;    // Waibel et al 2017
-            if (technologyParameters.ContainsKey("c_ElecChiller_OM"))
-                this.c_ElecChiller_OM = technologyParameters["c_ElecChiller_OM"];
-            else
-                this.c_ElecChiller_OM = 0.1;
-            if (technologyParameters.ContainsKey("c_ASHP_OM"))
-                this.c_ASHP_OM = technologyParameters["c_ASHP_OM"];
-            else
-                this.c_ASHP_OM = 0.1;    // Waibel et al 2017
+            this.c_PV_OM = technologyParameters.ContainsKey("c_PV_OM")?technologyParameters["c_PV_OM"]: 0.0;
+            this.c_Battery_OM = technologyParameters.ContainsKey("c_Battery_OM")?technologyParameters["c_Battery_OM"]: 0.0;
+            this.c_TES_OM = technologyParameters.ContainsKey("c_TES_OM")?technologyParameters["c_TES_OM"]: 0.0;
+            this.c_Boiler_OM = technologyParameters.ContainsKey("c_Boiler_OM")?technologyParameters["c_Boiler_OM"]: 0.01;    // Waibel et al 2017
+            this.c_BiomassBoiler_OM = technologyParameters.ContainsKey("c_BiomassBoiler_OM")?technologyParameters["c_BiomassBoiler_OM"]: 0.01;
+            this.c_CHP_OM = technologyParameters.ContainsKey("c_CHP_OM")?technologyParameters["c_CHP_OM"]: 0.021;    // Waibel et al 2017
+            this.c_ElecChiller_OM = technologyParameters.ContainsKey("c_ElecChiller_OM")?technologyParameters["c_ElecChiller_OM"]: 0.1;
+            this.c_ASHP_OM = technologyParameters.ContainsKey("c_ASHP_OM")?technologyParameters["c_ASHP_OM"]: 0.1;    // Waibel et al 2017
 
             // lifetime
-            if (technologyParameters.ContainsKey("LifetimePV"))
-                this.LifetimePV = technologyParameters["LifetimePV"];
-            else
-                this.LifetimePV = 20.0;
-            if (technologyParameters.ContainsKey("LifetimeBattery"))
-                this.LifetimeBattery = technologyParameters["LifetimeBattery"];
-            else
-                this.LifetimeBattery = 20.0;
-            if (technologyParameters.ContainsKey("LifetimeTES"))
-                this.LifetimeTES = technologyParameters["LifetimeTES"];
-            else
-                this.LifetimeTES = 17.0;
-            if (technologyParameters.ContainsKey("LifetimeASHP"))
-                this.LifetimeASHP = technologyParameters["LifetimeASHP"];
-            else
-                this.LifetimeASHP = 20.0;
-            if (technologyParameters.ContainsKey("LifeetimeCHP"))
-                this.LifetimeCHP = technologyParameters["LifetimeCHP"];
-            else
-                this.LifetimeCHP = 20.0;
-            if (technologyParameters.ContainsKey("LifetimeBoiler"))
-                this.LifetimeBoiler = technologyParameters["LifetimeBoiler"];
-            else
-                this.LifetimeBoiler = 30.0;
-            if (technologyParameters.ContainsKey("LifetimeBiomassBoiler"))
-                this.LifetimeBiomassBoiler = technologyParameters["LifetimeBiomassBoiler"];
-            else
-                this.LifetimeBiomassBoiler = 30.0;
-            if (technologyParameters.ContainsKey("LifetimeElecChiller"))
-                this.LifetimeElecChiller = technologyParameters["LifetimeElecChiller"];
-            else
-                this.LifetimeElecChiller = 20.0;
-            if (technologyParameters.ContainsKey("LifetimeDistrictHeating"))
-                this.LifetimeDistrictHeating = technologyParameters["LifetimeDistrictHeating"];
-            else
-                this.LifetimeDistrictHeating = 50.0;
-            if (technologyParameters.ContainsKey("LifetimeHeatExchanger"))
-                this.LifetimeHeatExchanger = technologyParameters["LifetimeHeatExchanger"];
-            else
-                this.LifetimeHeatExchanger = 30.0;
-            if (technologyParameters.ContainsKey("LifetimeCoolingTower"))
-                this.LifetimeCoolingTower = technologyParameters["LifetimeCoolingTower"];
-            else
-                this.LifetimeCoolingTower = 50.0;
+            this.LifetimePV = technologyParameters.ContainsKey("LifetimePV")?technologyParameters["LifetimePV"]: 20.0;
+            this.LifetimeBattery = technologyParameters.ContainsKey("LifetimeBattery")?technologyParameters["LifetimeBattery"]: 20.0;
+            this.LifetimeTES = technologyParameters.ContainsKey("LifetimeTES")?technologyParameters["LifetimeTES"]: 17.0;
+            this.LifetimeASHP = technologyParameters.ContainsKey("LifetimeASHP")?technologyParameters["LifetimeASHP"]: 20.0;
+            this.LifetimeCHP = technologyParameters.ContainsKey("LifeetimeCHP")?technologyParameters["LifetimeCHP"]: 20.0;
+            this.LifetimeBoiler = technologyParameters.ContainsKey("LifetimeBoiler") ? technologyParameters["LifetimeBoiler"]: 30.0;
+            this.LifetimeBiomassBoiler = technologyParameters.ContainsKey("LifetimeBiomassBoiler")?technologyParameters["LifetimeBiomassBoiler"]: 30.0;
+            this.LifetimeElecChiller = technologyParameters.ContainsKey("LifetimeElecChiller")?technologyParameters["LifetimeElecChiller"]: 20.0;
+            this.LifetimeDistrictHeating = technologyParameters.ContainsKey("LifetimeDistrictHeating")?technologyParameters["LifetimeDistrictHeating"]: 50.0;
+            this.LifetimeHeatExchanger = technologyParameters.ContainsKey("LifetimeHeatExchanger")?technologyParameters["LifetimeHeatExchanger"]: 30.0;
+            this.LifetimeCoolingTower = technologyParameters.ContainsKey("LifetimeCoolingTower")?technologyParameters["LifetimeCoolingTower"]: 50.0;
 
             // Annuity
             this.AnnuityPV = this.InterestRate / (1 - (1 / (Math.Pow((1 + this.InterestRate), (this.LifetimePV)))));
@@ -926,6 +629,16 @@ namespace Cisbat23BuildingIntegratedAgriculture
             this.lca_TES = this.LcaTotal_TES / this.LifetimeTES;
             this.lca_HeatExchanger = this.LcaTotal_HeatExchanger / this.LifetimeHeatExchanger;
             this.lca_CoolingTower = this.LcaTotal_CoolingTower / this.LifetimeCoolingTower;
+        #endregion
+
+
+            // BIA stuff
+            double occupants = technologyParameters.ContainsKey("occupants") ? Convert.ToInt32(technologyParameters["occupants"]) : 1;
+            double nutritionVegsPerDay = technologyParameters.ContainsKey("nutrition_leafs_daily_per_occupant") ? technologyParameters["nutrition_leafs_daily_per_occupant"] : 50;
+            this.totalDemandFood = occupants * nutritionVegsPerDay * 365;
+            this.a_bia_eff = technologyParameters.ContainsKey("caloriesPerKgRedAmaranth") ? technologyParameters["caloriesPerKgRedAmaranth"] : 230;
+
+
         }
 
 
@@ -1124,13 +837,18 @@ namespace Cisbat23BuildingIntegratedAgriculture
             /// 
 
             // Bia related constraints
-            // either pv or bia
-            ILinearNumExpr bia_and_pv = cpl.LinearNumExpr();
+            ILinearNumExpr food_produced = cpl.LinearNumExpr();
             for (int i = 0; i < NumberOfSolarAreas; i++)
             {
-                bia_and_pv.AddTerm(1,)
-                // cpl.Le(cpl.ILinearNumExpr().AddTerm(1, y_bia(i)).AddTerm(1, y_PV(i)));
+                cpl.AddLe(cpl.Sum(y_bia[i], y_PV[i]), 1);            // either pv or bia per surface
+                food_produced.AddTerm(y_bia[i], b_bia[i]);           // total food produced
+                        
             }
+
+            // cpl.AddLe() // demand food must be covered by bia produced food minus sold food plus supermarket food
+            cpl.AddLe(x_bia_sold, food_produced);                   // food sold must be smaller than food produced
+
+
 
             // meeting demands
             ILinearNumExpr carbonEmissions = cpl.LinearNumExpr();

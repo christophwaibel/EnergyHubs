@@ -62,6 +62,7 @@ namespace Cisbat23BuildingIntegratedAgriculture
             Misc.LoadTimeSeries(inputFile, out var ghgFoodMalaysia, 3, 1);
             Misc.LoadTimeSeries(inputFile, out var ghgFoodIndonesia, 4, 1);
             Misc.LoadTimeSeries(inputFile, out var ghgBia, 9, 1);
+            Misc.LoadTimeSeries(inputFile, out var yieldBia, 2, 1); // yield in kg per m2 per surface
             var ghgBiaVsSupermarket = ghgBia.Zip(ghgFoodIndonesia, (x, y) => x - y).ToList(); // should be a negative number, coz we should be saving with BIA. otherwise it bad
 
             // Opex (how much money is earned from BIA) per year
@@ -176,10 +177,14 @@ namespace Cisbat23BuildingIntegratedAgriculture
 
 
             int[] clustersizePerTimestep = typicalDays.NumberOfDaysPerTimestep;
+            #endregion
+
+
+
             EHubBiA ehub = new EHubBiA(typicalDays.DayProfiles[0], typicalDays.DayProfiles[1], typicalDays.DayProfiles[2],
                 typicalSolarLoads, surfaceAreas.ToArray(),
                 typicalDays.DayProfiles[4], technologyParameters,
-                clustersizePerTimestep,capexBia.ToArray(),opexBia.ToArray(),ghgBia.ToArray());
+                clustersizePerTimestep,capexBia.ToArray(),opexBia.ToArray(),ghgBia.ToArray(), yieldBia.ToArray());
             ehub.Solve(3, true);
 
             Console.WriteLine();
@@ -196,7 +201,7 @@ namespace Cisbat23BuildingIntegratedAgriculture
             // RESULTS WRITING
 
             //    WriteOutput(scenarioString[scenario], path, numberOfSolarAreas, ehub, typicalDays, numBaseLoads);
-            #endregion
+
         }
 
 
