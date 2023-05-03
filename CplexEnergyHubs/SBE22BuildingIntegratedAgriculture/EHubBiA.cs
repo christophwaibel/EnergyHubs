@@ -259,15 +259,20 @@ namespace Cisbat23BuildingIntegratedAgriculture
         double[] b_bia;              // total yearly food produced (red amaranth) in kg per surface
         double a_bia_eff;      // conversion efficiency from 1 kg of amaranth into cal nutrituin. 23cal/100g. https://www.fatsecret.com/calories-nutrition/usda/amaranth-leaves?portionid=58969&portionamount=100.000
         double totalDemandFood;      // total food demand in cal per year for all occupants
-        internal double c_Bia_OM { get; private set; }      // operation maintencance cost
-        internal double[] c_fix_Bia { get; private set; }   // fix cost per surface
-        internal double[] c_Bia { get; private set; }       // annualized investment cost
-        internal double[] AnnuityBia { get; private set; }  // annuity
+        internal double [] c_Bia_OM { get; private set; }      // operation maintencance cost
+        //internal double[] c_fix_Bia { get; private set; }   // fix cost per surface
+        internal double[] c_Bia { get; private set; }       // annualized investment cost: c_i^bia
+        internal double AnnuityBia { get; private set; }  // annuity
         internal double[] FixCostBia { get; private set; } // index for each surface
-        internal double CostBia { get; private set; }   // linear cost
-        internal double LcaTotal_FoodBia { get; private set; }      // total lca of bia per cal bia food
-        internal double LcaTotal_FoodSupermarket { get; private set; }  // total lca per cal of supermarket food
+        internal double[] BiaTotalCost { get; private set; } // total cost per surface of the whole building.
+        //internal double[] CostBia { get; private set; }   // linear cost per m2. annualized and discounted. can be different for each surface
+        //internal double[] LcaTotal_FoodBia { get; private set; }      // total lca per bia surface
+        internal double[] Lca_Bia { get; private set; }                 // CO2 emissions per kg Bia food 
+        internal double Lca_Supermarket { get; private set; }  // CO2 emissions per kg vegs bought in the supermarket (Indoensia produced)
         internal double LifetimeBia { get; private set; }
+        internal double c_food_sell { get; private set; }   // c_sell^food      in SGD/kgFood
+        internal double c_food_buy { get; private set; }    // c_buy^food       in SGD/kgFood
+
         #endregion
 
 
@@ -302,22 +307,26 @@ namespace Cisbat23BuildingIntegratedAgriculture
         /// <param name="ambientTemperature"></param>
         /// <param name="technologyParameters"></param>
         /// <param name="clustersizePerTimestep">how many days a typical day represents</param>
-        /// <param name="BiaCapexIn">BIA (Building Integrated Agriculture) total Capex per surface index []</param>
+        /// <param name="BiaCapexIn">BIA (Building Integrated Agriculture) total Capex per surface index in SGD</param>
         /// <param name="BiaOpexIn">Yearly BIA Opex per surface index [], i.e., the money earnt for selling all the food to the supermarket</param>
         /// <param name="BiaGhgIn">Yearly BIA Ghg per surface index [], if this amount of food was purchased from Indonesia or Malaysia (in kg CO2 eq). For abating (i.e., if BIA selected), substract this value in the energy hub</param>
-        /// <param name="BiaProducable">how much kg food can be produced per surface per m2 per year. multiply this with m2 of each surface to get total food produced per surface</param>
+        /// <param name="BiaYield">how much kg food can be produced per surface per year. total food produced per surface</param>
         internal EHubBiA(double[] heatingDemand, double[] coolingDemand, double[] electricityDemand,
             double[][] irradiance, double[] solarTechSurfaceAreas,
             double[] ambientTemperature, Dictionary<string, double> technologyParameters,
             int[] clustersizePerTimestep,
-            double [] BiaCapexIn, double [] BiaOpexIn, double [] BiaGhgIn, double [] BiaProducable)
+            double [] BiaCapexIn, double [] BiaOpexIn, double [] BiaGhgIn, double [] BiaYield)
         {
             this.CoolingDemand = coolingDemand;
             this.HeatingDemand = heatingDemand;
             this.ElectricityDemand = electricityDemand;
             this.SolarLoads = irradiance;
             this.SolarAreas = solarTechSurfaceAreas;
-            this.b_bia = BiaProducable;
+            this.b_bia = BiaYield;
+            this.BiaTotalCost = BiaCapexIn;
+            this.c_Bia_OM = BiaOpexIn;
+            this.Lca_Bia = BiaGhgIn.Select((x, index) => x/ BiaYield[index]).ToArray(); // for each srf, LCA of 1 kg Bia food
+            
 
             this.NumberOfSolarAreas = solarTechSurfaceAreas.Length;
             this.ClustersizePerTimestep = clustersizePerTimestep;
@@ -637,8 +646,12 @@ namespace Cisbat23BuildingIntegratedAgriculture
             double nutritionVegsPerDay = technologyParameters.ContainsKey("nutrition_leafs_daily_per_occupant") ? technologyParameters["nutrition_leafs_daily_per_occupant"] : 50;
             this.totalDemandFood = occupants * nutritionVegsPerDay * 365;
             this.a_bia_eff = technologyParameters.ContainsKey("caloriesPerKgRedAmaranth") ? technologyParameters["caloriesPerKgRedAmaranth"] : 230;
-
-
+            this.LifetimeBia = technologyParameters.ContainsKey("LifetimeBia") ? technologyParameters["LifetimeBia"] : 20;
+            this.AnnuityBia = this.InterestRate / (1 - (1 / (Math.Pow((1 + this.InterestRate), (this.LifetimeBia)))));
+            this.c_Bia = this.c_Bia_OM.Zip(this.BiaTotalCost, (a,b) => b * this.AnnuityBia + a).ToArray(); // annualized discounted cost for each surface. different for each surface
+            this.c_food_sell = technologyParameters.ContainsKey("c_sell_supermarket") ? technologyParameters["c_sell_supermarket"] : 5.7;
+            this.c_food_buy = technologyParameters.ContainsKey("c_purchase_supermarket") ? technologyParameters["c_purchase_supermarket"] : 6.0;
+            this.Lca_Supermarket = technologyParameters.ContainsKey("lca_supermarket") ? technologyParameters["lca_supermarket"] : 0.45;
         }
 
 

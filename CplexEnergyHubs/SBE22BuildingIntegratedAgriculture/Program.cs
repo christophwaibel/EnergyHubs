@@ -1,12 +1,9 @@
-﻿using System;
+﻿using EhubMisc;
+using Newtonsoft.Json.Linq;
+using System;
 using System.Collections.Generic;
 using System.IO;
-using Newtonsoft.Json.Linq;
-using EhubMisc;
 using System.Linq;
-
-using System.Diagnostics;
-using System.Threading;
 
 
 namespace Cisbat23BuildingIntegratedAgriculture
@@ -59,19 +56,21 @@ namespace Cisbat23BuildingIntegratedAgriculture
             // column D ([3]): "ghg_kg_co2_mys"
             // column E ([4]): "ghg_kg_co2_idn"
             // column J ([9]): "ghg_kg_co2_bia" -> co2 per year for operating bia
-            Misc.LoadTimeSeries(inputFile, out var ghgFoodMalaysia, 3, 1);
-            Misc.LoadTimeSeries(inputFile, out var ghgFoodIndonesia, 4, 1);
+            //Misc.LoadTimeSeries(inputFile, out var ghgFoodIndonesia, 4, 1);  // coefficient, read from technologies.csv
             Misc.LoadTimeSeries(inputFile, out var ghgBia, 9, 1);
-            Misc.LoadTimeSeries(inputFile, out var yieldBia, 2, 1); // yield in kg per m2 per surface
-            var ghgBiaVsSupermarket = ghgBia.Zip(ghgFoodIndonesia, (x, y) => x - y).ToList(); // should be a negative number, coz we should be saving with BIA. otherwise it bad
+            Misc.LoadTimeSeries(inputFile, out var yieldBia, 1, 1); // yield in kg per surface
+            //var ghgBiaVsSupermarket = ghgBia.Zip(ghgFoodIndonesia, (x, y) => x - y).ToList(); // should be a negative number, coz we should be saving with BIA. otherwise it bad
 
             // Opex (how much money is earned from BIA) per year
             // column AH: "opex_all_USD_per_year" in USD per year
-            Misc.LoadTimeSeries(inputFile, out var opexBia, 33, 1);
+            //Misc.LoadTimeSeries(inputFile, out var opexBia, 33, 1);
+            Misc.LoadTimeSeries(inputFile, out var opexSeeds, 28, 1);
+            Misc.LoadTimeSeries(inputFile, out var opexFertilizer, 30, 1);
+            var opexBia = opexSeeds.Zip(opexFertilizer, (x, y) => x + y);   // cost per year
 
             // Capex (how much the whole BIA system costs at this surface). for annualising, assume 20 years lifetime. IR 3% zhongming, but use same as in Ehub
             // column AA: "capex_all_USD" in USD
-            Misc.LoadTimeSeries(inputFile, out var capexBia, 26, 1);
+            Misc.LoadTimeSeries(inputFile, out var capexBia, 26, 1);  // total cost for whole lifetime. lifetime 10 years?
 
 
             // building loads
