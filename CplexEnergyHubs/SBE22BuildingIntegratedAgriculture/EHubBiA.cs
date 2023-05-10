@@ -257,17 +257,19 @@ namespace Cisbat23BuildingIntegratedAgriculture
         #region BIA stuff
 
         double[] b_bia;              // total yearly food produced (red amaranth) in kg per surface
-        double a_bia_eff;      // conversion efficiency from 1 kg of amaranth into cal nutrituin. 23cal/100g. https://www.fatsecret.com/calories-nutrition/usda/amaranth-leaves?portionid=58969&portionamount=100.000
+        double a_red_amaranth_eff;      // conversion efficiency from 1 kg of amaranth into cal nutrituin. 23cal/100g. https://www.fatsecret.com/calories-nutrition/usda/amaranth-leaves?portionid=58969&portionamount=100.000
         double totalDemandFood;      // total food demand in cal per year for all occupants
-        internal double [] c_Bia_OM { get; private set; }      // operation maintencance cost
+        internal double[] c_Bia_OM { get; private set; }      // operation maintencance cost
         //internal double[] c_fix_Bia { get; private set; }   // fix cost per surface
-        internal double[] c_Bia { get; private set; }       // annualized investment cost: c_i^bia
+        internal double[] c_Bia_fix { get; private set; }       // annualized investment cost: c_i^bia
         internal double AnnuityBia { get; private set; }  // annuity
         internal double[] FixCostBia { get; private set; } // index for each surface
         internal double[] BiaTotalCost { get; private set; } // total cost per surface of the whole building.
         //internal double[] CostBia { get; private set; }   // linear cost per m2. annualized and discounted. can be different for each surface
         //internal double[] LcaTotal_FoodBia { get; private set; }      // total lca per bia surface
-        internal double[] Lca_Bia { get; private set; }                 // CO2 emissions per kg Bia food 
+        internal double [] Lca_bia_superm_perkg { get; private set; }       // difference between supermarket emissions and BIA (kgCO2eq/kg)
+        internal double[] Lca_Bia_perkg { get; private set; }                 // CO2 emissions per kg Bia food (kgCO2eq/kg)
+        internal double [] Lca_Bia { get; private set; }                    // CO2 emissions per surface (kgCO2eq)
         internal double Lca_Supermarket { get; private set; }  // CO2 emissions per kg vegs bought in the supermarket (Indoensia produced)
         internal double LifetimeBia { get; private set; }
         internal double c_food_sell { get; private set; }   // c_sell^food      in SGD/kgFood
@@ -325,8 +327,8 @@ namespace Cisbat23BuildingIntegratedAgriculture
             this.b_bia = BiaYield;
             this.BiaTotalCost = BiaCapexIn;
             this.c_Bia_OM = BiaOpexIn;
-            this.Lca_Bia = BiaGhgIn.Select((x, index) => x/ BiaYield[index]).ToArray(); // for each srf, LCA of 1 kg Bia food
-            
+            this.Lca_Bia = BiaGhgIn;
+            this.Lca_Bia_perkg = BiaGhgIn.Select((x, index) => x/ BiaYield[index]).ToArray(); // for each srf, LCA of 1 kg Bia food
 
             this.NumberOfSolarAreas = solarTechSurfaceAreas.Length;
             this.ClustersizePerTimestep = clustersizePerTimestep;
@@ -644,14 +646,19 @@ namespace Cisbat23BuildingIntegratedAgriculture
             // BIA stuff
             double occupants = technologyParameters.ContainsKey("occupants") ? Convert.ToInt32(technologyParameters["occupants"]) : 1;
             double nutritionVegsPerDay = technologyParameters.ContainsKey("nutrition_leafs_daily_per_occupant") ? technologyParameters["nutrition_leafs_daily_per_occupant"] : 50;
-            this.totalDemandFood = occupants * nutritionVegsPerDay * 365;
-            this.a_bia_eff = technologyParameters.ContainsKey("caloriesPerKgRedAmaranth") ? technologyParameters["caloriesPerKgRedAmaranth"] : 230;
+            this.totalDemandFood = occupants * nutritionVegsPerDay * 365;   // in cal
+            this.a_red_amaranth_eff = technologyParameters.ContainsKey("caloriesPerKgRedAmaranth") ? technologyParameters["caloriesPerKgRedAmaranth"] : 230;        // cal / kg
             this.LifetimeBia = technologyParameters.ContainsKey("LifetimeBia") ? technologyParameters["LifetimeBia"] : 20;
             this.AnnuityBia = this.InterestRate / (1 - (1 / (Math.Pow((1 + this.InterestRate), (this.LifetimeBia)))));
-            this.c_Bia = this.c_Bia_OM.Zip(this.BiaTotalCost, (a,b) => b * this.AnnuityBia + a).ToArray(); // annualized discounted cost for each surface. different for each surface
+            this.c_Bia_fix = this.c_Bia_OM.Zip(this.BiaTotalCost, (a,b) => b * this.AnnuityBia + a).ToArray(); // annualized discounted cost for each surface. different for each surface
             this.c_food_sell = technologyParameters.ContainsKey("c_sell_supermarket") ? technologyParameters["c_sell_supermarket"] : 5.7;
             this.c_food_buy = technologyParameters.ContainsKey("c_purchase_supermarket") ? technologyParameters["c_purchase_supermarket"] : 6.0;
             this.Lca_Supermarket = technologyParameters.ContainsKey("lca_supermarket") ? technologyParameters["lca_supermarket"] : 0.45;
+
+            this.Lca_bia_superm_perkg = new double[this.Lca_Bia_perkg.Length];
+            this.Lca_Bia_perkg.CopyTo(this.Lca_bia_superm_perkg, 0);
+            this.Lca_bia_superm_perkg = this.Lca_bia_superm_perkg.Select((x) => this.Lca_Supermarket - x).ToArray();
+
         }
 
 
@@ -698,10 +705,13 @@ namespace Cisbat23BuildingIntegratedAgriculture
 
             // BIA
             INumVar[] y_bia = new INumVar[this.NumberOfSolarAreas];
+            INumVar[] x_bia_sold = new INumVar[this.NumberOfSolarAreas];// cpl.NumVar(0.0, System.Double.MaxValue);
             for (int i = 0; i < NumberOfSolarAreas; i++)
+            {
                 y_bia[i] = cpl.BoolVar();
-            INumVar x_supermarket = cpl.NumVar(0.0, System.Double.MaxValue);
-            INumVar x_bia_sold = cpl.NumVar(0.0, System.Double.MaxValue);
+                x_bia_sold[i] = cpl.NumVar(0.0, this.b_bia[i]);     // in kg
+            }
+            INumVar x_supermarket = cpl.NumVar(0.0, this.totalDemandFood / this.a_red_amaranth_eff);        // x in kg
 
 
 
@@ -851,15 +861,22 @@ namespace Cisbat23BuildingIntegratedAgriculture
 
             // Bia related constraints
             ILinearNumExpr food_produced = cpl.LinearNumExpr();
+            ILinearNumExpr totalFood = cpl.LinearNumExpr();
+            ILinearNumExpr foodSold = cpl.LinearNumExpr();
             for (int i = 0; i < NumberOfSolarAreas; i++)
             {
-                cpl.AddLe(cpl.Sum(y_bia[i], y_PV[i]), 1);            // either pv or bia per surface
-                food_produced.AddTerm(y_bia[i], b_bia[i]);           // total food produced
-                        
+                cpl.AddLe(cpl.Sum(y_bia[i], y_PV[i]), 1);            // either pv or bia per surface   (1)
+                food_produced.AddTerm(y_bia[i], b_bia[i]);           // total food produced             (2)-rhs
+                foodSold.AddTerm(1, x_bia_sold[i]);                   // food sold                      (2)-lhs     
+
+                totalFood.AddTerm(-1, x_bia_sold[i]);
+                totalFood.AddTerm(y_bia[i], b_bia[i]);
             }
 
-            // cpl.AddLe() // demand food must be covered by bia produced food minus sold food plus supermarket food
-            cpl.AddLe(x_bia_sold, food_produced);                   // food sold must be smaller than food produced
+            totalFood.AddTerm(1, x_supermarket);
+
+            cpl.AddLe(this.totalDemandFood, cpl.Prod(this.a_red_amaranth_eff, totalFood)); // (3) demand food must be covered by bia produced food minus sold food plus supermarket food
+            cpl.AddLe(foodSold, food_produced);                   // (2) food sold must be smaller than food produced
 
 
 
@@ -1185,6 +1202,9 @@ namespace Cisbat23BuildingIntegratedAgriculture
             /// ////////////////////////////////////////////////////////////////////////
             ILinearNumExpr opex = cpl.LinearNumExpr();
             ILinearNumExpr capex = cpl.LinearNumExpr();
+            ILinearNumExpr foodTotalCost = cpl.LinearNumExpr();
+            foodTotalCost.AddTerm(this.c_food_buy, x_supermarket);
+
             for (int i = 0; i < this.NumberOfSolarAreas; i++)
             {
                 capex.AddTerm(this.c_PV, x_PV[i]);
@@ -1231,16 +1251,18 @@ namespace Cisbat23BuildingIntegratedAgriculture
             }
 
 
+
+
             /// ////////////////////////////////////////////////////////////////////////
             /// Objective function
             /// ////////////////////////////////////////////////////////////////////////
-            if (isCostMinimization) cpl.AddMinimize(cpl.Sum(capex, cpl.Sum(OM_PV, opex)));
+            if (isCostMinimization) cpl.AddMinimize(cpl.Sum(foodTotalCost, cpl.Sum(capex, cpl.Sum(OM_PV, opex))));
             else cpl.AddMinimize(carbonEmissions);
 
             // epsilon constraints for carbon, 
             // or cost constraint in case of carbon minimization (the same reason why carbon minimization needs a cost constraint)
             if (hasCarbonConstraint && isCostMinimization) cpl.AddLe(carbonEmissions, (double)carbonConstraint);
-            else if (hasCostConstraint && !isCostMinimization) cpl.AddLe(cpl.Sum(capex, cpl.Sum(OM_PV, opex)), (double)costConstraint);
+            else if (hasCostConstraint && !isCostMinimization) cpl.AddLe(cpl.Sum(foodTotalCost, cpl.Sum(capex, cpl.Sum(OM_PV, opex))), (double)costConstraint);
 
 
             /// ////////////////////////////////////////////////////////////////////////
@@ -1270,8 +1292,16 @@ namespace Cisbat23BuildingIntegratedAgriculture
                 solution.cost = solution.OPEX + solution.CAPEX;
 
                 solution.x_pv = new double[this.NumberOfSolarAreas];
+                solution.x_bia_sold = new double[this.NumberOfSolarAreas];
+                solution.y_bia = new int[this.NumberOfSolarAreas];
                 for (int i = 0; i < this.NumberOfSolarAreas; i++)
+                {
                     solution.x_pv[i] = cpl.GetValue(x_PV[i]);
+                    solution.x_bia_sold[i] = cpl.GetValue(x_bia_sold[i]);
+                    solution.y_bia[i] = (int)cpl.GetValue(y_bia[i]);
+                }
+                solution.x_supermarket = cpl.GetValue(x_supermarket);
+
                 solution.x_bat = cpl.GetValue(x_Battery);
                 solution.x_tes = cpl.GetValue(x_TES);
                 solution.x_clgtes = cpl.GetValue(x_clgTES);
