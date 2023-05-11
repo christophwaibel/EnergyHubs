@@ -651,7 +651,7 @@ namespace Cisbat23BuildingIntegratedAgriculture
             this.LifetimeBia = technologyParameters.ContainsKey("LifetimeBia") ? technologyParameters["LifetimeBia"] : 20;
             this.AnnuityBia = this.InterestRate / (1 - (1 / (Math.Pow((1 + this.InterestRate), (this.LifetimeBia)))));
             this.c_Bia_fix = this.c_Bia_OM.Zip(this.BiaTotalCost, (a,b) => b * this.AnnuityBia + a).ToArray(); // annualized discounted cost for each surface. different for each surface
-            this.c_food_sell = technologyParameters.ContainsKey("c_sell_supermarket") ? technologyParameters["c_sell_supermarket"] : 5.7;
+            this.c_food_sell = technologyParameters.ContainsKey("c_sell_supermarket") ? technologyParameters["c_sell_supermarket"] : -5.7;
             this.c_food_buy = technologyParameters.ContainsKey("c_purchase_supermarket") ? technologyParameters["c_purchase_supermarket"] : 6.0;
             this.Lca_Supermarket = technologyParameters.ContainsKey("lca_supermarket") ? technologyParameters["lca_supermarket"] : 0.45;
 
@@ -1158,7 +1158,7 @@ namespace Cisbat23BuildingIntegratedAgriculture
             for (int i = 0; i < this.NumberOfSolarAreas; i++)
             {
                 cpl.AddLe(x_PV[i], cpl.Prod(M, y_PV[i]));
-                cpl.AddGe(x_PV[i], cpl.Prod(0.0, y_PV[i]));
+             //   cpl.AddGe(x_PV[i], cpl.Prod(0.0, y_PV[i])); // what is this????
             }
             #endregion
 
@@ -1167,8 +1167,15 @@ namespace Cisbat23BuildingIntegratedAgriculture
             /// ////////////////////////////////////////////////////////////////////////
             /// embodied carbon emissions of all technologies
             /// ////////////////////////////////////////////////////////////////////////
+            ILinearNumExpr GHG_veggis = cpl.LinearNumExpr();
+            GHG_veggis.AddTerm(this.Lca_Supermarket, x_supermarket);
+
             for (int i = 0; i < this.NumberOfSolarAreas; i++)
+            {
                 carbonEmissions.AddTerm(this.lca_PV, x_PV[i]);
+                GHG_veggis.AddTerm(this.Lca_Bia[i], y_bia[i]);
+                GHG_veggis.AddTerm(this.Lca_bia_superm_perkg[i], x_bia_sold[i]);
+            }
             carbonEmissions.AddTerm(this.lca_Battery, x_Battery);
             carbonEmissions.AddTerm(this.lca_ElecChiller, x_ElecChiller);
             carbonEmissions.AddTerm(this.lca_ASHP, x_ASHP);
@@ -1209,6 +1216,9 @@ namespace Cisbat23BuildingIntegratedAgriculture
             {
                 capex.AddTerm(this.c_PV, x_PV[i]);
                 capex.AddTerm(this.c_fix_PV, y_PV[i]);
+
+                foodTotalCost.AddTerm(this.c_Bia_fix[i], y_bia[i]);
+                foodTotalCost.AddTerm(this.c_food_sell, x_bia_sold[i]);
             }
 
             capex.AddTerm(this.c_Battery, x_Battery);
@@ -1251,18 +1261,19 @@ namespace Cisbat23BuildingIntegratedAgriculture
             }
 
 
-
+            INumExpr minCarb = cpl.Sum(carbonEmissions, GHG_veggis);
+            INumExpr minCost = cpl.Sum(foodTotalCost, cpl.Sum(capex, cpl.Sum(OM_PV, opex)));
 
             /// ////////////////////////////////////////////////////////////////////////
             /// Objective function
             /// ////////////////////////////////////////////////////////////////////////
-            if (isCostMinimization) cpl.AddMinimize(cpl.Sum(foodTotalCost, cpl.Sum(capex, cpl.Sum(OM_PV, opex))));
-            else cpl.AddMinimize(carbonEmissions);
+            if (isCostMinimization) cpl.AddMinimize(minCost);
+            else cpl.AddMinimize(minCarb);
 
             // epsilon constraints for carbon, 
             // or cost constraint in case of carbon minimization (the same reason why carbon minimization needs a cost constraint)
-            if (hasCarbonConstraint && isCostMinimization) cpl.AddLe(carbonEmissions, (double)carbonConstraint);
-            else if (hasCostConstraint && !isCostMinimization) cpl.AddLe(cpl.Sum(foodTotalCost, cpl.Sum(capex, cpl.Sum(OM_PV, opex))), (double)costConstraint);
+            if (hasCarbonConstraint && isCostMinimization) cpl.AddLe(minCarb, (double)carbonConstraint);
+            else if (hasCostConstraint && !isCostMinimization) cpl.AddLe(minCost, (double)costConstraint);
 
 
             /// ////////////////////////////////////////////////////////////////////////
