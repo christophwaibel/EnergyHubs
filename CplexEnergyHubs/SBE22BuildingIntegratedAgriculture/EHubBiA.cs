@@ -345,26 +345,28 @@ namespace Cisbat23BuildingIntegratedAgriculture
 
         internal void Solve(int epsilonCuts, bool verbose = false)
         {
-            double costTolerance = 100.0;
+            double costTolerance = 1;
             double carbonTolerance = 1;
             this.Outputs = new EhubOutputs[epsilonCuts + 2];
 
             // 1. solve for minCarbon, ignoring cost. solve again, but mincost, with minCarbon constraint
             EhubOutputs minCarbon = EnergyHub("carbon", null, null, verbose);
+            this.Outputs[0] = minCarbon;
 
             // 2. solve for minCost, 
             EhubOutputs minCost = EnergyHub("cost", null, null, verbose);
+            this.Outputs[epsilonCuts+1] = minCost;
 
             // 3. solve for minCost, ignoring Carbon (then, solve for minCarbon, using mincost as constraint. check, if it makes a difference in carbon)
-            this.Outputs[0] = EnergyHub("cost", minCarbon.carbon + carbonTolerance, null, verbose);
+            //this.Outputs[0] = EnergyHub("cost", minCarbon.carbon + carbonTolerance, null, verbose);
             //this.Outputs[epsilonCuts + 1] = minCost; 
-            this.Outputs[epsilonCuts + 1] = EnergyHub("carbon", null, minCost.cost + costTolerance, verbose);
+            //this.Outputs[epsilonCuts + 1] = EnergyHub("carbon", null, minCost.cost + costTolerance, verbose);
             double carbonInterval = (minCost.carbon - minCarbon.carbon) / (epsilonCuts + 1);
 
             // 4. make epsilonCuts cuts and solve for each minCost s.t. carbon
             for (int i = 0; i < epsilonCuts; i++)
                 this.Outputs[i + 1] = EnergyHub("cost", minCarbon.carbon + carbonInterval * (i + 1), null, verbose);
-
+            
             // 5. report all values into Outputs
             //  ...already done by this.Outputs
         }
@@ -871,6 +873,8 @@ namespace Cisbat23BuildingIntegratedAgriculture
 
                 totalFood.AddTerm(-1, x_bia_sold[i]);
                 totalFood.AddTerm(y_bia[i], b_bia[i]);
+
+                cpl.AddLe(x_bia_sold[i], cpl.Prod(y_bia[i], b_bia[i]));
             }
 
             totalFood.AddTerm(1, x_supermarket);

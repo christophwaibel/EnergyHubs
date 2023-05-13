@@ -214,13 +214,13 @@ namespace Cisbat23BuildingIntegratedAgriculture
             // write units to 2nd row
             List<string> header_units = new List<string>();
             header.Add("veggie demand");
-            header.Add("cal");
+            header_units.Add("cal");
             header.Add("x_supermarket");
             header_units.Add("kg"); 
             header.Add("y_BIA_i");
             header_units.Add("yes or no");
             header.Add("x_PV_i");
-            header_units.Add("yes or no");
+            header_units.Add("m2");
             header.Add("x_BIAsold_i");
             header_units.Add("kg");
             header.Add("b_BIA_totalProduction");
@@ -234,7 +234,6 @@ namespace Cisbat23BuildingIntegratedAgriculture
                 if (ehub.Outputs[e].infeasible)
                 {
                     outputString.Add(new List<string> { "Infeasible" });
-                    Console.WriteLine("--- Infeasible Solution ---");
                 }
                 else
                 {
@@ -252,21 +251,24 @@ namespace Cisbat23BuildingIntegratedAgriculture
 
                     outputString.Add(firstLine);
 
-                    for (int t = 1; t < ehub.Outputs[e].x_elecpur.Length; t++)
+                   
+                        
+                    for (int i = 1; i < numberOfSolarAreas; i++)
                     {
                         List<string> newLine = new List<string>();
                         for (int skip = 0; skip < 2; skip++)
                             newLine.Add("");
-                        for (int i = 1; i < numberOfSolarAreas; i++)
-                        {
-                            firstLine.Add(Convert.ToString(ehub.Outputs[e].y_bia[i]));
-                            firstLine.Add(Convert.ToString(ehub.Outputs[e].x_pv[1]));
-                            firstLine.Add(Convert.ToString(ehub.Outputs[e].x_bia_sold[1]));
-                            firstLine.Add(Convert.ToString(ehub.b_bia[i]));
-                            firstLine.Add(Convert.ToString(ehub.c_Bia_fix[i]));
-                        }
+                       
+                        newLine.Add(Convert.ToString(ehub.Outputs[e].y_bia[i]));
+                        newLine.Add(Convert.ToString(ehub.Outputs[e].x_pv[i]));
+                        newLine.Add(Convert.ToString(ehub.Outputs[e].x_bia_sold[i]));
+                        newLine.Add(Convert.ToString(ehub.b_bia[i]));
+                        newLine.Add(Convert.ToString(ehub.c_Bia_fix[i]));
+
                         outputString.Add(newLine);
                     }
+                    
+                    
 
                 }
                 using var sw = new StreamWriter(outputPath + scenario + "_result_bia_epsilon_" + e + ".csv");
@@ -413,6 +415,7 @@ namespace Cisbat23BuildingIntegratedAgriculture
                 }
                 else
                 {
+                    Console.WriteLine("Writing solution {0}", e.ToString());
                     outputString.Add(header);
                     outputString.Add(header_units);
 
