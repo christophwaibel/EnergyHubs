@@ -256,9 +256,9 @@ namespace Cisbat23BuildingIntegratedAgriculture
 
         #region BIA stuff
 
-        double[] b_bia;              // total yearly food produced (red amaranth) in kg per surface
-        double a_red_amaranth_eff;      // conversion efficiency from 1 kg of amaranth into cal nutrituin. 23cal/100g. https://www.fatsecret.com/calories-nutrition/usda/amaranth-leaves?portionid=58969&portionamount=100.000
-        double totalDemandFood;      // total food demand in cal per year for all occupants
+        internal double[] b_bia;              // total yearly food produced (red amaranth) in kg per surface
+        internal double a_red_amaranth_eff;      // conversion efficiency from 1 kg of amaranth into cal nutrituin. 23cal/100g. https://www.fatsecret.com/calories-nutrition/usda/amaranth-leaves?portionid=58969&portionamount=100.000
+        internal double totalDemandFood;      // total food demand in cal per year for all occupants
         internal double[] c_Bia_OM { get; private set; }      // operation maintencance cost
         //internal double[] c_fix_Bia { get; private set; }   // fix cost per surface
         internal double[] c_Bia_fix { get; private set; }       // annualized investment cost: c_i^bia
@@ -282,7 +282,7 @@ namespace Cisbat23BuildingIntegratedAgriculture
         /// ////////////////////////////////////////////////////////////////////////
         /// MILP
         /// ////////////////////////////////////////////////////////////////////////
-        private const double M = 99999;   // Big M method
+        private const double M = 9999999;   // Big M method
         #endregion
 
 
@@ -346,7 +346,7 @@ namespace Cisbat23BuildingIntegratedAgriculture
         internal void Solve(int epsilonCuts, bool verbose = false)
         {
             double costTolerance = 100.0;
-            double carbonTolerance = 0.1;
+            double carbonTolerance = 1;
             this.Outputs = new EhubOutputs[epsilonCuts + 2];
 
             // 1. solve for minCarbon, ignoring cost. solve again, but mincost, with minCarbon constraint
@@ -657,7 +657,7 @@ namespace Cisbat23BuildingIntegratedAgriculture
 
             this.Lca_bia_superm_perkg = new double[this.Lca_Bia_perkg.Length];
             this.Lca_Bia_perkg.CopyTo(this.Lca_bia_superm_perkg, 0);
-            this.Lca_bia_superm_perkg = this.Lca_bia_superm_perkg.Select((x) => this.Lca_Supermarket - x).ToArray();
+            this.Lca_bia_superm_perkg = this.Lca_bia_superm_perkg.Select((x) => -1 * (this.Lca_Supermarket - x)).ToArray();
 
         }
 
@@ -1173,8 +1173,8 @@ namespace Cisbat23BuildingIntegratedAgriculture
             for (int i = 0; i < this.NumberOfSolarAreas; i++)
             {
                 carbonEmissions.AddTerm(this.lca_PV, x_PV[i]);
-                GHG_veggis.AddTerm(this.Lca_Bia[i], y_bia[i]);
-                GHG_veggis.AddTerm(this.Lca_bia_superm_perkg[i], x_bia_sold[i]);
+               GHG_veggis.AddTerm(this.Lca_Bia[i], y_bia[i]);
+                //GHG_veggis.AddTerm(this.Lca_bia_superm_perkg[i], x_bia_sold[i]);
             }
             carbonEmissions.AddTerm(this.lca_Battery, x_Battery);
             carbonEmissions.AddTerm(this.lca_ElecChiller, x_ElecChiller);
@@ -1262,6 +1262,7 @@ namespace Cisbat23BuildingIntegratedAgriculture
 
 
             INumExpr minCarb = cpl.Sum(carbonEmissions, GHG_veggis);
+            //INumExpr minCarb = carbonEmissions;
             INumExpr minCost = cpl.Sum(foodTotalCost, cpl.Sum(capex, cpl.Sum(OM_PV, opex)));
 
             /// ////////////////////////////////////////////////////////////////////////

@@ -188,8 +188,6 @@ namespace Cisbat23BuildingIntegratedAgriculture
 
             Console.WriteLine();
             Console.WriteLine("ENERGY HUB SOLVER COMPLETED");
-            Console.ReadKey();
-
 
 
 
@@ -199,8 +197,342 @@ namespace Cisbat23BuildingIntegratedAgriculture
             //________________________________________________________________________
             // RESULTS WRITING
 
-            //    WriteOutput(scenarioString[scenario], path, numberOfSolarAreas, ehub, typicalDays, numBaseLoads);
+            WriteOutput("ehub-bia", rootFolder, numberOfSolarAreas, ehub, typicalDays, numBaseLoads);
+            WriteBIAOutput("ehub-bia", rootFolder, numberOfSolarAreas, ehub);
+            Console.ReadKey();
+        }
 
+
+        static void WriteBIAOutput(string scenario, string path, int numberOfSolarAreas, EHubBiA ehub)
+        {
+            // check, if results folder exists in inputs folder
+            string outputPath = path + @"results\";
+            Directory.CreateDirectory(outputPath);
+
+            // write a csv for each epsilon cut, name it "_e1", "_e2", .. etc
+            List<string> header = new List<string>();
+            // write units to 2nd row
+            List<string> header_units = new List<string>();
+            header.Add("veggie demand");
+            header.Add("cal");
+            header.Add("x_supermarket");
+            header_units.Add("kg"); 
+            header.Add("y_BIA_i");
+            header_units.Add("yes or no");
+            header.Add("x_PV_i");
+            header_units.Add("yes or no");
+            header.Add("x_BIAsold_i");
+            header_units.Add("kg");
+            header.Add("b_BIA_totalProduction");
+            header_units.Add("kg red amaranth");
+            header.Add("ann. fix cost bia");
+            header_units.Add("SGD/year");
+
+            for (int e = 0; e < ehub.Outputs.Length; e++)
+            {
+                List<List<string>> outputString = new List<List<string>>();
+                if (ehub.Outputs[e].infeasible)
+                {
+                    outputString.Add(new List<string> { "Infeasible" });
+                    Console.WriteLine("--- Infeasible Solution ---");
+                }
+                else
+                {
+                    outputString.Add(header);
+                    outputString.Add(header_units);
+
+                    List<string> firstLine = new List<string>();
+                    firstLine.Add(Convert.ToString(ehub.totalDemandFood));
+                    firstLine.Add(Convert.ToString(ehub.Outputs[e].x_supermarket));
+                    firstLine.Add(Convert.ToString(ehub.Outputs[e].y_bia[0]));
+                    firstLine.Add(Convert.ToString(ehub.Outputs[e].x_pv[0]));
+                    firstLine.Add(Convert.ToString(ehub.Outputs[e].x_bia_sold[0]));
+                    firstLine.Add(Convert.ToString(ehub.b_bia[0]));
+                    firstLine.Add(Convert.ToString(ehub.c_Bia_fix[0]));
+
+                    outputString.Add(firstLine);
+
+                    for (int t = 1; t < ehub.Outputs[e].x_elecpur.Length; t++)
+                    {
+                        List<string> newLine = new List<string>();
+                        for (int skip = 0; skip < 2; skip++)
+                            newLine.Add("");
+                        for (int i = 1; i < numberOfSolarAreas; i++)
+                        {
+                            firstLine.Add(Convert.ToString(ehub.Outputs[e].y_bia[i]));
+                            firstLine.Add(Convert.ToString(ehub.Outputs[e].x_pv[1]));
+                            firstLine.Add(Convert.ToString(ehub.Outputs[e].x_bia_sold[1]));
+                            firstLine.Add(Convert.ToString(ehub.b_bia[i]));
+                            firstLine.Add(Convert.ToString(ehub.c_Bia_fix[i]));
+                        }
+                        outputString.Add(newLine);
+                    }
+
+                }
+                using var sw = new StreamWriter(outputPath + scenario + "_result_bia_epsilon_" + e + ".csv");
+                foreach (List<string> line in outputString)
+                {
+                    foreach (string cell in line)
+                        sw.Write(cell + ";");
+                    sw.Write(Environment.NewLine);
+                }
+                sw.Close();
+
+            }
+        }
+
+
+
+        static void WriteOutput(string scenario, string path, int numberOfSolarAreas, EHubBiA ehub, EhubMisc.HorizonReduction.TypicalDays typicalDays, int numBaseLoads)
+        {
+            // check, if results folder exists in inputs folder
+            string outputPath = path + @"results\";
+            Directory.CreateDirectory(outputPath);
+
+            // write a csv for each epsilon cut, name it "_e1", "_e2", .. etc
+            List<string> header = new List<string>();
+            // write units to 2nd row
+            List<string> header_units = new List<string>();
+            header.Add("Lev.Emissions");
+            header_units.Add("kgCO2eq/a");
+            header.Add("Lev.Cost");
+            header_units.Add("CHF/a");
+            header.Add("OPEX");
+            header_units.Add("CHF/a");
+            header.Add("CAPEX");
+            header_units.Add("CHF/a");
+            header.Add("DistrictHeatingCost");
+            header_units.Add("CHF/a");
+            header.Add("x_DistrictHeatingNetwork");
+            header_units.Add("m");
+            header.Add("x_coolingTower");
+            header_units.Add("kWh");
+            header.Add("x_Battery");
+            header_units.Add("kWh");
+            header.Add("x_TES");
+            header_units.Add("kWh");
+            header.Add("x_clgTES");
+            header_units.Add("kWh");
+            header.Add("x_CHP");
+            header_units.Add("kW");
+            header.Add("x_Boiler");
+            header_units.Add("kW");
+            header.Add("x_BiomassBoiler");
+            header_units.Add("kW");
+            header.Add("x_ASHP");
+            header_units.Add("kW");
+            header.Add("x_ElecChiller");
+            header_units.Add("kW");
+            header.Add("x_Battery_charge");
+            header_units.Add("kWh");
+            header.Add("x_Battery_discharge");
+            header_units.Add("kWh");
+            header.Add("x_Battery_soc");
+            header_units.Add("kWh");
+            header.Add("x_TES_charge");
+            header_units.Add("kWh");
+            header.Add("x_TES_discharge");
+            header_units.Add("kWh");
+            header.Add("x_TES_soc");
+            header_units.Add("kWh");
+            header.Add("x_clgTES_charge");
+            header_units.Add("kWh");
+            header.Add("x_clgTES_discharge");
+            header_units.Add("kWh");
+            header.Add("x_clgTES_soc");
+            header_units.Add("kWh");
+            header.Add("x_CHP_op_e");
+            header_units.Add("kWh");
+            header.Add("x_CHP_op_h");
+            header_units.Add("kWh");
+            header.Add("x_CHP_dump");
+            header_units.Add("kWh");
+            header.Add("x_Boiler_op");
+            header_units.Add("kWh");
+            header.Add("x_BiomassBoiler_op");
+            header_units.Add("kWh");
+            header.Add("x_ASHP_op");
+            header_units.Add("kWh");
+            header.Add("x_AirCon_op");
+            header_units.Add("kWh");
+            header.Add("x_GridPurchase");
+            header_units.Add("kWh");
+            header.Add("x_FeedIn");
+            header_units.Add("kWh");
+            header.Add("x_DR_elec_pos");
+            header_units.Add("kWh");
+            header.Add("x_DR_elec_neg");
+            header_units.Add("kWh");
+            header.Add("x_DR_heat_pos");
+            header_units.Add("kWh");
+            header.Add("x_DR_heat_neg");
+            header_units.Add("kWh");
+            header.Add("x_DR_cool_pos");
+            header_units.Add("kWh");
+            header.Add("x_DR_cool_neg");
+            header_units.Add("kWh");
+            for (int i = 0; i < numberOfSolarAreas; i++)
+            {
+                header.Add("x_PV_" + i);
+                header_units.Add("sqm");
+            }
+            for (int i = 0; i < ehub.NumberOfBuildingsInDistrict; i++)
+            {
+                header.Add("x_HeatExchanger_DH_" + i);
+                header_units.Add("kW");
+            }
+            header.Add("b_PV_totalProduction");
+            header_units.Add("kWh");
+            header.Add("TypicalHeating");
+            header_units.Add("kWh");
+            header.Add("TypicalCooling");
+            header_units.Add("kWh");
+            header.Add("TypicalElectricity");
+            header_units.Add("kWh");
+            header.Add("TypicalGHI");
+            header_units.Add(@"W/sqm");
+            header.Add("TypicalAmbientTemp");
+            header_units.Add("deg C");
+            header.Add("ClusterSize");
+            header_units.Add("Days");
+            header.Add("BiomassConsumed");
+            header_units.Add("kWh");
+            for (int i = 0; i < numberOfSolarAreas; i++)
+            {
+                header.Add("TypicalPotentialsSP_" + i);
+                header_units.Add("kWh/m^2");
+            }
+
+            for (int e = 0; e < ehub.Outputs.Length; e++)
+            {
+                List<List<string>> outputString = new List<List<string>>();
+                if (ehub.Outputs[e].infeasible)
+                {
+                    outputString.Add(new List<string> { "Infeasible" });
+                    Console.WriteLine("--- Infeasible Solution ---");
+                }
+                else
+                {
+                    outputString.Add(header);
+                    outputString.Add(header_units);
+
+                    List<string> firstLine = new List<string>();
+                    firstLine.Add(Convert.ToString(ehub.Outputs[e].carbon));
+                    firstLine.Add(Convert.ToString(ehub.Outputs[e].cost));
+                    firstLine.Add(Convert.ToString(ehub.Outputs[e].OPEX));
+                    firstLine.Add(Convert.ToString(ehub.Outputs[e].CAPEX));
+                    firstLine.Add(Convert.ToString(ehub.Outputs[e].cost_dh));
+                    firstLine.Add(Convert.ToString(ehub.Outputs[e].x_dh));
+                    firstLine.Add(Convert.ToString(ehub.Outputs[e].x_clgtower));
+                    firstLine.Add(Convert.ToString(ehub.Outputs[e].x_bat));
+                    firstLine.Add(Convert.ToString(ehub.Outputs[e].x_tes));
+                    firstLine.Add(Convert.ToString(ehub.Outputs[e].x_clgtes));
+                    firstLine.Add(Convert.ToString(ehub.Outputs[e].x_chp));
+                    firstLine.Add(Convert.ToString(ehub.Outputs[e].x_boi));
+                    firstLine.Add(Convert.ToString(ehub.Outputs[e].x_bmboi));
+                    firstLine.Add(Convert.ToString(ehub.Outputs[e].x_hp));
+                    firstLine.Add(Convert.ToString(ehub.Outputs[e].x_ac));
+                    firstLine.Add(Convert.ToString(ehub.Outputs[e].x_bat_charge[0]));
+                    firstLine.Add(Convert.ToString(ehub.Outputs[e].x_bat_discharge[0]));
+                    firstLine.Add(Convert.ToString(ehub.Outputs[e].x_bat_soc[0]));
+                    firstLine.Add(Convert.ToString(ehub.Outputs[e].x_tes_charge[0]));
+                    firstLine.Add(Convert.ToString(ehub.Outputs[e].x_tes_discharge[0]));
+                    firstLine.Add(Convert.ToString(ehub.Outputs[e].x_tes_soc[0]));
+                    firstLine.Add(Convert.ToString(ehub.Outputs[e].x_clgtes_charge[0]));
+                    firstLine.Add(Convert.ToString(ehub.Outputs[e].x_clgtes_discharge[0]));
+                    firstLine.Add(Convert.ToString(ehub.Outputs[e].x_clgtes_soc[0]));
+                    firstLine.Add(Convert.ToString(ehub.Outputs[e].x_chp_op_e[0]));
+                    firstLine.Add(Convert.ToString(ehub.Outputs[e].x_chp_op_h[0]));
+                    firstLine.Add(Convert.ToString(ehub.Outputs[e].x_chp_dump[0]));
+                    firstLine.Add(Convert.ToString(ehub.Outputs[e].x_boi_op[0]));
+                    firstLine.Add(Convert.ToString(ehub.Outputs[e].x_bmboi_op[0]));
+                    firstLine.Add(Convert.ToString(ehub.Outputs[e].x_hp_op[0]));
+                    firstLine.Add(Convert.ToString(ehub.Outputs[e].x_ac_op[0]));
+                    firstLine.Add(Convert.ToString(ehub.Outputs[e].x_elecpur[0]));
+                    firstLine.Add(Convert.ToString(ehub.Outputs[e].x_feedin[0]));
+                    firstLine.Add(Convert.ToString(ehub.Outputs[e].x_dr_elec_pos[0]));
+                    firstLine.Add(Convert.ToString(ehub.Outputs[e].x_dr_elec_neg[0]));
+                    firstLine.Add(Convert.ToString(ehub.Outputs[e].x_dr_heat_pos[0]));
+                    firstLine.Add(Convert.ToString(ehub.Outputs[e].x_dr_heat_neg[0]));
+                    firstLine.Add(Convert.ToString(ehub.Outputs[e].x_dr_cool_pos[0]));
+                    firstLine.Add(Convert.ToString(ehub.Outputs[e].x_dr_cool_neg[0]));
+                    for (int i = 0; i < numberOfSolarAreas; i++)
+                        firstLine.Add(Convert.ToString(ehub.Outputs[e].x_pv[i]));
+                    for (int i = 0; i < ehub.NumberOfBuildingsInDistrict; i++)
+                        firstLine.Add(Convert.ToString(ehub.Outputs[e].x_hx_dh[i]));
+                    firstLine.Add(Convert.ToString(ehub.Outputs[e].b_pvprod[0]));
+
+                    firstLine.Add(Convert.ToString(typicalDays.DayProfiles[0][0]));
+                    firstLine.Add(Convert.ToString(typicalDays.DayProfiles[1][0]));
+                    firstLine.Add(Convert.ToString(typicalDays.DayProfiles[2][0]));
+                    firstLine.Add(Convert.ToString(typicalDays.DayProfiles[3][0]));
+                    firstLine.Add(Convert.ToString(typicalDays.DayProfiles[4][0]));
+                    firstLine.Add(Convert.ToString(ehub.Outputs[e].clustersize[0]));
+                    firstLine.Add(Convert.ToString(ehub.Outputs[e].biomassConsumed));
+                    for (int i = 0; i < numberOfSolarAreas; i++)
+                        firstLine.Add(Convert.ToString(typicalDays.DayProfiles[numBaseLoads + i][0]));
+
+                    outputString.Add(firstLine);
+
+                    for (int t = 1; t < ehub.Outputs[e].x_elecpur.Length; t++)
+                    {
+                        List<string> newLine = new List<string>();
+                        for (int skip = 0; skip < 15; skip++)
+                            newLine.Add("");
+                        newLine.Add(Convert.ToString(ehub.Outputs[e].x_bat_charge[t]));
+                        newLine.Add(Convert.ToString(ehub.Outputs[e].x_bat_discharge[t]));
+                        newLine.Add(Convert.ToString(ehub.Outputs[e].x_bat_soc[t]));
+                        newLine.Add(Convert.ToString(ehub.Outputs[e].x_tes_charge[t]));
+                        newLine.Add(Convert.ToString(ehub.Outputs[e].x_tes_discharge[t]));
+                        newLine.Add(Convert.ToString(ehub.Outputs[e].x_tes_soc[t]));
+                        newLine.Add(Convert.ToString(ehub.Outputs[e].x_clgtes_charge[t]));
+                        newLine.Add(Convert.ToString(ehub.Outputs[e].x_clgtes_discharge[t]));
+                        newLine.Add(Convert.ToString(ehub.Outputs[e].x_clgtes_soc[t]));
+                        newLine.Add(Convert.ToString(ehub.Outputs[e].x_chp_op_e[t]));
+                        newLine.Add(Convert.ToString(ehub.Outputs[e].x_chp_op_h[t]));
+                        newLine.Add(Convert.ToString(ehub.Outputs[e].x_chp_dump[t]));
+                        newLine.Add(Convert.ToString(ehub.Outputs[e].x_boi_op[t]));
+                        newLine.Add(Convert.ToString(ehub.Outputs[e].x_bmboi_op[t]));
+                        newLine.Add(Convert.ToString(ehub.Outputs[e].x_hp_op[t]));
+                        newLine.Add(Convert.ToString(ehub.Outputs[e].x_ac_op[t]));
+                        newLine.Add(Convert.ToString(ehub.Outputs[e].x_elecpur[t]));
+                        newLine.Add(Convert.ToString(ehub.Outputs[e].x_feedin[t]));
+                        newLine.Add(Convert.ToString(ehub.Outputs[e].x_dr_elec_pos[t]));
+                        newLine.Add(Convert.ToString(ehub.Outputs[e].x_dr_elec_neg[t]));
+                        newLine.Add(Convert.ToString(ehub.Outputs[e].x_dr_heat_pos[t]));
+                        newLine.Add(Convert.ToString(ehub.Outputs[e].x_dr_heat_neg[t]));
+                        newLine.Add(Convert.ToString(ehub.Outputs[e].x_dr_cool_pos[t]));
+                        newLine.Add(Convert.ToString(ehub.Outputs[e].x_dr_cool_neg[t]));
+                        for (int skip = 0; skip < numberOfSolarAreas; skip++)
+                            newLine.Add("");
+                        for (int skip = 0; skip < ehub.NumberOfBuildingsInDistrict; skip++)
+                            newLine.Add("");
+                        newLine.Add(Convert.ToString(ehub.Outputs[e].b_pvprod[t]));
+
+                        newLine.Add(Convert.ToString(typicalDays.DayProfiles[0][t]));
+                        newLine.Add(Convert.ToString(typicalDays.DayProfiles[1][t]));
+                        newLine.Add(Convert.ToString(typicalDays.DayProfiles[2][t]));
+                        newLine.Add(Convert.ToString(typicalDays.DayProfiles[3][t]));
+                        newLine.Add(Convert.ToString(typicalDays.DayProfiles[4][t]));
+                        newLine.Add(Convert.ToString(ehub.Outputs[e].clustersize[t]));
+                        newLine.Add("");
+                        for (int i = 0; i < numberOfSolarAreas; i++)
+                            newLine.Add(Convert.ToString(typicalDays.DayProfiles[numBaseLoads + i][t]));
+
+                        outputString.Add(newLine);
+                    }
+
+                }
+                using var sw = new StreamWriter(outputPath + scenario + "_result_epsilon_" + e + ".csv");
+                foreach (List<string> line in outputString)
+                {
+                    foreach (string cell in line)
+                        sw.Write(cell + ";");
+                    sw.Write(Environment.NewLine);
+                }
+                sw.Close();
+
+            }
         }
 
 
