@@ -68,6 +68,13 @@
         internal int[] clustersize;         // cluster size per timestep. used as scalar
 
         internal double biomassConsumed;        // consumed Biomass in kWh
+
+
+
+
+        internal double x_supermarket;
+        internal double[] x_bia_sold;
+        internal int[] y_bia;
     }
 
     public struct MultiPeriodEhubOutput
@@ -98,4 +105,5 @@
         // typical days related 
         internal int[][] Clustersize;         // cluster size per period and timestep. used as scalar
     }
+
 }
