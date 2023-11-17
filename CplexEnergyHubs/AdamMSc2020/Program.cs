@@ -24,15 +24,21 @@ namespace AdamMSc2020
             //SilhouetteTest();
 
 
-            try
-            {
-                RunMultipleEhubs();
-            }
-            catch (Exception ex)
-            {
-                Console.WriteLine(ex);
-            }
-            Console.ReadKey();
+            //try
+            //{
+            //    RunMultipleEhubs();
+            //}
+            //catch (Exception ex)
+            //{
+            //    Console.WriteLine(ex);
+            //}
+            //Console.ReadKey();
+
+
+
+            // postprocessing for Sobol Indices:
+            // calculate solar self sufficiency, solar fraction, and sum of all PV surfaces
+            LoadEhubResultsAndComputeSolarAutonomyAndPvSurfaces();
         }
 
 
@@ -494,6 +500,170 @@ namespace AdamMSc2020
             //Console.WriteLine("Hit any key to abort program...");
             //Console.ReadKey();
         }
+
+
+
+
+        static void LoadEhubResultsAndComputeSolarAutonomyAndPvSurfaces()
+        {
+
+            // get all folders:
+            string path = @"\\nas22\arch_ita_schlueter\03-Research\01-Projects\29_FCLGlobal\04_Numerical\Buildings_MES_Interactions\energyhub_results";
+
+
+
+            // Get all subdirectories
+            string[] directories = Directory.GetDirectories(path);
+
+            Console.WriteLine("Directories in " + path + ":");
+            foreach (string dir in directories)
+            {
+                Console.WriteLine(dir);
+
+                string[] files = Directory.GetFiles(dir);
+
+                //Console.WriteLine("Files in " + dir + ":");
+                // For each sample in this folder
+                foreach (string file in files)
+                {
+                    //Console.WriteLine(file);
+
+
+
+                    string filePath = file;
+
+                    // List to hold each column as a separate list
+                    List<List<string>> columns = new List<List<string>>();
+
+                    // Read all lines from the file
+                    string[] lines = File.ReadAllLines(filePath);
+
+                    // Process each line
+                    foreach (string line in lines)
+                    {
+                        string[] row = line.Split(new char[] { ',', ';' }, StringSplitOptions.None);
+
+                        // Process each column in the row
+                        for (int i = 0; i < row.Length; i++)
+                        {
+                            // If the cell is empty, skip adding it
+                            if (string.IsNullOrEmpty(row[i]))
+                            {
+                                continue;
+                            }
+
+                            // If this is a new column, add a new list to columns
+                            if (i >= columns.Count)
+                            {
+                                columns.Add(new List<string>());
+                            }
+
+                            // Add the item to the appropriate column
+                            columns[i].Add(row[i]);
+                        }
+                    }
+
+                    // Convert each List<string> in columns to a string array
+                    string[][] columnArrays = new string[columns.Count][];
+                    for (int i = 0; i < columns.Count; i++)
+                    {
+                        columnArrays[i] = columns[i].ToArray();
+                    }
+
+                    //// Example to show the contents of each column
+                    //for (int i = 0; i < columnArrays.Length; i++)
+                    //{
+                    //    Console.WriteLine($"Column {i + 1}:");
+                    //    foreach (string value in columnArrays[i])
+                    //    {
+                    //        Console.WriteLine(value);
+                    //    }
+                    //    Console.WriteLine();
+                    //}
+
+
+                    var targetStrings = new string[5] { "ClusterSize", "TypicalElectricity", "x_GridPurchase", "b_PV_totalProduction", "x_FeedIn" };
+                    double[] clusterSize = null;
+                    double[] elecDemand = null;
+                    double[] gridPurchase = null;
+                    double[] pvProduction = null;
+                    double[] feedIn = null;
+                    foreach (var targetString in targetStrings)
+                    {
+                        string[] targetArray = null;
+                        foreach (var array in columnArrays)
+                        {
+                            if (array.Length > 0 && array[0].Equals(targetString, StringComparison.OrdinalIgnoreCase))
+                            {
+                                targetArray = array;
+                                switch (targetString)
+                                {
+                                    case "ClusterSize":
+                                        clusterSize = targetArray.Skip(2)
+                                              .Select(s => double.Parse(s))
+                                              .ToArray();
+                                        break;
+                                    case "TypicalElectricity":
+                                        elecDemand = targetArray.Skip(2)
+                                              .Select(s => double.Parse(s))
+                                              .ToArray();
+                                        break;
+                                    case "x_GridPurchase":
+                                        gridPurchase = targetArray.Skip(2)
+                                              .Select(s => double.Parse(s))
+                                              .ToArray();
+                                        break;
+                                    case "b_PV_totalProduction":
+                                        pvProduction = targetArray.Skip(2)
+                                              .Select(s => double.Parse(s))
+                                              .ToArray();
+                                        break;
+                                    case "x_FeedIn":
+                                        feedIn = targetArray.Skip(2)
+                                              .Select(s => double.Parse(s))
+                                              .ToArray();
+                                        break;
+                                }
+                                break;
+                            }
+                        }
+                    }
+
+                    double[] solarAutonomy = EhubMisc.Misc.CalcSolarAutonomy(clusterSize, elecDemand, gridPurchase, pvProduction, feedIn);
+                }
+            }
+                
+
+
+        // foreach sample 1-10000
+
+
+
+        // foreach epsilon
+
+
+        //string clusterSizeFile = @"C:\temp\buildingInteractions\clusterSize.txt";
+        //    string typicalElecFile = @"C:\temp\buildingInteractions\elec.txt";
+        //    string typicalGridFile = @"C:\temp\buildingInteractions\gridPurchase.txt";
+        //    string typicalPvFile = @"C:\temp\buildingInteractions\pvProduction.txt";
+        //    string typicalFeedInFile = @"C:\temp\buildingInteractions\feedIn.txt";
+
+        //    EhubMisc.Misc.LoadTimeSeries(clusterSizeFile, out List<double> clusterSize);
+        //    EhubMisc.Misc.LoadTimeSeries(typicalElecFile, out List<double> elecDemand);
+        //    EhubMisc.Misc.LoadTimeSeries(typicalGridFile, out List<double> gridPurchase);
+        //    EhubMisc.Misc.LoadTimeSeries(typicalPvFile, out List<double> pvProduction);
+        //    EhubMisc.Misc.LoadTimeSeries(typicalFeedInFile, out List<double> feedIn);
+
+            //double[] solarAutonomy = EhubMisc.Misc.CalcSolarAutonomy(clusterSize, elecDemand, gridPurchase, pvProduction, feedIn);
+
+            //Console.WriteLine("solar fraction: {0}, solar self-sufficiency: {1}", solarAutonomy[0], solarAutonomy[1]);
+            //Console.ReadKey();
+
+
+        }
+
+
+
 
     }
 }

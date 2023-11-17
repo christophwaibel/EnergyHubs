@@ -168,5 +168,48 @@ namespace EhubMisc
         }
 
 
+
+        /// <summary>
+        /// Returns 2 values: Solar Fraction and Solar Self-Sufficiency
+        /// </summary>
+        /// <param name="clusterSize">time series of</param>
+        /// <param name="typicalElecDemand"></param>
+        /// <param name="typicalGridPurchase"></param>
+        /// <param name="typicalPvProduction"></param>
+        /// <param name="typicalFeedIn"></param>
+        public static double [] CalcSolarAutonomy(double [] clusterSize, double [] typicalElecDemand, double [] typicalGridPurchase, double [] typicalPvProduction, double [] typicalFeedIn)
+        {
+            int horizon = clusterSize.Length;
+
+            double totalElecDemand = 0.0;
+            double totalGridPurchase = 0.0;
+            double totalPvProduction = 0.0;
+            double totalFeedIn = 0.0;
+
+            double solarSelfSuffnumerator = 0.0;
+            double solarSelfSuffdenominator = 0.0;
+            for (int i=0; i<horizon; i++)
+            {
+                double weightedElecDemand = clusterSize[i] * typicalElecDemand[i];
+                double weightedGridPurchase = clusterSize[i] * typicalGridPurchase[i];
+                double weightedPvProduction = clusterSize[i] * typicalPvProduction[i];
+                double weightedFeedIn = clusterSize[i] * typicalFeedIn[i];
+                double PvMinusFeedIn = weightedPvProduction - weightedFeedIn;
+                double GridPlusPvMinusFeedIn = weightedGridPurchase + PvMinusFeedIn;
+
+                totalElecDemand += weightedElecDemand;
+                totalGridPurchase += weightedGridPurchase;
+                totalPvProduction += weightedPvProduction;
+                totalFeedIn += weightedFeedIn;
+
+                solarSelfSuffnumerator += PvMinusFeedIn;
+                solarSelfSuffdenominator += GridPlusPvMinusFeedIn;
+            }
+
+
+            double solarFraction = (totalPvProduction - totalFeedIn) / totalElecDemand;
+            double solarSelfSufficiency = solarSelfSuffnumerator / solarSelfSuffdenominator;
+            return new double[2] { solarFraction, solarSelfSufficiency };
+        }
     }
 }

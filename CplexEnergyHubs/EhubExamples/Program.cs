@@ -6,9 +6,11 @@ namespace EhubExamples
     {
         static void Main(string[] args)
         {
-            ExampleScripts.ClusterLoadData();
-            ExampleScripts.ClusterRandomData();
-            ExampleScripts.SilhouetteTest();
+            //ExampleScripts.ClusterLoadData();
+            //ExampleScripts.ClusterRandomData();
+            //ExampleScripts.SilhouetteTest();
+
+            ExampleScripts.LoadBuildingDemandAndCalcSolarAutonomy();
         }
     }
 }
