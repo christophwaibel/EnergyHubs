@@ -51,8 +51,8 @@ The formulations are based on [Waibel et al 2019](https://doi.org/10.1016/j.apen
 ### Objective Functions
 
 The cost and carbon objective functions are given with:
-$\min (\sum_{i=1}^{N} c_{i} x_{i} + \sum_{i=1}^{N} \sum_{t=1}^{T} k_t c_{i,t}^{\text{op}} x_{i,t}^{\text{op}}) ,$
-![\min (\sum_{i=1}^{N} c_{i} x_{i} + \sum_{i=1}^{N} \sum_{t=1}^{T} k_t c_{i,t}^{\text{op}} x_{i,t}^{\text{op}}) ,](https://render.githubusercontent.com/render/math?math=%5Cmin%20(%5Csum_%7Bi%3D1%7D%5E%7BN%7D%20c_%7Bi%7D%20x_%7Bi%7D%20%2B%20%5Csum_%7Bi%3D1%7D%5E%7BN%7D%20%5Csum_%7Bt%3D1%7D%5E%7BT%7D%20k_t%20c_%7Bi%2Ct%7D%5E%7B%5Ctext%7Bop%7D%7D%20x_%7Bi%2Ct%7D%5E%7B%5Ctext%7Bop%7D%7D)%20%2C)
+$$\min (\sum_{i=1}^{N} c_{i} x_{i} + \sum_{i=1}^{N} \sum_{t=1}^{T} k_t c_{i,t}^{\text{op}} x_{i,t}^{\text{op}}) ,$$
+<!---![\min (\sum_{i=1}^{N} c_{i} x_{i} + \sum_{i=1}^{N} \sum_{t=1}^{T} k_t c_{i,t}^{\text{op}} x_{i,t}^{\text{op}}) ,](https://render.githubusercontent.com/render/math?math=%5Cmin%20(%5Csum_%7Bi%3D1%7D%5E%7BN%7D%20c_%7Bi%7D%20x_%7Bi%7D%20%2B%20%5Csum_%7Bi%3D1%7D%5E%7BN%7D%20%5Csum_%7Bt%3D1%7D%5E%7BT%7D%20k_t%20c_%7Bi%2Ct%7D%5E%7B%5Ctext%7Bop%7D%7D%20x_%7Bi%2Ct%7D%5E%7B%5Ctext%7Bop%7D%7D)%20%2C)--->
 
 where the cost coefficients either represent monetary cost for investment and operation, or embodied and operational carbon emissions. The cost coefficients themselves might include conversion efficiencies, depending on technology. ![k_t](https://render.githubusercontent.com/render/math?math=k_t) is a scaling factor that depends on the typical day and it ensures that the costs of a certain day are weighed according to the size of the cluster that this day belongs to.
 
