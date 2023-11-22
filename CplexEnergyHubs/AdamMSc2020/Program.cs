@@ -506,14 +506,17 @@ namespace AdamMSc2020
 
         static void LoadEhubResultsAndComputeSolarAutonomyAndPvSurfaces()
         {
-
             // get all folders:
             string path = @"\\nas22\arch_ita_schlueter\03-Research\01-Projects\29_FCLGlobal\04_Numerical\Buildings_MES_Interactions\energyhub_results";
 
-
-
             // Get all subdirectories
             string[] directories = Directory.GetDirectories(path);
+
+
+            var sampleNames = new List<string>();
+            var sampleSolarSelfSufficiency = new List<double>();
+            var sampleSolarFraction = new List<double>();
+            var sampleTotalPv = new List<double>();
 
             Console.WriteLine("Directories in " + path + ":");
             foreach (string dir in directories)
@@ -630,6 +633,11 @@ namespace AdamMSc2020
                     }
 
                     double[] solarAutonomy = EhubMisc.Misc.CalcSolarAutonomy(clusterSize, elecDemand, gridPurchase, pvProduction, feedIn);
+                    var fileName = file.Split('\\');
+                    sampleNames.Add(fileName[fileName.Length-1]);
+                    sampleSolarFraction.Add(solarAutonomy[0]);
+                    sampleSolarSelfSufficiency.Add(solarAutonomy[1]);
+                    sampleTotalPv.Add(0.0);
                 }
             }
                 
