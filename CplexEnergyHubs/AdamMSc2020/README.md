@@ -82,7 +82,7 @@ The storage energy balance is given with:
 <!---$$x_{\text{stor},t+1}^{\text{soc}}=(1-a^{\text{loss}}_{\text{stor}})x_{\text{stor},t}^{\text{soc}} + a_{\text{stor}}^{\text{ch}}x_{\text{stor},t}^{\text{ch}} + \frac{-1}{a_{\text{stor},t}^{\text{dis}}}x_{\text{stor},t}^{\text{dis}} ,$$--->
 $$x_{\text{stor},t+1}^{\text{soc}}=$$
 
-$$(1-a^{\text{loss}}_{\text{stor}}) x_{\text{stor},t}^{\text{soc}} + $$
+$$(1-a^{\text{loss}}_{\text{stor}}) * x_{\text{stor},t}^{\text{soc}} + $$
 
 $$a_{\text{stor}}^{\text{ch}}x_{\text{stor},t}^{\text{ch}} + \frac{-1}{a_{\text{stor},t}^{\text{dis}}}x_{\text{stor},t}^{\text{dis}} ,$$
 
