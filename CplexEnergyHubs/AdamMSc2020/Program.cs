@@ -513,17 +513,17 @@ namespace AdamMSc2020
             string[] directories = Directory.GetDirectories(path);
 
 
+            //// just because half of the other folders are complete already...
+            //directories = new string[1] {
+            //    @"\\nas22\arch_ita_schlueter\03-Research\01-Projects\29_FCLGlobal\04_Numerical\Buildings_MES_Interactions\energyhub_results\test"
+            //};
             
 
             Console.WriteLine("Directories in " + path + ":");
             foreach (string dir in directories)
             {
                 var sampleOutputLines = new List<string>();
-                //var sampleNames = new List<string>();
-                //var sampleSolarSelfSufficiency = new List<double>();
-                //var sampleSolarFraction = new List<double>();
-                //var sampleTotalPv = new List<double>();
-                string oneLine = "File Name;"+ "Solar Fraction;" + "Solar Self-Sufficiency;" + "PV Area";
+                string oneLine = "File Name;"+ "Solar Fraction;" + "Solar Self-Consumption;" + "PV Area";
                 sampleOutputLines.Add(oneLine);
 
                 Console.WriteLine(dir);
@@ -576,12 +576,15 @@ namespace AdamMSc2020
                     }
 
                     string pvString = "x_PV_";
-                    var targetStrings = new string[5] { "ClusterSize", "TypicalElectricity", "x_GridPurchase", "b_PV_totalProduction", "x_FeedIn" };
+                    var targetStrings = new string[7] { "ClusterSize", "x_GridPurchase", "b_PV_totalProduction", "x_FeedIn", "x_CHP_op_e", "x_Battery_charge", "x_Battery_discharge" };
                     double[] clusterSize = null;
-                    double[] elecDemand = null;
                     double[] gridPurchase = null;
                     double[] pvProduction = null;
                     double[] feedIn = null;
+                    double[] chpElecGen = null;
+                    double[] batteryCharge = null;
+                    double[] batteryDischarge = null;
+                    double[] totalElecDemand = null;
                     double pvAreaThisSample = 0.0;
                     foreach (var targetString in targetStrings)
                     {
@@ -594,29 +597,25 @@ namespace AdamMSc2020
                                 switch (targetString)
                                 {
                                     case "ClusterSize":
-                                        clusterSize = targetArray.Skip(2)
-                                              .Select(s => double.Parse(s))
-                                              .ToArray();
-                                        break;
-                                    case "TypicalElectricity":
-                                        elecDemand = targetArray.Skip(2)
-                                              .Select(s => double.Parse(s))
-                                              .ToArray();
+                                        clusterSize = targetArray.Skip(2).Select(s => double.Parse(s)).ToArray();
                                         break;
                                     case "x_GridPurchase":
-                                        gridPurchase = targetArray.Skip(2)
-                                              .Select(s => double.Parse(s))
-                                              .ToArray();
+                                        gridPurchase = targetArray.Skip(2).Select(s => double.Parse(s)).ToArray();
                                         break;
                                     case "b_PV_totalProduction":
-                                        pvProduction = targetArray.Skip(2)
-                                              .Select(s => double.Parse(s))
-                                              .ToArray();
+                                        pvProduction = targetArray.Skip(2).Select(s => double.Parse(s)).ToArray();
                                         break;
                                     case "x_FeedIn":
-                                        feedIn = targetArray.Skip(2)
-                                              .Select(s => double.Parse(s))
-                                              .ToArray();
+                                        feedIn = targetArray.Skip(2).Select(s => double.Parse(s)).ToArray();
+                                        break;
+                                    case "x_CHP_op_e":
+                                        chpElecGen = targetArray.Skip(2).Select(s => double.Parse(s)).ToArray();
+                                        break;
+                                    case "x_Battery_charge":
+                                        batteryCharge = targetArray.Skip(2).Select(s => double.Parse(s)).ToArray();
+                                        break;
+                                    case "x_Battery_discharge":
+                                        batteryDischarge = targetArray.Skip(2).Select(s => double.Parse(s)).ToArray();
                                         break;
                                 }
                                 break;
@@ -633,14 +632,26 @@ namespace AdamMSc2020
                         }
                     }
 
-                    double[] solarAutonomy = EhubMisc.Misc.CalcSolarAutonomy(clusterSize, elecDemand, gridPurchase, pvProduction, feedIn);
-                    var fileName = file.Split('\\');
-                    //sampleNames.Add(fileName[fileName.Length - 1]);
-                    //sampleSolarFraction.Add(solarAutonomy[0]);
-                    //sampleSolarSelfSufficiency.Add(solarAutonomy[1]);
-                    //sampleTotalPv.Add(pvAreaThisSample);
-                    oneLine = fileName[fileName.Length - 1] + ";" + solarAutonomy[0].ToString() + ";" + solarAutonomy[1].ToString() + ";" + pvAreaThisSample.ToString();
-                    sampleOutputLines.Add(oneLine);
+                    try
+                    {
+                        totalElecDemand = gridPurchase.Zip(pvProduction, (a, b) => a + b)
+                            .Zip(feedIn, (sum, c) => sum - c)
+                            .Zip(chpElecGen, (sum, d) => sum + d)
+                            .Zip(batteryCharge, (sum, e) => sum + e)
+                            .Zip(batteryDischarge, (sum, f) => sum + f)
+                            .ToArray();
+                        double[] solarAutonomy = EhubMisc.Misc.CalcSolarAutonomy(clusterSize, gridPurchase, pvProduction, feedIn, totalElecDemand);
+
+                        var fileName = file.Split('\\');
+                        oneLine = fileName[fileName.Length - 1] + ";" + solarAutonomy[0].ToString() + ";" + solarAutonomy[1].ToString() + ";" + pvAreaThisSample.ToString();
+                        sampleOutputLines.Add(oneLine);
+                    }
+                    catch (Exception e)
+                    {
+                        Console.WriteLine("file broken: {0}", file);
+                        Console.WriteLine(e.Message);
+                        //Console.ReadKey();
+                    }
                 }
                 Console.WriteLine("folder {0} done", dir);
 
@@ -650,32 +661,6 @@ namespace AdamMSc2020
 
             Console.WriteLine("all done, save this now");
             Console.ReadKey();
-
-
-            // foreach sample 1-10000
-
-
-
-            // foreach epsilon
-
-
-            //string clusterSizeFile = @"C:\temp\buildingInteractions\clusterSize.txt";
-            //    string typicalElecFile = @"C:\temp\buildingInteractions\elec.txt";
-            //    string typicalGridFile = @"C:\temp\buildingInteractions\gridPurchase.txt";
-            //    string typicalPvFile = @"C:\temp\buildingInteractions\pvProduction.txt";
-            //    string typicalFeedInFile = @"C:\temp\buildingInteractions\feedIn.txt";
-
-            //    EhubMisc.Misc.LoadTimeSeries(clusterSizeFile, out List<double> clusterSize);
-            //    EhubMisc.Misc.LoadTimeSeries(typicalElecFile, out List<double> elecDemand);
-            //    EhubMisc.Misc.LoadTimeSeries(typicalGridFile, out List<double> gridPurchase);
-            //    EhubMisc.Misc.LoadTimeSeries(typicalPvFile, out List<double> pvProduction);
-            //    EhubMisc.Misc.LoadTimeSeries(typicalFeedInFile, out List<double> feedIn);
-
-            //double[] solarAutonomy = EhubMisc.Misc.CalcSolarAutonomy(clusterSize, elecDemand, gridPurchase, pvProduction, feedIn);
-
-            //Console.WriteLine("solar fraction: {0}, solar self-sufficiency: {1}", solarAutonomy[0], solarAutonomy[1]);
-            //Console.ReadKey();
-
 
         }
 

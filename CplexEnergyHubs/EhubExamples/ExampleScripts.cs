@@ -159,20 +159,20 @@ namespace EhubExamples
             //double[] clusterSize, double[] typicalElecDemand, double[] typicalGridPurchase, double[] typicalPvProduction, double[] typicalFeedIn
             
             string clusterSizeFile = @"C:\temp\buildingInteractions\clusterSize.txt";
-            string typicalElecFile = @"C:\temp\buildingInteractions\elec.txt";
             string typicalGridFile = @"C:\temp\buildingInteractions\gridPurchase.txt";
             string typicalPvFile = @"C:\temp\buildingInteractions\pvProduction.txt";
             string typicalFeedInFile = @"C:\temp\buildingInteractions\feedIn.txt";
+            string typicalElecFile = @"C:\temp\buildingInteractions\elec.txt";      // this needs to be TOTAL electricity demand, including for heat pumps, aircon, battery, ...
 
             EhubMisc.Misc.LoadTimeSeries(clusterSizeFile, out List<double> clusterSize);
-            EhubMisc.Misc.LoadTimeSeries(typicalElecFile, out List<double> elecDemand);
             EhubMisc.Misc.LoadTimeSeries(typicalGridFile, out List<double> gridPurchase);
             EhubMisc.Misc.LoadTimeSeries(typicalPvFile, out List<double> pvProduction);
             EhubMisc.Misc.LoadTimeSeries(typicalFeedInFile, out List<double> feedIn);
+            EhubMisc.Misc.LoadTimeSeries(typicalElecFile, out List<double> elecDemand);
 
-            double [] solarAutonomy = EhubMisc.Misc.CalcSolarAutonomy(clusterSize.ToArray(), elecDemand.ToArray(), gridPurchase.ToArray(), pvProduction.ToArray(), feedIn.ToArray());
+            double [] solarAutonomy = EhubMisc.Misc.CalcSolarAutonomy(clusterSize.ToArray(), gridPurchase.ToArray(), pvProduction.ToArray(), feedIn.ToArray(), elecDemand.ToArray());
 
-            Console.WriteLine("solar fraction: {0}, solar self-sufficiency: {1}", solarAutonomy[0], solarAutonomy[1]);
+            Console.WriteLine("solar fraction: {0}, solar self-consumption: {1}", solarAutonomy[0], solarAutonomy[1]);
             Console.ReadKey();
 
         }

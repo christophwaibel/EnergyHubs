@@ -170,46 +170,45 @@ namespace EhubMisc
 
 
         /// <summary>
-        /// Returns 2 values: Solar Fraction and Solar Self-Sufficiency
+        /// Returns 2 values: Solar Fraction and Solar Self-Consumption
+        /// Solar Fraction (also Solar Self-Sufficiency, or Autarky): The amounft of energy demand that is covered by solar energy. Also: Solar Fraction, Autarky.
+        /// Solar Self-Consumption: The amount of solar energy consumed on-site.
         /// </summary>
         /// <param name="clusterSize">time series of</param>
-        /// <param name="typicalElecDemand"></param>
         /// <param name="typicalGridPurchase"></param>
         /// <param name="typicalPvProduction"></param>
         /// <param name="typicalFeedIn"></param>
-        public static double [] CalcSolarAutonomy(double [] clusterSize, double [] typicalElecDemand, double [] typicalGridPurchase, double [] typicalPvProduction, double [] typicalFeedIn)
+        /// <param name="totalElecDemand">Total electricity demand of the system, including for heat pumps, batteries, etc...</param>
+        public static double [] CalcSolarAutonomy(double [] clusterSize, double [] typicalGridPurchase, double [] typicalPvProduction, double [] typicalFeedIn, double [] totalElecDemand)
         {
             int horizon = clusterSize.Length;
-
-            double totalElecDemand = 0.0;
-            double totalGridPurchase = 0.0;
-            double totalPvProduction = 0.0;
-            double totalFeedIn = 0.0;
+            double totalWeightedGridPurchase = 0.0;
+            double totalWeightedPvProduction = 0.0;
+            double totalWeightedFeedIn = 0.0;
+            double totalWeightedElecDemand = 0.0;
 
             double solarSelfSuffnumerator = 0.0;
             double solarSelfSuffdenominator = 0.0;
-            for (int i=0; i<horizon; i++)
+            for (int t=0; t<horizon; t++)
             {
-                double weightedElecDemand = clusterSize[i] * typicalElecDemand[i];
-                double weightedGridPurchase = clusterSize[i] * typicalGridPurchase[i];
-                double weightedPvProduction = clusterSize[i] * typicalPvProduction[i];
-                double weightedFeedIn = clusterSize[i] * typicalFeedIn[i];
+                double weightedGridPurchase = clusterSize[t] * typicalGridPurchase[t];
+                double weightedPvProduction = clusterSize[t] * typicalPvProduction[t];
+                double weightedFeedIn = clusterSize[t] * typicalFeedIn[t];
                 double PvMinusFeedIn = weightedPvProduction - weightedFeedIn;
                 double GridPlusPvMinusFeedIn = weightedGridPurchase + PvMinusFeedIn;
 
-                totalElecDemand += weightedElecDemand;
-                totalGridPurchase += weightedGridPurchase;
-                totalPvProduction += weightedPvProduction;
-                totalFeedIn += weightedFeedIn;
+                totalWeightedGridPurchase += weightedGridPurchase;
+                totalWeightedPvProduction += weightedPvProduction;
+                totalWeightedFeedIn += weightedFeedIn;
+                totalWeightedElecDemand += (totalElecDemand[t] * clusterSize[t]);
 
                 solarSelfSuffnumerator += PvMinusFeedIn;
                 solarSelfSuffdenominator += GridPlusPvMinusFeedIn;
             }
 
-
-            double solarFraction = (totalPvProduction - totalFeedIn) / totalElecDemand;
-            double solarSelfSufficiency = solarSelfSuffnumerator / solarSelfSuffdenominator;
-            return new double[2] { solarFraction, solarSelfSufficiency };
+            double solarFraction = (totalWeightedPvProduction - totalWeightedFeedIn) / totalWeightedElecDemand;
+            double solarSelfConsumption = ((totalWeightedPvProduction - totalWeightedFeedIn) / totalWeightedPvProduction);
+            return new double[2] { solarFraction, solarSelfConsumption };
         }
     }
 }
