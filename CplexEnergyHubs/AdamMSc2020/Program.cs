@@ -576,13 +576,12 @@ namespace AdamMSc2020
                     }
 
                     string pvString = "x_PV_";
-                    var targetStrings = new string[7] { "ClusterSize", "x_GridPurchase", "b_PV_totalProduction", "x_FeedIn", "x_CHP_op_e", "x_Battery_charge", "x_Battery_discharge" };
+                    var targetStrings = new string[6] { "ClusterSize", "x_GridPurchase", "b_PV_totalProduction", "x_FeedIn", "x_CHP_op_e", "x_Battery_discharge" };
                     double[] clusterSize = null;
                     double[] gridPurchase = null;
                     double[] pvProduction = null;
                     double[] feedIn = null;
                     double[] chpElecGen = null;
-                    double[] batteryCharge = null;
                     double[] batteryDischarge = null;
                     double[] totalElecDemand = null;
                     double pvAreaThisSample = 0.0;
@@ -611,9 +610,6 @@ namespace AdamMSc2020
                                     case "x_CHP_op_e":
                                         chpElecGen = targetArray.Skip(2).Select(s => double.Parse(s)).ToArray();
                                         break;
-                                    case "x_Battery_charge":
-                                        batteryCharge = targetArray.Skip(2).Select(s => double.Parse(s)).ToArray();
-                                        break;
                                     case "x_Battery_discharge":
                                         batteryDischarge = targetArray.Skip(2).Select(s => double.Parse(s)).ToArray();
                                         break;
@@ -634,11 +630,11 @@ namespace AdamMSc2020
 
                     try
                     {
+                        // total elec demand needs to include all generating technologies, because they are feeding devices including heat pumps, aircon, battery charging, etc
                         totalElecDemand = gridPurchase.Zip(pvProduction, (a, b) => a + b)
                             .Zip(feedIn, (sum, c) => sum - c)
                             .Zip(chpElecGen, (sum, d) => sum + d)
-                            .Zip(batteryCharge, (sum, e) => sum + e)
-                            .Zip(batteryDischarge, (sum, f) => sum + f)
+                            .Zip(batteryDischarge, (sum, e) => sum + e)
                             .ToArray();
                         double[] solarAutonomy = EhubMisc.Misc.CalcSolarAutonomy(clusterSize, gridPurchase, pvProduction, feedIn, totalElecDemand);
 
