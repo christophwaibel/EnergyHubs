@@ -677,9 +677,9 @@ namespace AdamMSc2020
         static void LoadEhubResultsAndWriteTotalResultsPerEpsilon()
         {
             // get all folders:
-            //string path = @"\\nas22\arch_ita_schlueter\03-Research\01-Projects\29_FCLGlobal\04_Numerical\Buildings_MES_Interactions\energyhub_results";
-            string path = @"C:\test";
-
+            string path = @"\\nas22\arch_ita_schlueter\03-Research\01-Projects\29_FCLGlobal\04_Numerical\Buildings_MES_Interactions\energyhub_results";
+            //string path = @"C:\test";
+            int epsilonCuts = 7;
             // Get all subdirectories
             string[] directories = Directory.GetDirectories(path);
 
@@ -700,7 +700,7 @@ namespace AdamMSc2020
             var solarFractionEpsilon = new List<List<double>>();
             var solarSelfConsumptionEpsilon = new List<List<double>>();
 
-            for (int e = 0; e < 7; e++)
+            for (int e = 0; e < epsilonCuts; e++)
             {
                 sampleEpsilon.Add(new List<int>());
 
@@ -912,76 +912,97 @@ namespace AdamMSc2020
             // sort all lists according to sampleEpsilon
             // "Lev.Emissions", "Lev.Cost", "OPEX", "CAPEX", "DistrictHeatingCost", "x_Battery", "x_TES", "x_CHP", "x_Boiler", "x_BiomassBoiler",
             // "x_ASHP", "x_AirCon"
-                // Zip the three lists together
+            // Zip the three lists together
             //var zippedLists = emissionsEpsilon[0].Zip(costEpsilon[0], (v1, v2) => new { Value1 = v1, Value2 = v2 })
             //                    .Zip(sampleEpsilon[0], (values, index) => new { Value1 = values.Value1, Value2 = values.Value2, Index = index });
 
-            var zippedLists = emissionsEpsilon[0].Zip(costEpsilon[0], (v1, v2) => new { Value1 = v1, Value2 = v2 })
-                                .Zip(dhCostEpsilon[0], (values, v3) => new { values.Value1, values.Value2, Value3 = v3 })
-                                .Zip(capBatteryEpsilon[0], (values, v4) => new { values.Value1, values.Value2, values.Value3, Value4 = v4 })
-                                .Zip(capTesEpsilon[0], (values, v5) => new { values.Value1, values.Value2, values.Value3, values.Value4, Value5 = v5 })
-                                .Zip(capChpEpsilon[0], (values, v6) => new { values.Value1, values.Value2, values.Value3, values.Value4, values.Value5, Value6 = v6 })
-                                .Zip(capBoilerEpsilon[0], (values, v7) => new { values.Value1, values.Value2, values.Value3, values.Value4, values.Value5, values.Value6, Value7 = v7 })
-                                .Zip(capBiomassBoilerEpsilon[0], (values, v8) => new { values.Value1, values.Value2, values.Value3, values.Value4, values.Value5, values.Value6, values.Value7, Value8 = v8 })
-                                .Zip(capAshpEpsilon[0], (values, v9) => new { values.Value1, values.Value2, values.Value3, values.Value4, values.Value5, values.Value6, values.Value7, values.Value8, Value9 = v9 })
-                                .Zip(capAirConEpsilon[0], (values, v10) => new { values.Value1, values.Value2, values.Value3, values.Value4, values.Value5, values.Value6, values.Value7, values.Value8, values.Value9, Value10 = v10 })
-                                .Zip(capPvAreaEpsilon[0], (values, v11) => new { values.Value1, values.Value2, values.Value3, values.Value4, values.Value5, values.Value6, values.Value7, values.Value8, values.Value9, values.Value10, Value11 = v11 })
-                                .Zip(solarFractionEpsilon[0], (values, v12) => new { values.Value1, values.Value2, values.Value3, values.Value4, values.Value5, values.Value6, values.Value7, values.Value8, values.Value9, values.Value10, values.Value11, Value12 = v12 })
-                                .Zip(solarSelfConsumptionEpsilon[0], (values, v13) => new { values.Value1, values.Value2, values.Value3, values.Value4, values.Value5, values.Value6, values.Value7, values.Value8, values.Value9, values.Value10, values.Value11, values.Value12, Value13 = v13 })
-                                .Zip(sampleEpsilon[0], (values, index) => new { values.Value1, values.Value2, values.Value3, values.Value4, values.Value5, values.Value6, values.Value7, values.Value8, values.Value9, values.Value10, values.Value11, values.Value12, values.Value13, Index = index });
+            for (int e = 0; e < epsilonCuts; e++)
+            {
+                var zippedLists = emissionsEpsilon[e].Zip(costEpsilon[e], (v1, v2) => new { Value1 = v1, Value2 = v2 })
+                    .Zip(opexEpsilon[e], (values, v3) => new { values.Value1, values.Value2, Value3 = v3 })
+                    .Zip(capexEpsilon[e], (values, v4) => new { values.Value1, values.Value2, values.Value3, Value4 = v4 })
+                    .Zip(dhCostEpsilon[e], (values, v5) => new { values.Value1, values.Value2, values.Value3, values.Value4, Value5 = v5 })
+                    .Zip(capBatteryEpsilon[e], (values, v6) => new { values.Value1, values.Value2, values.Value3, values.Value4, values.Value5, Value6 = v6 })
+                    .Zip(capTesEpsilon[e], (values, v7) => new { values.Value1, values.Value2, values.Value3, values.Value4, values.Value5, values.Value6, Value7 = v7 })
+                    .Zip(capChpEpsilon[e], (values, v8) => new { values.Value1, values.Value2, values.Value3, values.Value4, values.Value5, values.Value6, values.Value7, Value8 = v8 })
+                    .Zip(capBoilerEpsilon[e], (values, v9) => new { values.Value1, values.Value2, values.Value3, values.Value4, values.Value5, values.Value6, values.Value7, values.Value8, Value9 = v9 })
+                    .Zip(capBiomassBoilerEpsilon[e], (values, v10) => new { values.Value1, values.Value2, values.Value3, values.Value4, values.Value5, values.Value6, values.Value7, values.Value8, values.Value9, Value10 = v10 })
+                    .Zip(capAshpEpsilon[e], (values, v11) => new { values.Value1, values.Value2, values.Value3, values.Value4, values.Value5, values.Value6, values.Value7, values.Value8, values.Value9, values.Value10, Value11 = v11 })
+                    .Zip(capAirConEpsilon[e], (values, v12) => new { values.Value1, values.Value2, values.Value3, values.Value4, values.Value5, values.Value6, values.Value7, values.Value8, values.Value9, values.Value10, values.Value11, Value12 = v12 })
+                    .Zip(capPvAreaEpsilon[e], (values, v13) => new { values.Value1, values.Value2, values.Value3, values.Value4, values.Value5, values.Value6, values.Value7, values.Value8, values.Value9, values.Value10, values.Value11, values.Value12, Value13 = v13 })
+                    .Zip(solarFractionEpsilon[e], (values, v14) => new { values.Value1, values.Value2, values.Value3, values.Value4, values.Value5, values.Value6, values.Value7, values.Value8, values.Value9, values.Value10, values.Value11, values.Value12, values.Value13, Value14 = v14 })
+                    .Zip(solarSelfConsumptionEpsilon[e], (values, v15) => new { values.Value1, values.Value2, values.Value3, values.Value4, values.Value5, values.Value6, values.Value7, values.Value8, values.Value9, values.Value10, values.Value11, values.Value12, values.Value13, values.Value14, Value15 = v15 })
+                    .Zip(sampleEpsilon[e], (values, index) => new { values.Value1, values.Value2, values.Value3, values.Value4, values.Value5, values.Value6, values.Value7, values.Value8, values.Value9, values.Value10, values.Value11, values.Value12, values.Value13, values.Value14, values.Value15, Index = index });
 
 
- 
-            //var  = new List<List<double>>(); //for each epsilon, a list of battery capacities per sample
-            //var  = new List<List<double>>();
-            //var  = new List<List<double>>();
-            //var  = new List<List<double>>();
-            //var  = new List<List<double>>();
-            //var  = new List<List<double>>();
-            //var  = new List<List<double>>();
-            //var  = new List<List<double>>();
-            //var  = new List<List<double>>();
-            //var solarSelfConsumptionEpsilon = new List<List<double>>();
 
-            var orderedList = zippedLists.OrderBy(item => item.Index);
+                var orderedList = zippedLists.OrderBy(item => item.Index);
 
-            List<double> sortedValues1 = orderedList.Select(item => item.Value1).ToList();
-            List<double> sortedValues2 = orderedList.Select(item => item.Value2).ToList();
-            List<double> sortedValues3 = orderedList.Select(item => item.Value3).ToList();
-            List<double> sortedValues4 = orderedList.Select(item => item.Value4).ToList();
-            List<double> sortedValues5 = orderedList.Select(item => item.Value5).ToList();
-            List<double> sortedValues6 = orderedList.Select(item => item.Value6).ToList();
-            List<double> sortedValues7 = orderedList.Select(item => item.Value7).ToList();
-            List<double> sortedValues8 = orderedList.Select(item => item.Value8).ToList();
-            List<double> sortedValues9 = orderedList.Select(item => item.Value9).ToList();
-            List<double> sortedValues10 = orderedList.Select(item => item.Value10).ToList();
-            List<double> sortedValues11 = orderedList.Select(item => item.Value11).ToList();
-            List<double> sortedValues12 = orderedList.Select(item => item.Value12).ToList();
-            List<double> sortedValues13 = orderedList.Select(item => item.Value13).ToList();
+                emissionsEpsilon[e] = orderedList.Select(item => item.Value1).ToList();
+                costEpsilon[e] = orderedList.Select(item => item.Value2).ToList();
+                opexEpsilon[e] = orderedList.Select(item => item.Value3).ToList();
+                capexEpsilon[e] = orderedList.Select(item => item.Value4).ToList();
+                dhCostEpsilon[e] = orderedList.Select(item => item.Value5).ToList();
+                capBatteryEpsilon[e] = orderedList.Select(item => item.Value6).ToList();
+                capTesEpsilon[e] = orderedList.Select(item => item.Value7).ToList();
+                capChpEpsilon[e] = orderedList.Select(item => item.Value8).ToList();
+                capBoilerEpsilon[e] = orderedList.Select(item => item.Value9).ToList();
+                capBiomassBoilerEpsilon[e] = orderedList.Select(item => item.Value10).ToList();
+                capAshpEpsilon[e] = orderedList.Select(item => item.Value11).ToList();
+                capAirConEpsilon[e] = orderedList.Select(item => item.Value12).ToList();
+                capPvAreaEpsilon[e] = orderedList.Select(item => item.Value13).ToList();
+                solarFractionEpsilon[e] = orderedList.Select(item => item.Value14).ToList();
+                solarSelfConsumptionEpsilon[e] = orderedList.Select(item => item.Value15).ToList();
 
-            List<int> sortedIndices = orderedList.Select(item => item.Index).ToList();
+                sampleEpsilon[e] = orderedList.Select(item => item.Index).ToList();
 
 
-            // Display the sorted lists and indices
-            Console.WriteLine("Sorted Values1: " + string.Join(", ", sortedValues1));
-            Console.WriteLine("Sorted Values2: " + string.Join(", ", sortedValues2));
-            Console.WriteLine("Sorted Values3: " + string.Join(", ", sortedValues3));
-            Console.WriteLine("Sorted Values4: " + string.Join(", ", sortedValues4));
-            Console.WriteLine("Sorted Values5: " + string.Join(", ", sortedValues5));
-            Console.WriteLine("Sorted Values6: " + string.Join(", ", sortedValues6));
-            Console.WriteLine("Sorted Values7: " + string.Join(", ", sortedValues7));
-            Console.WriteLine("Sorted Values8: " + string.Join(", ", sortedValues8));
-            Console.WriteLine("Sorted Values9: " + string.Join(", ", sortedValues9));
-            Console.WriteLine("Sorted Values10: " + string.Join(", ", sortedValues10));
-            Console.WriteLine("Sorted Values11: " + string.Join(", ", sortedValues11));
-            Console.WriteLine("Sorted Values12: " + string.Join(", ", sortedValues12));
-            Console.WriteLine("Sorted Values13: " + string.Join(", ", sortedValues13));
-            Console.WriteLine("Sorted Indices: " + string.Join(", ", sortedIndices));
-            Console.WriteLine();
+                //// Display the sorted lists and indices
+                //Console.WriteLine("Sorted Values1: " + string.Join(", ", sortedValues1));
+                //Console.WriteLine("Sorted Values2: " + string.Join(", ", sortedValues2));
+                //Console.WriteLine("Sorted Values3: " + string.Join(", ", sortedValues3));
+                //// ...
+                //Console.WriteLine("Sorted Indices: " + string.Join(", ", sortedIndices));
+                //Console.WriteLine();
 
-            Console.WriteLine("Unsorted Values1: " + string.Join(", ", emissionsEpsilon[0]));
-            Console.WriteLine("Unsorted Values2: " + string.Join(", ", costEpsilon[0]));
-            Console.WriteLine("Unsorted Indices: " + string.Join(", ", sampleEpsilon[0]));
+                //Console.WriteLine("Unsorted Values1: " + string.Join(", ", emissionsEpsilon[0]));
+                //Console.WriteLine("Unsorted Values2: " + string.Join(", ", costEpsilon[0]));
+                //Console.WriteLine("Unsorted Indices: " + string.Join(", ", sampleEpsilon[0]));
+
+
+                var sampleOutputLines = new List<string>();
+                sampleOutputLines.Add("sample ID;Lev.Emissions;Lev.Cost;OPEX;CAPEX;DistrictHeatingCost;x_Battery;x_TES;x_CHP;x_Boiler;x_BiomassBoiler;x_ASHP;x_AirCon;x_PV;solarFraction;solarSelfConsumption");
+                for (int i = 0; i < sampleEpsilon[e].Count; i++) // assuming the other results variables have the same length
+                {
+                    string oneLine = null;
+                    oneLine += Convert.ToString(sampleEpsilon[e][i]) + ";";
+                    oneLine += Convert.ToString(emissionsEpsilon[e][i]) + ";";
+                    oneLine += Convert.ToString(costEpsilon[e][i]) + ";";
+                    oneLine += Convert.ToString(opexEpsilon[e][i]) + ";";
+                    oneLine += Convert.ToString(capexEpsilon[e][i]) + ";";
+                    oneLine += Convert.ToString(dhCostEpsilon[e][i]) + ";";
+                    oneLine += Convert.ToString(capBatteryEpsilon[e][i]) + ";";
+                    oneLine += Convert.ToString(capTesEpsilon[e][i]) + ";";
+                    oneLine += Convert.ToString(capChpEpsilon[e][i]) + ";";
+                    oneLine += Convert.ToString(capBoilerEpsilon[e][i]) + ";";
+                    oneLine+= Convert.ToString(capBiomassBoilerEpsilon[e][i]) + ";";
+                    oneLine += Convert.ToString(capAshpEpsilon[e][i]) + ";";
+                    oneLine += Convert.ToString(capAirConEpsilon[e][i]) + ";";
+                    oneLine += Convert.ToString(capPvAreaEpsilon[e][i]) + ";";
+                    oneLine += Convert.ToString(solarFractionEpsilon[e][i]) + ";";
+                    oneLine += Convert.ToString(solarSelfConsumptionEpsilon[e][i]) + ";";
+                    sampleOutputLines.Add(oneLine);
+                }
+                
+
+                string outputPath = path + @"\\total_results_epsilon" + e.ToString() + ".csv";
+                File.WriteAllLines(outputPath, sampleOutputLines);
+                Console.WriteLine("epsilon {0} done", e);
+            }
+
+
+
+
 
             Console.WriteLine("all done, save this now");
             Console.ReadKey();
