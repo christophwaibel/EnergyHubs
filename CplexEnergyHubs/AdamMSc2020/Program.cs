@@ -679,6 +679,8 @@ namespace AdamMSc2020
             // get all folders:
             string path = @"\\nas22\arch_ita_schlueter\03-Research\01-Projects\29_FCLGlobal\04_Numerical\Buildings_MES_Interactions\energyhub_results";
             //string path = @"C:\test";
+            //string path = @"C:\test\test2";
+
             int epsilonCuts = 7;
             // Get all subdirectories
             string[] directories = Directory.GetDirectories(path);
@@ -737,14 +739,6 @@ namespace AdamMSc2020
                 // For each sample in this folder
                 foreach (string file in files)
                 {
-                    // identify epsilon
-                    // identify sample id
-                    var sampleAndEpsilon = file.Split(new[] { "result_", "_epsilon", ".csv" }, StringSplitOptions.None);
-                    var sample = Convert.ToInt32(sampleAndEpsilon[1]);
-                    var epsilon = Convert.ToInt32(sampleAndEpsilon[2]);
-                    sampleEpsilon[epsilon].Add(sample);
-
-
                     //Console.WriteLine(file);
                     string filePath = file;
 
@@ -753,6 +747,22 @@ namespace AdamMSc2020
 
                     // Read all lines from the file
                     string[] lines = File.ReadAllLines(filePath);
+
+
+                    string firstLine = lines[0];
+                    string[] firstRow = firstLine.Split(new char[] { ',', ';' }, StringSplitOptions.None);
+                    if (string.Equals(firstRow[0], "Infeasible"))
+                    {
+                        continue;
+                    }
+
+                    // identify epsilon
+                    // identify sample id
+                    var sampleAndEpsilon = file.Split(new[] { "result_", "_epsilon", ".csv" }, StringSplitOptions.None);
+                    var sample = Convert.ToInt32(sampleAndEpsilon[1]);
+                    var epsilon = Convert.ToInt32(sampleAndEpsilon[2]);
+                    sampleEpsilon[epsilon].Add(sample);
+                    
 
                     // Process each line
                     foreach (string line in lines)
