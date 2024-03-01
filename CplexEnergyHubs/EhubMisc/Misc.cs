@@ -124,6 +124,33 @@ namespace EhubMisc
 
 
 
+        /// <summary>
+        /// Loading all files in a directory and saving as one. Each row in a file is transposed into one column, then each file goes into one row
+        /// </summary>
+        /// <param name="inputDirectory"></param>
+        /// <param name="contentInRowsPerFile"></param>
+        public static void LoadAllFilesInDirectory(string inputDirectory, out List<string> contentInRowsPerFile)
+        {
+            contentInRowsPerFile = new List<string>();
+            string[] files = Directory.GetFiles(inputDirectory);
+            
+
+            //Console.WriteLine("Files in " + dir + ":");
+            // For each sample in this folder
+            foreach (string file in files)
+            {
+                string filePath = file;
+                string[] lines = File.ReadAllLines(filePath);
+
+                // transpose rows into one column
+                string oneRow = file + ";";
+                foreach(var line in lines)
+                    oneRow += line+";";
+                contentInRowsPerFile.Add(oneRow);               
+            }
+        }
+
+
         public static void WriteTextFile(string outputPath, string fileName, List<List<string>> outputString)
         {
             using (var sw = new StreamWriter(outputPath + fileName))

@@ -41,6 +41,7 @@ namespace AdamMSc2020
             //LoadEhubResultsAndComputeSolarAutonomyAndPvSurfaces();
 
             LoadEhubResultsAndWriteTotalResultsPerEpsilon();
+            
         }
 
 
@@ -674,12 +675,14 @@ namespace AdamMSc2020
         /// <summary>
         /// Write summary output files PER EPSILON, containing all samples and relevant results to be used in Sobol Analysis
         /// </summary>
-        static void LoadEhubResultsAndWriteTotalResultsPerEpsilon()
+        static void LoadEhubResultsAndWriteTotalResultsPerEpsilon(bool normalize = true)
         {
             // get all folders:
             string path = @"\\nas22\arch_ita_schlueter\03-Research\01-Projects\29_FCLGlobal\04_Numerical\Buildings_MES_Interactions\energyhub_results";
-            //string path = @"C:\test";
-            //string path = @"C:\test\test2";
+            string geometryPath = @"\\nas22\arch_ita_schlueter\03-Research\01-Projects\29_FCLGlobal\04_Numerical\Buildings_MES_Interactions\Geometric Features\Geom_data";
+            //string path = @"C:\test\results";
+            //string geometryPath = @"C:\test\geom";
+
 
             int epsilonCuts = 7;
             // Get all subdirectories
@@ -919,12 +922,32 @@ namespace AdamMSc2020
             }
 
 
-            // sort all lists according to sampleEpsilon
-            // "Lev.Emissions", "Lev.Cost", "OPEX", "CAPEX", "DistrictHeatingCost", "x_Battery", "x_TES", "x_CHP", "x_Boiler", "x_BiomassBoiler",
-            // "x_ASHP", "x_AirCon"
-            // Zip the three lists together
-            //var zippedLists = emissionsEpsilon[0].Zip(costEpsilon[0], (v1, v2) => new { Value1 = v1, Value2 = v2 })
-            //                    .Zip(sampleEpsilon[0], (values, index) => new { Value1 = values.Value1, Value2 = values.Value2, Index = index });
+            //normalize per floor area
+            var sortedGeomSampleID = new List<int>();
+            var sortedFloorAreaList = new List<double>();
+            if (normalize)
+            {
+                var geomSamplesId = new List<int>();
+                var floorAreas = new List<double>();
+
+                EhubMisc.Misc.LoadAllFilesInDirectory(geometryPath, out var geometryFeatures);
+                for (int g = 0; g < geometryFeatures.Count; g++)
+                {
+                    var sampleID = geometryFeatures[g].Split(new[] { "Geom_data", ".csv" }, StringSplitOptions.None)[1];
+                    geomSamplesId.Add(Convert.ToInt32(sampleID));
+                    geometryFeatures[g] = "sample_" + sampleID + ";" + geometryFeatures[g].Split(new[] { ".csv;" }, StringSplitOptions.None)[1];
+
+                    var floorAreaString = geometryFeatures[g].Split(new char[] { ';' }, StringSplitOptions.None);
+                    if (floorAreaString.Length == 12) floorAreas.Add(Convert.ToDouble(floorAreaString[9]));
+                    else floorAreas.Add(0.0); // zero area indicates something is wrong
+                }
+
+                // order by ID
+                var combinedList = geomSamplesId.Zip(floorAreas, (id, value) => new { SamplesID = id, Value = value }).ToList();
+                combinedList.Sort((a, b) => a.SamplesID.CompareTo(b.SamplesID));
+                sortedGeomSampleID = combinedList.Select(item => item.SamplesID).ToList();
+                sortedFloorAreaList = combinedList.Select(item => item.Value).ToList();
+            }
 
             for (int e = 0; e < epsilonCuts; e++)
             {
@@ -978,6 +1001,29 @@ namespace AdamMSc2020
                 //Console.WriteLine("Unsorted Values1: " + string.Join(", ", emissionsEpsilon[0]));
                 //Console.WriteLine("Unsorted Values2: " + string.Join(", ", costEpsilon[0]));
                 //Console.WriteLine("Unsorted Indices: " + string.Join(", ", sampleEpsilon[0]));
+
+
+                if (normalize)
+                {
+                    for (int i = 0; i < sampleEpsilon[e].Count; i++)
+                    {
+                        int index = sortedGeomSampleID.IndexOf(sampleEpsilon[e][i]);
+                        double areaToNormalizeWith = sortedFloorAreaList[index];
+                        emissionsEpsilon[e][i] /= areaToNormalizeWith;
+                        costEpsilon[e][i] /= areaToNormalizeWith;
+                        opexEpsilon[e][i] /= areaToNormalizeWith;
+                        capexEpsilon[e][i] /= areaToNormalizeWith;
+                        dhCostEpsilon[e][i] /= areaToNormalizeWith;
+                        capBatteryEpsilon[e][i] /= areaToNormalizeWith;
+                        capTesEpsilon[e][i] /= areaToNormalizeWith;
+                        capChpEpsilon[e][i] /= areaToNormalizeWith;
+                        capBoilerEpsilon[e][i] /= areaToNormalizeWith;
+                        capBiomassBoilerEpsilon[e][i] /= areaToNormalizeWith;
+                        capAshpEpsilon[e][i] /= areaToNormalizeWith;
+                        capAirConEpsilon[e][i] /= areaToNormalizeWith;
+                        capPvAreaEpsilon[e][i] /= areaToNormalizeWith;
+                    }
+                }
 
 
                 var sampleOutputLines = new List<string>();
