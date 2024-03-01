@@ -938,7 +938,17 @@ namespace AdamMSc2020
                     geometryFeatures[g] = "sample_" + sampleID + ";" + geometryFeatures[g].Split(new[] { ".csv;" }, StringSplitOptions.None)[1];
 
                     var floorAreaString = geometryFeatures[g].Split(new char[] { ';' }, StringSplitOptions.None);
-                    if (floorAreaString.Length == 12) floorAreas.Add(Convert.ToDouble(floorAreaString[9]));
+                    if (floorAreaString.Length == 12)
+                    {
+                        try 
+                        { 
+                            floorAreas.Add(Convert.ToDouble(floorAreaString[9]));
+                        }
+                        catch
+                        {
+                            floorAreas.Add(0.0);
+                        }
+                    }
                     else floorAreas.Add(0.0); // zero area indicates something is wrong
                 }
 
