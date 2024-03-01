@@ -679,7 +679,7 @@ namespace AdamMSc2020
         {
             // get all folders:
             string path = @"\\nas22\arch_ita_schlueter\03-Research\01-Projects\29_FCLGlobal\04_Numerical\Buildings_MES_Interactions\energyhub_results";
-            string geometryPath = @"\\nas22\arch_ita_schlueter\03-Research\01-Projects\29_FCLGlobal\04_Numerical\Buildings_MES_Interactions\Geometric Features\Geom_data";
+            string geometryPath = @"\\nas22\arch_ita_schlueter\03-Research\01-Projects\29_FCLGlobal\04_Numerical\Buildings_MES_Interactions\Geometric Features\data";
             //string path = @"C:\test\results";
             //string geometryPath = @"C:\test\geom";
 
