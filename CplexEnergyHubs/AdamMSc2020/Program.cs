@@ -3,6 +3,7 @@ using System.IO;
 using System.Collections.Generic;
 
 using System.Linq;
+using System.Net.Http.Headers;
 
 namespace AdamMSc2020
 {
@@ -40,8 +41,165 @@ namespace AdamMSc2020
             // calculate solar self sufficiency, solar fraction, and sum of all PV surfaces
             //LoadEhubResultsAndComputeSolarAutonomyAndPvSurfaces();
 
-            LoadEhubResultsAndWriteTotalResultsPerEpsilon();
+            // LoadEhubResultsAndWriteTotalResultsPerEpsilon();
+            CorrectBuildingInputFiles();
+
+
+        }
+
+
+
+        /// <summary>
+        /// The building_input_x.csv files are wrong because of a wrong order of reading the run1,2,3 folders from Euler. run1,2,3 doesnt correspond to 1,2,3.idf.
+        /// This script corrects for this mistake:
+        /// 1) Loading all weather files Zurich/Singapore from a given folder
+        /// 2) Loading job_list_ZH or job_list_Singapore. That file contains info on which idf and weather file belongs to which run1,2,3
+        /// 3) go through each building_input file, swap GHI and dry bulb with the correct epw, and rename to match with the correct idf. E.g., building_input_2, which used run2 (10.idf), becomes building_input_10.csv
+        /// 4) save corrected csvs in a new folder with building input files
+        /// </summary>
+        static void CorrectBuildingInputFiles()
+        {
+            // paths
+            string allGhi = @"D:\RESEARCH\19_20 ETH AS\PROJEKTE\08_BuildingsEnergyInteractions\Scripts and Inputs\WeatherZurich\All_GHI_Zurich.csv";
+            string allDbt = @"D:\RESEARCH\19_20 ETH AS\PROJEKTE\08_BuildingsEnergyInteractions\Scripts and Inputs\WeatherZurich\All_DBT_Zurich.csv";
+            string jobList = @"D:\RESEARCH\19_20 ETH AS\PROJEKTE\08_BuildingsEnergyInteractions\Scripts and Inputs\job_list_ZH.csv";
+            string oldBuildingFolder = @"D:\RESEARCH\19_20 ETH AS\PROJEKTE\08_BuildingsEnergyInteractions\EnergyHub\Energy hub inputs\bldg_wrong_order";
+            string newBuildingFolder = @"D:\RESEARCH\19_20 ETH AS\PROJEKTE\08_BuildingsEnergyInteractions\EnergyHub\Energy hub inputs\bldg";
+
+            // 1) load weather files
+            List<List<string>> allDbtList;
+            List<List<string>> allGhiList;
+            List<string> weatherFile;
+            LoadEpwGhiDbt(allDbt, allGhi, out allDbtList, out allGhiList, out weatherFile);
             
+
+            // 2) load job_list to know the matching
+            List<string> jobRuns;
+            List<string> jobWeather;
+            List<string> jobIdf;
+            LoadJobList(jobList, out jobRuns, out jobWeather, out jobIdf);
+
+            // 3) go through building_input files, swap ghi and dbt, and rename in new folder
+            string[] files = Directory.GetFiles(oldBuildingFolder);
+
+            //Console.WriteLine("Files in " + dir + ":");
+            // For each sample in this folder
+            foreach (string file in files)
+            {
+                string[] lines = File.ReadAllLines(file);
+
+                //get ID of building_input_ID
+                string bldgFileId = file.Split(new[] { "input_", ".csv" }, StringSplitOptions.None)[1];
+                //find this id in the "jobRuns" as "Run"+bldgFileId
+                int indexBldgFile = jobRuns.IndexOf("Run" + bldgFileId);
+                //from this index, get the actually correct idf-ID. this ID will be used as new name 'building_input_NewID.csv'
+                string newFileName = "building_input_" + jobIdf[indexBldgFile].Split(new char[1] {'.'})[0] + ".csv";
+
+                //also load the actual weather file from this index
+                //[4] ghi
+                //[5] tamb
+                // starting from row[1], coz 0 is header
+                int indexWeatherFile = weatherFile.IndexOf(jobWeather[indexBldgFile]);
+                // allDbtList[indexWeatherFile]
+                // allGhiList[indexWeatherFile]
+                // put these into the old file 'file'. 'lines' are already read. go through each line, skip the first one though.
+                int counter = 0;
+                for (int i = 1; i < lines.Length; i++)
+                {
+                    string [] line = lines[i].Split(new char[2] {',', ';'});
+                    line[4] = allGhiList[indexWeatherFile][i - 1];
+                    line[5] = allDbtList[indexWeatherFile][i - 1];
+                    string newLine = null;
+                    for (int u = 0; u < line.Length; u++)
+                    {
+                        newLine += line[u]+",";
+                    }
+                    lines[i] = newLine;
+                }
+
+                // write a new file in new folder, same name though, but with the updated lines
+                File.WriteAllLines(newBuildingFolder+@"\" + newFileName, lines);
+
+            }
+
+
+        }
+
+
+        /// <summary>
+        /// Loads a timeseries of a csv file. Separator ',' and ';' and uses the first value per row
+        /// </summary>
+        /// <param name="inputFileDbt"></param>
+        /// <param name="dbt"></param>
+        private static void LoadEpwGhiDbt(string inputFileDbt, string inputFileGhi, out List<List<string>> dbt, out List<List<string>> ghi, out List<string> header)
+        {
+            header = new List<string>();
+            dbt = new List<List<string>>();
+            ghi = new List<List<string>>();
+
+            int skipLine = 2;
+            int numEpws = 27;
+            var linesDbt = File.ReadAllLines(inputFileDbt);
+            var allHeaders = linesDbt[0].Split(new char[2] { ',', ';' });
+            for (int i = 0; i < numEpws; i++)
+            {
+                dbt.Add(new List<string>());
+                header.Add(allHeaders[i]+".epw");
+            }
+
+            int counter = 0;
+            foreach (var line in linesDbt)
+            {
+                if (skipLine > 0 && counter < skipLine)
+                {
+                    counter++;
+                    continue;
+                }
+                var lineSplit = line.Split(new char[2] { ',', ';' });
+                for (int i = 0; i < numEpws; i++)
+                {
+                    dbt[i].Add(lineSplit[i]);
+                }
+            }
+
+
+            var linesGhi = File.ReadAllLines(inputFileGhi);
+            
+            for (int i = 0; i < numEpws; i++)
+            {
+                ghi.Add(new List<string>());
+            }
+
+            counter = 0;
+            foreach (var line in linesGhi)
+            {
+                if (skipLine > 0 && counter < skipLine)
+                {
+                    counter++;
+                    continue;
+                }
+                var lineSplit = line.Split(new char[2] { ',', ';' });
+                for (int i = 0; i < numEpws; i++)
+                {
+                    ghi[i].Add(lineSplit[i]);
+                }
+            }
+        }
+
+        private static void LoadJobList(string inputFile, out List<string> jobRuns, out List<string> jobWeather, out List<string> jobIdf )
+        {
+            jobRuns = new List<string>();
+            jobWeather = new List<string>();
+            jobIdf = new List<string>();
+            var lines = File.ReadAllLines(inputFile);
+            int counter = 0;
+            foreach (var line in lines)
+            {
+                var lineSplit = line.Split(new char[2] { ',', ';' });
+                jobRuns.Add(lineSplit[0]);
+                jobWeather.Add(lineSplit[1]);
+                jobIdf.Add(lineSplit[2]);
+            }
         }
 
 
